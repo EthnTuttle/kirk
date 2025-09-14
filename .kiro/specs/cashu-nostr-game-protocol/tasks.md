@@ -1,12 +1,12 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core dependencies
+- [x] 1. Set up project structure and core dependencies
   - Create Cargo.toml with CDK 0.12.1, nostr-sdk 0.35, and other dependencies
   - Set up basic library structure with modules: events, game, cashu, client, error
   - Create lib.rs with public module exports
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. Implement core error types and utilities
+- [x] 2. Implement core error types and utilities
   - Define GameProtocolError enum with all error variants
   - Implement error conversions from CDK and nostr errors
   - Add utility functions for SHA256 hashing and hex encoding
