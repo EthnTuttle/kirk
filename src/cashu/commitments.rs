@@ -65,12 +65,14 @@ impl TokenCommitment {
     }
     
     /// Standard token hashing function
+    /// Uses the token's serialized JSON representation for consistent hashing
     fn hash_token(token: &CashuToken) -> [u8; 32] {
-        // Hash the token's serialized representation
-        // This is a placeholder - actual implementation will use token-specific data
-        let token_data = format!("{:?}", token);
+        // Serialize token to JSON for consistent hashing
+        let token_json = serde_json::to_string(token)
+            .unwrap_or_else(|_| format!("{:?}", token));
+        
         let mut hasher = Sha256::new();
-        hasher.update(token_data.as_bytes());
+        hasher.update(token_json.as_bytes());
         hasher.finalize().into()
     }
     
@@ -134,5 +136,466 @@ impl TokenCommitment {
         }
         
         current_level[0] // Return merkle root
+    }
+}
+
+// Additional utility functions for commitment construction
+impl TokenCommitment {
+    /// Create hash commitment for a single token (convenience function)
+    pub fn hash_single_token(token: &CashuToken) -> String {
+        let commitment = Self::single(token);
+        commitment.commitment_hash
+    }
+    
+    /// Create hash commitment for multiple tokens using concatenation
+    pub fn hash_concatenation(tokens: &[CashuToken]) -> String {
+        let commitment = Self::multiple(tokens, CommitmentMethod::Concatenation);
+        commitment.commitment_hash
+    }
+    
+    /// Create hash commitment for multiple tokens using merkle tree radix 4
+    pub fn hash_merkle_tree_radix4(tokens: &[CashuToken]) -> String {
+        let commitment = Self::multiple(tokens, CommitmentMethod::MerkleTreeRadix4);
+        commitment.commitment_hash
+    }
+    
+    /// Verify a commitment hash against revealed tokens with specified method
+    pub fn verify_commitment_hash(
+        commitment_hash: &str,
+        tokens: &[CashuToken],
+        method: Option<CommitmentMethod>
+    ) -> Result<bool, ValidationError> {
+        let commitment = match (tokens.len(), method) {
+            (1, None) => Self::single(&tokens[0]),
+            (_, Some(method)) => Self::multiple(tokens, method),
+            (_, None) => {
+                return Err(ValidationError {
+                    event_id: nostr::EventId::from_hex("0".repeat(64)).unwrap(),
+                    error_type: crate::error::ValidationErrorType::InvalidCommitment,
+                    message: "Multiple tokens require commitment method specification".to_string(),
+                });
+            }
+        };
+        
+        Ok(commitment.commitment_hash == commitment_hash)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::events::CommitmentMethod;
+    use cdk::nuts::Token as CashuToken;
+
+    /// Create a test token for commitment testing
+    /// Since we're testing commitment algorithms, not CDK integration,
+    /// we'll create a simple mock token that serializes deterministically
+    fn create_test_token(seed: u8) -> CashuToken {
+        // Create a simple JSON structure that can be parsed as a CDK Token
+        // This is sufficient for testing commitment algorithms
+        let token_json = format!(
+            r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_{}","unit":"sat"}}"#,
+            seed, seed
+        );
+        
+        // Parse as CDK token - this should work with the basic structure
+        serde_json::from_str(&token_json)
+            .unwrap_or_else(|e| {
+                // If CDK structure is different, create a deterministic fallback
+                // that will still allow us to test commitment algorithms
+                panic!("Failed to create test token for seed {}: {}. CDK Token structure may have changed.", seed, e);
+            })
+    }
+
+    /// Create multiple test tokens
+    fn create_test_tokens(count: usize) -> Vec<CashuToken> {
+        (0..count).map(|i| create_test_token(i as u8)).collect()
+    }
+
+    #[test]
+    fn test_single_token_commitment() {
+        let token = create_test_token(1);
+        let commitment = TokenCommitment::single(&token);
+        
+        // Verify commitment structure
+        assert!(!commitment.commitment_hash.is_empty());
+        assert_eq!(commitment.commitment_hash.len(), 64); // SHA256 hex = 64 chars
+        assert!(matches!(commitment.commitment_type, CommitmentType::Single));
+        
+        // Verify hex format
+        assert!(hex::decode(&commitment.commitment_hash).is_ok());
+    }
+
+    #[test]
+    fn test_single_token_commitment_deterministic() {
+        let token1 = create_test_token(1);
+        let token2 = create_test_token(1); // Same seed = same token
+        
+        let commitment1 = TokenCommitment::single(&token1);
+        let commitment2 = TokenCommitment::single(&token2);
+        
+        // Same token should produce same commitment
+        assert_eq!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_single_token_commitment_different_tokens() {
+        let token1 = create_test_token(1);
+        let token2 = create_test_token(2);
+        
+        let commitment1 = TokenCommitment::single(&token1);
+        let commitment2 = TokenCommitment::single(&token2);
+        
+        // Different tokens should produce different commitments
+        assert_ne!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_multiple_token_concatenation_commitment() {
+        let tokens = create_test_tokens(3);
+        let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+        
+        // Verify commitment structure
+        assert!(!commitment.commitment_hash.is_empty());
+        assert_eq!(commitment.commitment_hash.len(), 64);
+        assert!(matches!(
+            commitment.commitment_type, 
+            CommitmentType::Multiple { method: CommitmentMethod::Concatenation }
+        ));
+    }
+
+    #[test]
+    fn test_multiple_token_merkle_commitment() {
+        let tokens = create_test_tokens(4);
+        let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Verify commitment structure
+        assert!(!commitment.commitment_hash.is_empty());
+        assert_eq!(commitment.commitment_hash.len(), 64);
+        assert!(matches!(
+            commitment.commitment_type, 
+            CommitmentType::Multiple { method: CommitmentMethod::MerkleTreeRadix4 }
+        ));
+    }
+
+    #[test]
+    fn test_concatenation_commitment_deterministic() {
+        let tokens1 = create_test_tokens(3);
+        let tokens2 = create_test_tokens(3); // Same tokens
+        
+        let commitment1 = TokenCommitment::multiple(&tokens1, CommitmentMethod::Concatenation);
+        let commitment2 = TokenCommitment::multiple(&tokens2, CommitmentMethod::Concatenation);
+        
+        // Same tokens should produce same commitment
+        assert_eq!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_merkle_commitment_deterministic() {
+        let tokens1 = create_test_tokens(4);
+        let tokens2 = create_test_tokens(4); // Same tokens
+        
+        let commitment1 = TokenCommitment::multiple(&tokens1, CommitmentMethod::MerkleTreeRadix4);
+        let commitment2 = TokenCommitment::multiple(&tokens2, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Same tokens should produce same commitment
+        assert_eq!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_concatenation_vs_merkle_different() {
+        let tokens = create_test_tokens(4);
+        
+        let concat_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+        let merkle_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Different methods should produce different commitments
+        assert_ne!(concat_commitment.commitment_hash, merkle_commitment.commitment_hash);
+    }
+
+    #[test]
+    fn test_token_ordering_consistency() {
+        // Create tokens in different orders
+        let tokens1 = create_test_tokens(3);
+        let mut tokens2 = tokens1.clone();
+        tokens2.reverse(); // Reverse order
+        
+        let commitment1 = TokenCommitment::multiple(&tokens1, CommitmentMethod::Concatenation);
+        let commitment2 = TokenCommitment::multiple(&tokens2, CommitmentMethod::Concatenation);
+        
+        // Should produce same commitment regardless of input order (due to internal sorting)
+        assert_eq!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_merkle_tree_ordering_consistency() {
+        let tokens1 = create_test_tokens(4);
+        let mut tokens2 = tokens1.clone();
+        tokens2.reverse();
+        
+        let commitment1 = TokenCommitment::multiple(&tokens1, CommitmentMethod::MerkleTreeRadix4);
+        let commitment2 = TokenCommitment::multiple(&tokens2, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Should produce same commitment regardless of input order
+        assert_eq!(commitment1.commitment_hash, commitment2.commitment_hash);
+    }
+
+    #[test]
+    fn test_single_token_verification() {
+        let token = create_test_token(1);
+        let commitment = TokenCommitment::single(&token);
+        
+        // Verify with correct token
+        assert!(commitment.verify(&[token.clone()]).unwrap());
+        
+        // Verify with wrong token
+        let wrong_token = create_test_token(2);
+        assert!(!commitment.verify(&[wrong_token]).unwrap());
+        
+        // Verify with multiple tokens (should fail for single commitment)
+        let multiple_tokens = create_test_tokens(2);
+        assert!(!commitment.verify(&multiple_tokens).unwrap());
+    }
+
+    #[test]
+    fn test_multiple_token_concatenation_verification() {
+        let tokens = create_test_tokens(3);
+        let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+        
+        // Verify with correct tokens
+        assert!(commitment.verify(&tokens).unwrap());
+        
+        // Verify with wrong tokens
+        let wrong_tokens = create_test_tokens(2);
+        assert!(!commitment.verify(&wrong_tokens).unwrap());
+        
+        // Verify with tokens in different order (should still work due to sorting)
+        let mut reordered_tokens = tokens.clone();
+        reordered_tokens.reverse();
+        assert!(commitment.verify(&reordered_tokens).unwrap());
+    }
+
+    #[test]
+    fn test_multiple_token_merkle_verification() {
+        let tokens = create_test_tokens(4);
+        let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Verify with correct tokens
+        assert!(commitment.verify(&tokens).unwrap());
+        
+        // Verify with wrong tokens
+        let wrong_tokens = create_test_tokens(3);
+        assert!(!commitment.verify(&wrong_tokens).unwrap());
+        
+        // Verify with tokens in different order
+        let mut reordered_tokens = tokens.clone();
+        reordered_tokens.reverse();
+        assert!(commitment.verify(&reordered_tokens).unwrap());
+    }
+
+    #[test]
+    fn test_merkle_tree_edge_cases() {
+        // Test empty tokens
+        let merkle_root = TokenCommitment::build_merkle_tree_radix4(&[]);
+        assert_eq!(merkle_root, [0u8; 32]);
+        
+        // Test single token
+        let single_hash = [1u8; 32];
+        let merkle_root = TokenCommitment::build_merkle_tree_radix4(&[single_hash]);
+        assert_eq!(merkle_root, single_hash);
+        
+        // Test two tokens
+        let two_hashes = [[1u8; 32], [2u8; 32]];
+        let merkle_root = TokenCommitment::build_merkle_tree_radix4(&two_hashes);
+        assert_ne!(merkle_root, [0u8; 32]);
+        assert_ne!(merkle_root, [1u8; 32]);
+        assert_ne!(merkle_root, [2u8; 32]);
+    }
+
+    #[test]
+    fn test_merkle_tree_radix4_properties() {
+        // Test that merkle tree handles various sizes correctly
+        for size in 1..=17 {
+            let hashes: Vec<[u8; 32]> = (0..size).map(|i| {
+                let mut hash = [0u8; 32];
+                hash[0] = (i + 1) as u8; // Start from 1 to avoid all-zero hash
+                hash
+            }).collect();
+            
+            let merkle_root = TokenCommitment::build_merkle_tree_radix4(&hashes);
+            
+            // Root should not be all zeros (unless input was empty)
+            if !hashes.is_empty() {
+                // For single element, root equals the element
+                if hashes.len() == 1 {
+                    assert_eq!(merkle_root, hashes[0]);
+                } else {
+                    // For multiple elements, root should be different from any input
+                    assert!(!hashes.contains(&merkle_root));
+                }
+            }
+            
+            // Root should be deterministic
+            let merkle_root2 = TokenCommitment::build_merkle_tree_radix4(&hashes);
+            assert_eq!(merkle_root, merkle_root2);
+        }
+    }
+
+    #[test]
+    fn test_concatenation_commitment_properties() {
+        // Test various sizes
+        for size in 1..=10 {
+            let tokens = create_test_tokens(size);
+            let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+            
+            // Should be valid hex
+            assert!(hex::decode(&commitment.commitment_hash).is_ok());
+            
+            // Should be 64 characters (SHA256 hex)
+            assert_eq!(commitment.commitment_hash.len(), 64);
+            
+            // Should verify correctly
+            assert!(commitment.verify(&tokens).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_hash_token_consistency() {
+        let token = create_test_token(1);
+        
+        // Hash same token multiple times
+        let hash1 = TokenCommitment::hash_token(&token);
+        let hash2 = TokenCommitment::hash_token(&token);
+        let hash3 = TokenCommitment::hash_token(&token);
+        
+        // Should always produce same hash
+        assert_eq!(hash1, hash2);
+        assert_eq!(hash2, hash3);
+    }
+
+    #[test]
+    fn test_hash_token_different_tokens() {
+        let token1 = create_test_token(1);
+        let token2 = create_test_token(2);
+        
+        let hash1 = TokenCommitment::hash_token(&token1);
+        let hash2 = TokenCommitment::hash_token(&token2);
+        
+        // Different tokens should produce different hashes
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_commitment_type_matching() {
+        let token = create_test_token(1);
+        let tokens = create_test_tokens(3);
+        
+        let single_commitment = TokenCommitment::single(&token);
+        let concat_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+        let merkle_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Verify type matching
+        assert!(matches!(single_commitment.commitment_type, CommitmentType::Single));
+        assert!(matches!(
+            concat_commitment.commitment_type, 
+            CommitmentType::Multiple { method: CommitmentMethod::Concatenation }
+        ));
+        assert!(matches!(
+            merkle_commitment.commitment_type, 
+            CommitmentType::Multiple { method: CommitmentMethod::MerkleTreeRadix4 }
+        ));
+    }
+
+    #[test]
+    fn test_verification_with_wrong_method() {
+        let tokens = create_test_tokens(3);
+        
+        // Create commitment with concatenation
+        let mut commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+        
+        // Change the method to merkle (simulating wrong method in verification)
+        commitment.commitment_type = CommitmentType::Multiple { 
+            method: CommitmentMethod::MerkleTreeRadix4 
+        };
+        
+        // Should fail verification because method doesn't match original
+        assert!(!commitment.verify(&tokens).unwrap());
+    }
+
+    #[test]
+    fn test_utility_functions() {
+        let token = create_test_token(1);
+        let tokens = create_test_tokens(3);
+        
+        // Test single token hash utility
+        let single_hash = TokenCommitment::hash_single_token(&token);
+        assert_eq!(single_hash.len(), 64);
+        assert!(hex::decode(&single_hash).is_ok());
+        
+        // Test concatenation utility
+        let concat_hash = TokenCommitment::hash_concatenation(&tokens);
+        assert_eq!(concat_hash.len(), 64);
+        assert!(hex::decode(&concat_hash).is_ok());
+        
+        // Test merkle utility
+        let merkle_hash = TokenCommitment::hash_merkle_tree_radix4(&tokens);
+        assert_eq!(merkle_hash.len(), 64);
+        assert!(hex::decode(&merkle_hash).is_ok());
+        
+        // Different methods should produce different hashes
+        assert_ne!(concat_hash, merkle_hash);
+    }
+
+    #[test]
+    fn test_verify_commitment_hash_utility() {
+        let token = create_test_token(1);
+        let tokens = create_test_tokens(3);
+        
+        // Test single token verification
+        let single_hash = TokenCommitment::hash_single_token(&token);
+        assert!(TokenCommitment::verify_commitment_hash(&single_hash, &[token.clone()], None).unwrap());
+        
+        // Test concatenation verification
+        let concat_hash = TokenCommitment::hash_concatenation(&tokens);
+        assert!(TokenCommitment::verify_commitment_hash(
+            &concat_hash, 
+            &tokens, 
+            Some(CommitmentMethod::Concatenation)
+        ).unwrap());
+        
+        // Test merkle verification
+        let merkle_hash = TokenCommitment::hash_merkle_tree_radix4(&tokens);
+        assert!(TokenCommitment::verify_commitment_hash(
+            &merkle_hash, 
+            &tokens, 
+            Some(CommitmentMethod::MerkleTreeRadix4)
+        ).unwrap());
+        
+        // Test wrong hash should fail
+        assert!(!TokenCommitment::verify_commitment_hash(
+            "invalid_hash", 
+            &tokens, 
+            Some(CommitmentMethod::Concatenation)
+        ).unwrap());
+        
+        // Test multiple tokens without method should fail
+        assert!(TokenCommitment::verify_commitment_hash(&concat_hash, &tokens, None).is_err());
+    }
+
+    #[test]
+    fn test_large_token_set_performance() {
+        // Test with larger token sets to ensure algorithms scale reasonably
+        let large_token_set = create_test_tokens(50);
+        
+        // Both methods should complete without panic
+        let concat_commitment = TokenCommitment::multiple(&large_token_set, CommitmentMethod::Concatenation);
+        let merkle_commitment = TokenCommitment::multiple(&large_token_set, CommitmentMethod::MerkleTreeRadix4);
+        
+        // Should produce valid commitments
+        assert_eq!(concat_commitment.commitment_hash.len(), 64);
+        assert_eq!(merkle_commitment.commitment_hash.len(), 64);
+        
+        // Should verify correctly
+        assert!(concat_commitment.verify(&large_token_set).unwrap());
+        assert!(merkle_commitment.verify(&large_token_set).unwrap());
     }
 }
