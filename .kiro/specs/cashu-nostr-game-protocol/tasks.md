@@ -12,14 +12,14 @@
   - Add utility functions for SHA256 hashing and hex encoding
   - _Requirements: 1.4_
 
-- [ ] 3. Implement nostr event content structures
+- [x] 3. Implement nostr event content structures
   - Create ChallengeContent, ChallengeAcceptContent, MoveContent, FinalContent, RewardContent structs
   - Implement Serialize/Deserialize for all content types
   - Define CommitmentMethod enum (Concatenation, MerkleTreeRadix4)
   - Add MoveType enum (Move, Commit, Reveal)
   - _Requirements: 2.1, 2.2, 3.1, 4.1, 5.1_
 
-- [ ] 4. Implement nostr event builders
+- [x] 4. Implement nostr event builders
   - Create event kind constants (9259-9263) for all game event types
   - Implement to_event() methods for each content struct using nostr EventBuilder
   - Add event validation and parsing utilities

@@ -20,7 +20,47 @@ impl ChallengeContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(CHALLENGE_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the challenge content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        if self.game_type.is_empty() {
+            return Err(GameProtocolError::GameValidation(
+                "Game type cannot be empty".to_string()
+            ));
+        }
+        
+        if self.commitment_hashes.is_empty() {
+            return Err(GameProtocolError::GameValidation(
+                "At least one commitment hash is required".to_string()
+            ));
+        }
+        
+        // Validate commitment hash format (should be hex strings)
+        for hash in &self.commitment_hashes {
+            if hash.len() != 64 {
+                return Err(GameProtocolError::InvalidCommitment(
+                    format!("Commitment hash must be 64 characters (32 bytes hex), got {}", hash.len())
+                ));
+            }
+            
+            hex::decode(hash).map_err(|_| {
+                GameProtocolError::InvalidCommitment(
+                    format!("Invalid hex format in commitment hash: {}", hash)
+                )
+            })?;
+        }
+        
+        // Validate expiry if present
+        if let Some(expiry) = self.expiry {
+            let now = chrono::Utc::now().timestamp() as u64;
+            if expiry <= now {
+                return Err(GameProtocolError::InvalidExpiry);
+            }
+        }
+        
+        Ok(())
     }
 }
 
@@ -37,6 +77,32 @@ impl ChallengeAcceptContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(CHALLENGE_ACCEPT_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the challenge accept content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        if self.commitment_hashes.is_empty() {
+            return Err(GameProtocolError::GameValidation(
+                "At least one commitment hash is required".to_string()
+            ));
+        }
+        
+        // Validate commitment hash format (should be hex strings)
+        for hash in &self.commitment_hashes {
+            if hash.len() != 64 {
+                return Err(GameProtocolError::InvalidCommitment(
+                    format!("Commitment hash must be 64 characters (32 bytes hex), got {}", hash.len())
+                ));
+            }
+            
+            hex::decode(hash).map_err(|_| {
+                GameProtocolError::InvalidCommitment(
+                    format!("Invalid hex format in commitment hash: {}", hash)
+                )
+            })?;
+        }
+        
+        Ok(())
     }
 }

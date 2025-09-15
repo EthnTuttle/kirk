@@ -28,6 +28,23 @@ impl FinalContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(FINAL_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the final content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        // If commitment method is specified, validate it makes sense
+        if let Some(ref method) = self.commitment_method {
+            match method {
+                CommitmentMethod::Concatenation => {
+                    // Concatenation method is always valid
+                },
+                CommitmentMethod::MerkleTreeRadix4 => {
+                    // Merkle tree method is always valid
+                }
+            }
+        }
+        
+        Ok(())
     }
 }

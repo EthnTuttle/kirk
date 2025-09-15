@@ -29,6 +29,41 @@ impl MoveContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(MOVE_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the move content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        // Validate move type consistency
+        match self.move_type {
+            MoveType::Reveal => {
+                if self.revealed_tokens.is_none() {
+                    return Err(GameProtocolError::InvalidMove(
+                        "Reveal moves must include revealed tokens".to_string()
+                    ));
+                }
+            },
+            MoveType::Commit => {
+                if self.revealed_tokens.is_some() {
+                    return Err(GameProtocolError::InvalidMove(
+                        "Commit moves should not include revealed tokens".to_string()
+                    ));
+                }
+            },
+            MoveType::Move => {
+                // Regular moves may or may not have revealed tokens
+            }
+        }
+        
+        // Validate that revealed tokens, if present, are not empty
+        if let Some(ref tokens) = self.revealed_tokens {
+            if tokens.is_empty() {
+                return Err(GameProtocolError::InvalidMove(
+                    "If revealed_tokens is present, it cannot be empty".to_string()
+                ));
+            }
+        }
+        
+        Ok(())
     }
 }

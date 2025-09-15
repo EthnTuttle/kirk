@@ -21,7 +21,27 @@ impl RewardContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(REWARD_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the reward content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        if self.reward_tokens.is_empty() {
+            return Err(GameProtocolError::GameValidation(
+                "Reward events must contain at least one reward token".to_string()
+            ));
+        }
+        
+        // Validate that all reward tokens are actually reward type
+        for token in &self.reward_tokens {
+            if !matches!(token.game_type, crate::cashu::GameTokenType::Reward { .. }) {
+                return Err(GameProtocolError::InvalidToken(
+                    "All tokens in reward event must be Reward type".to_string()
+                ));
+            }
+        }
+        
+        Ok(())
     }
 }
 
@@ -39,6 +59,17 @@ impl ValidationFailureContent {
         let content = serde_json::to_string(self)?;
         EventBuilder::new(REWARD_KIND, content, Vec::<nostr::Tag>::new())
             .to_event(keys)
-            .map_err(|e| GameProtocolError::Nostr(e.to_string()))
+            .map_err(GameProtocolError::from)
+    }
+    
+    /// Validate the validation failure content
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        if self.failure_reason.is_empty() {
+            return Err(GameProtocolError::GameValidation(
+                "Validation failure reason cannot be empty".to_string()
+            ));
+        }
+        
+        Ok(())
     }
 }
