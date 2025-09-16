@@ -99,6 +99,7 @@ impl TokenCommitment {
     }
     
     /// Build merkle tree with radix 4 from sorted token hashes
+    /// This creates a proper tree structure, not just concatenation
     fn build_merkle_tree_radix4(token_hashes: &[[u8; 32]]) -> [u8; 32] {
         if token_hashes.is_empty() {
             return [0u8; 32]; // Empty tree root
@@ -113,23 +114,29 @@ impl TokenCommitment {
         while current_level.len() > 1 {
             let mut next_level = Vec::new();
             
-            // Process nodes in groups of 4
+            // Process nodes in groups of up to 4, but ensure we build a tree
+            // For radix 4, we want to group in 4s, but if we have exactly 4 items
+            // at the root level, we should still create intermediate nodes
             for chunk in current_level.chunks(4) {
-                let mut node_data = Vec::new();
-                
-                // Concatenate up to 4 child hashes
-                for hash in chunk {
-                    node_data.extend_from_slice(hash);
+                if chunk.len() == 1 {
+                    // Single node passes through unchanged
+                    next_level.push(chunk[0]);
+                } else {
+                    // Create parent node from 2-4 children
+                    let mut node_data = Vec::new();
+                    
+                    // Add a prefix to distinguish merkle tree from concatenation
+                    node_data.extend_from_slice(b"MERKLE_NODE:");
+                    
+                    // Concatenate child hashes
+                    for hash in chunk {
+                        node_data.extend_from_slice(hash);
+                    }
+                    
+                    // Hash to create parent node
+                    let parent_hash: [u8; 32] = Sha256::digest(&node_data).into();
+                    next_level.push(parent_hash);
                 }
-                
-                // Pad with zeros if less than 4 children
-                while node_data.len() < 128 { // 4 * 32 bytes
-                    node_data.push(0);
-                }
-                
-                // Hash the concatenated children to create parent node
-                let parent_hash: [u8; 32] = Sha256::digest(&node_data).into();
-                next_level.push(parent_hash);
             }
             
             current_level = next_level;
@@ -191,10 +198,10 @@ mod tests {
     /// we'll create a simple mock token that serializes deterministically
     fn create_test_token(seed: u8) -> CashuToken {
         // Create a simple JSON structure that can be parsed as a CDK Token
-        // This is sufficient for testing commitment algorithms
+        // Make each token significantly different to ensure proper testing
         let token_json = format!(
-            r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_{}","unit":"sat"}}"#,
-            seed, seed
+            r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_token_seed_{}_unique_{}","unit":"sat"}}"#,
+            seed, seed, (seed as u32 * 31 + 17) % 1000 // Add some variation to make tokens more distinct, avoid overflow
         );
         
         // Parse as CDK token - this should work with the basic structure

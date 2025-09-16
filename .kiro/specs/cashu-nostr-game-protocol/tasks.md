@@ -26,7 +26,7 @@
   - Write unit tests for event serialization/deserialization
   - _Requirements: 2.1, 3.1, 4.1, 5.1_
 
-- [ ] 5. Implement standardized hash commitment system
+- [x] 5. Implement standardized hash commitment system
   - Create TokenCommitment struct with commitment_hash and commitment_type
   - Implement single token commitment using SHA256(token_hash)
   - Implement concatenation commitment for multiple tokens
