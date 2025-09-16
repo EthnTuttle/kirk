@@ -35,7 +35,7 @@
   - Write comprehensive tests for all commitment methods
   - _Requirements: 2.3, 2.4, 5a.1, 5a.2, 5a.3_
 
-- [ ] 6. Implement core game traits
+- [x] 6. Implement core game traits
   - Define Game trait with GamePiece, GameState, MoveData associated types
   - Add decode_c_value method for extracting game pieces from C values
   - Add validate_sequence, is_sequence_complete, determine_winner methods
@@ -43,7 +43,7 @@
   - Define CommitmentValidator trait with validation methods
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.6_
 
-- [ ] 7. Implement CDK integration layer
+- [x] 7. Implement CDK integration layer
   - Create GameTokenType enum (Game, Reward with P2PK locking)
   - Implement GameToken wrapper around CDK Token with game context
   - Add methods to extract C values from token proofs

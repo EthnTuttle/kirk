@@ -9,8 +9,9 @@ keywords = ["cashu", "nostr", "gaming", "ecash", "cryptography"]
 categories = ["games", "cryptography"]
 
 [dependencies]
-# Cashu integration - use latest stable CDK release
-cdk = "0.12.1"
+# Cashu integration - use local submodule for modifications
+cdk = { path = "deps/cdk/crates/cdk" }
+cashu = { path = "deps/cdk/crates/cashu", features = ["kirk"] }
 
 # Nostr integration - reuse existing rust-nostr functionality  
 nostr = { version = "0.35" }
