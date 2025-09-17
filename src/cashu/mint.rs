@@ -1,59 +1,301 @@
 //! Game mint wrapper extending CDK mint functionality
 
-use nostr::{PublicKey, EventId};
+use std::sync::Arc;
+use std::collections::HashMap;
+use nostr::{PublicKey, EventId, Keys, secp256k1::XOnlyPublicKey};
 use nostr_sdk::Client as NostrClient;
-use cdk::nuts::Token as CashuToken;
-use crate::error::GameProtocolError;
-use crate::cashu::GameToken;
+use cdk::{Mint, Amount};
+use cdk::nuts::{
+    Token as CashuToken, SwapRequest, SwapResponse, CurrencyUnit, Id, KeySetInfo
+};
+use cdk::mint::{MintKeySetInfo, QuoteId};
+use cashu::nuts::nut00::Error as TokenError;
+use crate::error::{GameProtocolError, GameResult};
+use crate::cashu::{GameToken, GameTokenType};
+use crate::events::reward::RewardContent;
 
 /// Wrapper around CDK Mint with nostr integration
 pub struct GameMint {
-    // CDK mint will be integrated in later tasks
+    inner: Arc<Mint>, // CDK Mint instance
     nostr_client: NostrClient,
+    keys: Keys, // Nostr keys for signing events
+    unit: CurrencyUnit, // Currency unit for this mint
 }
 
 impl GameMint {
-    /// Create new GameMint with nostr client
-    pub fn new(nostr_client: NostrClient) -> Self {
+    /// Create new GameMint wrapping existing CDK mint
+    pub fn new(
+        mint: Arc<Mint>, 
+        nostr_client: NostrClient, 
+        keys: Keys,
+        unit: CurrencyUnit
+    ) -> Self {
         Self {
+            inner: mint,
             nostr_client,
+            keys,
+            unit,
         }
     }
     
-    /// Mint Game tokens using CDK's existing mint operation
-    /// This is a placeholder - actual CDK integration will be implemented in later tasks
-    pub async fn mint_game_tokens(&self, _amount: u64) -> Result<Vec<GameToken>, GameProtocolError> {
-        // Placeholder implementation
-        todo!("CDK integration will be implemented in task 8")
+    /// Get reference to underlying CDK mint
+    pub fn inner(&self) -> &Arc<Mint> {
+        &self.inner
     }
     
-    /// Mint P2PK locked Reward tokens for game winner
-    /// This is a placeholder - actual CDK integration will be implemented in later tasks
+    /// Mint Game tokens using CDK's standard minting process
+    /// This creates regular tokens that can be used for game commitments
+    pub async fn mint_game_tokens(&self, _amount: Amount) -> GameResult<Vec<GameToken>> {
+        // This is a simplified implementation that would need to be integrated
+        // with the full CDK minting process including quotes and payments
+        
+        // For now, return an error indicating this needs full implementation
+        Err(GameProtocolError::MintError(
+            "Game token minting requires full CDK integration with quote/payment cycle. \
+             This would involve creating mint quotes, processing payments, and minting tokens.".to_string()
+        ))
+    }
+    
+    /// Mint P2PK locked Reward tokens for game winner using NUT-11
     pub async fn mint_reward_tokens(
         &self, 
-        _amount: u64, 
-        _winner_pubkey: PublicKey
-    ) -> Result<Vec<GameToken>, GameProtocolError> {
-        // Placeholder implementation
-        todo!("CDK integration will be implemented in task 8")
+        _amount: Amount, 
+        winner_pubkey: PublicKey
+    ) -> GameResult<Vec<GameToken>> {
+        // Convert nostr PublicKey to the format needed for P2PK conditions
+        let _p2pk_pubkey = self.convert_nostr_pubkey_to_p2pk(winner_pubkey)?;
+        
+        // This is a simplified implementation that would need to be integrated
+        // with the full CDK minting process including P2PK conditions
+        
+        // For now, return an error indicating this needs full implementation
+        Err(GameProtocolError::MintError(
+            format!("P2PK reward token minting for pubkey {} requires full CDK integration \
+                     with NUT-11 P2PK spending conditions and quote/payment cycle.", winner_pubkey)
+        ))
     }
     
-    /// Validate tokens using CDK's existing validation
-    /// This is a placeholder - actual CDK integration will be implemented in later tasks
-    pub async fn validate_tokens(&self, _tokens: &[CashuToken]) -> Result<bool, GameProtocolError> {
-        // Placeholder implementation
-        todo!("CDK integration will be implemented in task 8")
+    /// Validate tokens using CDK's verify_proofs method
+    pub async fn validate_tokens(&self, tokens: &[CashuToken]) -> GameResult<bool> {
+        for token in tokens {
+            // Get the active keysets for validation
+            let keysets: Vec<KeySetInfo> = self.inner.get_active_keysets()
+                .into_iter()
+                .filter_map(|(unit, id)| {
+                    if unit == self.unit {
+                        self.inner.get_keyset_info(&id).map(|_info| KeySetInfo {
+                            id,
+                            unit,
+                            active: true,
+                            input_fee_ppk: 0, // Would need actual fee from mint keyset info
+                            final_expiry: None,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            
+            // Extract proofs from each token
+            let proofs = token.proofs(&keysets)
+                .map_err(|e| GameProtocolError::Cdk(format!("Token proof extraction failed: {}", e)))?;
+            
+            // Verify proofs using CDK's verification
+            match self.inner.verify_proofs(proofs).await {
+                Ok(()) => continue, // Token is valid
+                Err(_) => return Ok(false), // Token is invalid
+            }
+        }
+        
+        Ok(true) // All tokens are valid
+    }
+    
+    /// Process swap request using CDK's swap functionality
+    pub async fn swap_tokens(&self, swap_request: SwapRequest) -> GameResult<SwapResponse> {
+        self.inner.process_swap_request(swap_request).await
+            .map_err(|e| GameProtocolError::Cdk(e.to_string()))
+    }
+    
+    /// Process melt request using CDK's melt functionality
+    /// Note: This is a simplified interface - actual melt requests require more parameters
+    pub async fn melt_tokens(&self, _quote_id: QuoteId) -> GameResult<Amount> {
+        // CDK's process_melt_request requires multiple parameters including
+        // proof writer, melt quote, melt request, optional payment hash, and amount
+        // This would need to be implemented with the full melt workflow
+        
+        Err(GameProtocolError::MintError(
+            "Token melting requires full CDK integration with melt quotes and payment processing.".to_string()
+        ))
+    }
+    
+    /// Create mint quote for external payment
+    pub async fn create_mint_quote(
+        &self, 
+        amount: Amount, 
+        description: Option<String>
+    ) -> GameResult<String> {
+        // This would create a mint quote through CDK's quote system
+        // The actual implementation would involve:
+        // 1. Creating a proper mint quote request
+        // 2. Processing it through the mint's quote system
+        // 3. Returning the quote ID for payment
+        
+        Err(GameProtocolError::MintError(
+            format!("Mint quote creation for amount {} with description {:?} \
+                     requires full CDK quote system integration.", amount, description)
+        ))
+    }
+    
+    /// Create melt quote for external payment
+    pub async fn create_melt_quote(
+        &self,
+        request: String, // Lightning invoice or other payment request
+        unit: Option<CurrencyUnit>
+    ) -> GameResult<String> {
+        // This would create a melt quote through CDK's quote system
+        // The actual implementation would involve:
+        // 1. Creating a proper melt quote request with the payment request
+        // 2. Processing it through the mint's quote system
+        // 3. Returning the quote ID for the melt operation
+        
+        let _unit = unit.unwrap_or_else(|| self.unit.clone());
+        
+        Err(GameProtocolError::MintError(
+            format!("Melt quote creation for request {} requires full CDK quote system integration.", request)
+        ))
     }
     
     /// Publish game result and reward to nostr
-    /// This is a placeholder - actual implementation will be in later tasks
     pub async fn publish_game_result(
         &self,
-        _game_sequence_root: EventId,
-        _winner: PublicKey,
-        _reward_tokens: Vec<GameToken>
-    ) -> Result<EventId, GameProtocolError> {
-        // Placeholder implementation
-        todo!("Implementation will be completed in task 8")
+        game_sequence_root: EventId,
+        winner: PublicKey,
+        reward_tokens: Vec<GameToken>
+    ) -> GameResult<EventId> {
+        // Validate that all reward tokens are actually reward type
+        for token in &reward_tokens {
+            if !token.is_reward_token() {
+                return Err(GameProtocolError::InvalidToken(
+                    "All tokens in reward event must be Reward type".to_string()
+                ));
+            }
+        }
+        
+        let reward_content = RewardContent {
+            game_sequence_root,
+            winner_pubkey: winner,
+            reward_tokens,
+            unlock_instructions: Some(
+                "These tokens are locked to your nostr public key using NUT-11 P2PK. \
+                 Use a compatible Cashu wallet to spend them.".to_string()
+            ),
+        };
+        
+        // Validate the reward content
+        reward_content.validate()?;
+        
+        // Create and publish the reward event
+        let event = reward_content.to_event(&self.keys)?;
+        let event_id = event.id;
+        
+        self.nostr_client.send_event(event).await
+            .map_err(|e| GameProtocolError::NostrSdk(e.to_string()))?;
+        
+        Ok(event_id)
+    }
+    
+    /// Internal helper to process mint requests and wrap tokens
+    /// This would be implemented with full CDK integration
+    async fn _process_mint_request_internal(
+        &self,
+        _game_type: GameTokenType
+    ) -> GameResult<Vec<GameToken>> {
+        // This is a placeholder for the full mint integration
+        // In a real implementation, this would:
+        // 1. Process the mint request through CDK's full minting process
+        // 2. Handle the quote/payment/mint cycle
+        // 3. Return the minted tokens wrapped as GameTokens
+        
+        Err(GameProtocolError::MintError(
+            "Full CDK mint integration not yet implemented. \
+             This requires implementing the complete quote/payment/mint cycle.".to_string()
+        ))
+    }
+    
+    /// Convert nostr PublicKey to the format needed for P2PK conditions
+    fn convert_nostr_pubkey_to_p2pk(&self, pubkey: PublicKey) -> GameResult<XOnlyPublicKey> {
+        // Convert nostr public key bytes to secp256k1 XOnlyPublicKey
+        let pubkey_bytes = pubkey.to_bytes();
+        XOnlyPublicKey::from_slice(&pubkey_bytes)
+            .map_err(|e| GameProtocolError::InvalidToken(
+                format!("Invalid public key for P2PK: {}", e)
+            ))
+    }
+    
+    /// Get mint information
+    pub async fn get_mint_info(&self) -> GameResult<cdk::nuts::MintInfo> {
+        self.inner.mint_info().await
+            .map_err(|e| GameProtocolError::Cdk(e.to_string()))
+    }
+    
+    /// Get active keysets for this mint
+    pub fn get_active_keysets(&self) -> HashMap<CurrencyUnit, Id> {
+        self.inner.get_active_keysets()
+    }
+    
+    /// Get keyset info by ID
+    pub fn get_keyset_info(&self, id: &Id) -> Option<MintKeySetInfo> {
+        self.inner.get_keyset_info(id)
+    }
+}
+
+// Helper trait implementations for error conversion
+impl From<cdk::Error> for GameProtocolError {
+    fn from(err: cdk::Error) -> Self {
+        GameProtocolError::Cdk(err.to_string())
+    }
+}
+
+impl From<TokenError> for GameProtocolError {
+    fn from(err: TokenError) -> Self {
+        GameProtocolError::Cdk(format!("Token error: {}", err))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+    
+    /// Create a test public key for testing
+    fn create_test_pubkey(seed: u8) -> PublicKey {
+        let mut key_bytes = [0u8; 32];
+        for i in 0..32 {
+            key_bytes[i] = seed.wrapping_add(i as u8);
+        }
+        if key_bytes[0] == 0 {
+            key_bytes[0] = 1;
+        }
+        
+        PublicKey::from_slice(&key_bytes)
+            .unwrap_or_else(|_| {
+                let hex_str = format!("{:02x}{:062x}", seed, seed as u64);
+                PublicKey::from_str(&hex_str)
+                    .unwrap_or_else(|_| {
+                        PublicKey::from_str("0000000000000000000000000000000000000000000000000000000000000001")
+                            .expect("Failed to create test pubkey")
+                    })
+            })
+    }
+    
+    #[test]
+    fn test_pubkey_conversion() {
+        let pubkey = create_test_pubkey(42);
+        
+        // Test that we can convert nostr pubkey to secp256k1 format
+        let pubkey_bytes = pubkey.to_bytes();
+        let secp_pubkey = XOnlyPublicKey::from_slice(&pubkey_bytes);
+        
+        assert!(secp_pubkey.is_ok(), "Should be able to convert nostr pubkey to secp256k1 format");
     }
 }

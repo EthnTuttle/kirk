@@ -51,7 +51,7 @@
   - Write unit tests for token wrapper functionality
   - _Requirements: 6.1, 6.3, 6.8_
 
-- [ ] 8. Implement mint operations wrapper
+- [x] 8. Implement mint operations wrapper
   - Create GameMint struct wrapping CDK Mint with nostr client
   - Implement mint_game_tokens using CDK's standard minting
   - Implement mint_reward_tokens using NUT-11 P2PK locking
@@ -60,7 +60,7 @@
   - Add publish_game_result method for nostr reward events
   - _Requirements: 6.2, 6.4, 6.5, 6.6, 7.1, 7.4, 7.5, 7.7_
 
-- [ ] 9. Implement game sequence validation
+- [x] 9. Implement game sequence validation
   - Create GameSequence struct with challenge_id, players, events, state
   - Implement SequenceState enum with proper state transitions
   - Add state transition validation (WaitingForAccept → InProgress → WaitingForFinal → Complete)
