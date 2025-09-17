@@ -68,7 +68,7 @@
   - Implement sequence integrity validation (event chain verification)
   - _Requirements: 3.2, 3.3, 5.2, 7.2, 7.3_
 
-- [ ] 10. Implement player client
+- [x] 10. Implement player client
   - Create PlayerClient struct with nostr client, CDK wallet, and keys
   - Implement create_challenge with configurable expiry (default 1 hour)
   - Add create_challenge_default convenience method
@@ -78,7 +78,7 @@
   - Add private create_commitments helper method
   - _Requirements: 2.1, 2.2, 3.1, 4.2, 5.1_
 
-- [ ] 11. Implement commitment construction algorithms
+- [-] 11. Implement commitment construction algorithms
   - Implement build_merkle_tree_radix4 with proper padding and hashing
   - Implement build_concatenation_commitment with sorted token ordering
   - Add hash_token standardized function for consistent token hashing

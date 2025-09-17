@@ -38,3 +38,7 @@ chrono = { version = "0.4", features = ["serde"] }
 [dev-dependencies]
 # Testing utilities
 tokio-test = "0.4"
+# CDK SQLite for testing
+cdk-sqlite = { path = "deps/cdk/crates/cdk-sqlite", features = ["wallet"] }
+# Property-based testing
+proptest = "1.0"

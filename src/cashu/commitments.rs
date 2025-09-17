@@ -606,3 +606,287 @@ mod tests {
         assert!(merkle_commitment.verify(&large_token_set).unwrap());
     }
 }
+
+// Property-based tests for commitment determinism and security
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+    use crate::events::CommitmentMethod;
+
+    /// Generate a test token with deterministic content based on seed
+    fn generate_test_token(seed: u32) -> CashuToken {
+        let token_json = format!(
+            r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_token_seed_{}_unique_{}","unit":"sat"}}"#,
+            seed % 100, seed, (seed * 31 + 17) % 10000
+        );
+        
+        serde_json::from_str(&token_json)
+            .unwrap_or_else(|e| panic!("Failed to create test token for seed {}: {}", seed, e))
+    }
+
+    /// Strategy for generating test tokens
+    fn token_strategy() -> impl Strategy<Value = CashuToken> {
+        any::<u32>().prop_map(generate_test_token)
+    }
+
+    /// Strategy for generating vectors of test tokens
+    fn tokens_strategy(min_size: usize, max_size: usize) -> impl Strategy<Value = Vec<CashuToken>> {
+        prop::collection::vec(token_strategy(), min_size..=max_size)
+    }
+
+    proptest! {
+        /// Property: Single token commitments are deterministic
+        /// The same token should always produce the same commitment hash
+        #[test]
+        fn prop_single_token_commitment_deterministic(token in token_strategy()) {
+            let commitment1 = TokenCommitment::single(&token);
+            let commitment2 = TokenCommitment::single(&token);
+            
+            prop_assert_eq!(&commitment1.commitment_hash, &commitment2.commitment_hash);
+            prop_assert!(matches!(commitment1.commitment_type, CommitmentType::Single));
+            prop_assert_eq!(commitment1.commitment_hash.len(), 64);
+            prop_assert!(hex::decode(&commitment1.commitment_hash).is_ok());
+        }
+
+        /// Property: Concatenation commitments are deterministic regardless of input order
+        /// The same set of tokens should produce the same commitment hash regardless of order
+        #[test]
+        fn prop_concatenation_commitment_order_independent(
+            mut tokens in tokens_strategy(2, 10)
+        ) {
+            // Skip if we don't have enough unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(tokens.len() >= 2);
+            
+            let commitment1 = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+            
+            // Shuffle the tokens
+            let mut shuffled_tokens = tokens.clone();
+            shuffled_tokens.reverse();
+            let commitment2 = TokenCommitment::multiple(&shuffled_tokens, CommitmentMethod::Concatenation);
+            
+            prop_assert_eq!(&commitment1.commitment_hash, &commitment2.commitment_hash);
+            prop_assert_eq!(commitment1.commitment_hash.len(), 64);
+            prop_assert!(hex::decode(&commitment1.commitment_hash).is_ok());
+        }
+
+        /// Property: Merkle tree commitments are deterministic regardless of input order
+        #[test]
+        fn prop_merkle_commitment_order_independent(
+            mut tokens in tokens_strategy(2, 15)
+        ) {
+            // Skip if we don't have enough unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(tokens.len() >= 2);
+            
+            let commitment1 = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+            
+            // Shuffle the tokens
+            let mut shuffled_tokens = tokens.clone();
+            shuffled_tokens.reverse();
+            let commitment2 = TokenCommitment::multiple(&shuffled_tokens, CommitmentMethod::MerkleTreeRadix4);
+            
+            prop_assert_eq!(&commitment1.commitment_hash, &commitment2.commitment_hash);
+            prop_assert_eq!(commitment1.commitment_hash.len(), 64);
+            prop_assert!(hex::decode(&commitment1.commitment_hash).is_ok());
+        }
+
+        /// Property: Different commitment methods produce different hashes for the same tokens
+        #[test]
+        fn prop_different_methods_produce_different_hashes(
+            mut tokens in tokens_strategy(2, 10)
+        ) {
+            // Skip if we don't have enough unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(tokens.len() >= 2);
+            
+            let concat_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+            let merkle_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+            
+            prop_assert_ne!(&concat_commitment.commitment_hash, &merkle_commitment.commitment_hash);
+        }
+
+        /// Property: Commitment verification works correctly
+        #[test]
+        fn prop_commitment_verification_correctness(
+            mut tokens in tokens_strategy(1, 10)
+        ) {
+            // Ensure unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(!tokens.is_empty());
+            
+            if tokens.len() == 1 {
+                let commitment = TokenCommitment::single(&tokens[0]);
+                prop_assert!(commitment.verify(&tokens).unwrap());
+                
+                // Should fail with different token
+                if tokens.len() > 0 {
+                    let different_token = generate_test_token(999999);
+                    prop_assert!(!commitment.verify(&[different_token]).unwrap());
+                }
+            } else {
+                let concat_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+                let merkle_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+                
+                prop_assert!(concat_commitment.verify(&tokens).unwrap());
+                prop_assert!(merkle_commitment.verify(&tokens).unwrap());
+                
+                // Should fail with subset of tokens
+                if tokens.len() > 1 {
+                    let subset = &tokens[0..tokens.len()-1];
+                    prop_assert!(!concat_commitment.verify(subset).unwrap());
+                    prop_assert!(!merkle_commitment.verify(subset).unwrap());
+                }
+            }
+        }
+
+        /// Property: Hash token function is deterministic and collision-resistant
+        #[test]
+        fn prop_hash_token_deterministic_and_unique(
+            seed1 in any::<u32>(),
+            seed2 in any::<u32>()
+        ) {
+            prop_assume!(seed1 != seed2);
+            
+            let token1 = generate_test_token(seed1);
+            let token2 = generate_test_token(seed2);
+            
+            let hash1a = TokenCommitment::hash_token(&token1);
+            let hash1b = TokenCommitment::hash_token(&token1);
+            let hash2 = TokenCommitment::hash_token(&token2);
+            
+            // Same token should produce same hash
+            prop_assert_eq!(hash1a, hash1b);
+            
+            // Different tokens should produce different hashes (with very high probability)
+            prop_assert_ne!(hash1a, hash2);
+        }
+
+        /// Property: Merkle tree construction handles various sizes correctly
+        #[test]
+        fn prop_merkle_tree_construction_correctness(
+            size in 1usize..20
+        ) {
+            let hashes: Vec<[u8; 32]> = (0..size).map(|i| {
+                let mut hash = [0u8; 32];
+                // Use a more complex pattern to ensure uniqueness
+                hash[0] = ((i + 1) % 256) as u8;
+                hash[1] = ((i + 1) / 256) as u8;
+                hash[2] = ((i * 31 + 17) % 256) as u8;
+                hash
+            }).collect();
+            
+            let merkle_root = TokenCommitment::build_merkle_tree_radix4(&hashes);
+            
+            if size == 1 {
+                // Single element should equal the root
+                prop_assert_eq!(merkle_root, hashes[0]);
+            } else {
+                // Multiple elements should produce a different root
+                prop_assert!(!hashes.contains(&merkle_root));
+            }
+            
+            // Root should be deterministic
+            let merkle_root2 = TokenCommitment::build_merkle_tree_radix4(&hashes);
+            prop_assert_eq!(merkle_root, merkle_root2);
+        }
+
+        /// Property: Concatenation commitment construction is correct
+        #[test]
+        fn prop_concatenation_construction_correctness(
+            mut tokens in tokens_strategy(1, 15)
+        ) {
+            // Ensure unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(!tokens.is_empty());
+            
+            let commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+            
+            // Should be valid hex
+            prop_assert!(hex::decode(&commitment.commitment_hash).is_ok());
+            
+            // Should be 64 characters (SHA256 hex)
+            prop_assert_eq!(commitment.commitment_hash.len(), 64);
+            
+            // Should verify correctly
+            prop_assert!(commitment.verify(&tokens).unwrap());
+            
+            // Should be deterministic
+            let commitment2 = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+            prop_assert_eq!(&commitment.commitment_hash, &commitment2.commitment_hash);
+        }
+
+        /// Property: Token sorting is consistent and stable
+        #[test]
+        fn prop_token_sorting_consistency(
+            mut tokens in tokens_strategy(2, 10)
+        ) {
+            // Ensure we have at least 2 unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(tokens.len() >= 2);
+            
+            // Sort tokens multiple times and ensure consistency
+            let mut tokens1 = tokens.clone();
+            let mut tokens2 = tokens.clone();
+            let mut tokens3 = tokens.clone();
+            
+            tokens1.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens2.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens3.sort_by_key(|t| TokenCommitment::hash_token(t));
+            
+            // All sorted versions should be identical
+            for i in 0..tokens1.len() {
+                let hash1 = TokenCommitment::hash_token(&tokens1[i]);
+                let hash2 = TokenCommitment::hash_token(&tokens2[i]);
+                let hash3 = TokenCommitment::hash_token(&tokens3[i]);
+                prop_assert_eq!(hash1, hash2);
+                prop_assert_eq!(hash2, hash3);
+            }
+        }
+
+        /// Property: Utility functions produce consistent results
+        #[test]
+        fn prop_utility_functions_consistency(
+            mut tokens in tokens_strategy(1, 8)
+        ) {
+            // Ensure unique tokens
+            tokens.sort_by_key(|t| TokenCommitment::hash_token(t));
+            tokens.dedup_by_key(|t| TokenCommitment::hash_token(t));
+            prop_assume!(!tokens.is_empty());
+            
+            if tokens.len() == 1 {
+                let hash1 = TokenCommitment::hash_single_token(&tokens[0]);
+                let commitment = TokenCommitment::single(&tokens[0]);
+                prop_assert_eq!(hash1, commitment.commitment_hash);
+            } else {
+                let concat_hash1 = TokenCommitment::hash_concatenation(&tokens);
+                let concat_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::Concatenation);
+                prop_assert_eq!(&concat_hash1, &concat_commitment.commitment_hash);
+                
+                let merkle_hash1 = TokenCommitment::hash_merkle_tree_radix4(&tokens);
+                let merkle_commitment = TokenCommitment::multiple(&tokens, CommitmentMethod::MerkleTreeRadix4);
+                prop_assert_eq!(&merkle_hash1, &merkle_commitment.commitment_hash);
+                
+                // Verify utility function
+                prop_assert!(TokenCommitment::verify_commitment_hash(
+                    &concat_hash1, 
+                    &tokens, 
+                    Some(CommitmentMethod::Concatenation)
+                ).unwrap());
+                
+                prop_assert!(TokenCommitment::verify_commitment_hash(
+                    &merkle_hash1, 
+                    &tokens, 
+                    Some(CommitmentMethod::MerkleTreeRadix4)
+                ).unwrap());
+            }
+        }
+    }
+}
