@@ -25,7 +25,7 @@ pub use events::{
 pub use game::{Game, CommitmentValidator};
 
 // Re-export Cashu integration types
-pub use cashu::{GameToken, GameTokenType, GameMint, TokenCommitment};
+pub use cashu::{GameToken, GameTokenType, GameMint, TokenCommitment, SequenceProcessor, SequenceProcessorConfig, ProcessingResult};
 
 // Re-export client interfaces
 pub use client::{PlayerClient, ValidationClient};

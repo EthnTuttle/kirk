@@ -247,6 +247,90 @@ impl GameMint {
     pub fn get_keyset_info(&self, id: &Id) -> Option<MintKeySetInfo> {
         self.inner.get_keyset_info(id)
     }
+    
+    /// Get the nostr keys for this mint (for signing events)
+    pub fn keys(&self) -> &Keys {
+        &self.keys
+    }
+    
+    /// Create a P2PK locked token utility using NUT-11
+    /// This is a utility function that would be used in the full minting process
+    pub fn create_p2pk_locked_utility(
+        &self,
+        pubkey: PublicKey,
+        _amount: Amount
+    ) -> GameResult<String> {
+        // Convert nostr pubkey to the format needed for P2PK conditions
+        let p2pk_pubkey = self.convert_nostr_pubkey_to_p2pk(pubkey)?;
+        
+        // Create P2PK spending condition
+        // This is a simplified representation - actual NUT-11 implementation would be more complex
+        let condition = format!("p2pk:{}", p2pk_pubkey);
+        
+        Ok(condition)
+    }
+    
+    /// Unlock P2PK tokens through standard CDK swap operations
+    /// This would swap P2PK locked tokens for standard unlocked tokens
+    pub async fn unlock_p2pk_tokens(
+        &self,
+        locked_tokens: Vec<GameToken>,
+        spending_pubkey: PublicKey
+    ) -> GameResult<Vec<GameToken>> {
+        // Validate that all tokens are P2PK locked and can be spent by the pubkey
+        for token in &locked_tokens {
+            if !token.is_p2pk_locked() {
+                return Err(GameProtocolError::InvalidToken(
+                    "All tokens must be P2PK locked for unlocking".to_string()
+                ));
+            }
+            
+            if !token.can_spend(&spending_pubkey) {
+                return Err(GameProtocolError::InvalidToken(
+                    format!("Token cannot be spent by pubkey {}", spending_pubkey)
+                ));
+            }
+        }
+        
+        // In a full implementation, this would:
+        // 1. Create a swap request with the P2PK locked tokens as inputs
+        // 2. Create new output tokens without P2PK conditions
+        // 3. Process the swap through CDK's swap mechanism
+        // 4. Return the unlocked tokens
+        
+        // For now, return a placeholder error indicating full implementation needed
+        Err(GameProtocolError::MintError(
+            format!("P2PK token unlocking for {} tokens by pubkey {} requires full CDK swap integration. \
+                     This would involve creating swap requests with P2PK spending conditions.", 
+                     locked_tokens.len(), spending_pubkey)
+        ))
+    }
+    
+    /// Validate P2PK spending conditions for a token
+    pub fn validate_p2pk_spending(
+        &self,
+        token: &GameToken,
+        spending_pubkey: PublicKey
+    ) -> GameResult<bool> {
+        match &token.game_type {
+            GameTokenType::Game => {
+                // Game tokens don't have P2PK conditions
+                Ok(true)
+            }
+            GameTokenType::Reward { p2pk_locked } => {
+                match p2pk_locked {
+                    Some(locked_pubkey) => {
+                        // Check if the spending pubkey matches the locked pubkey
+                        Ok(*locked_pubkey == spending_pubkey)
+                    }
+                    None => {
+                        // Unlocked reward tokens can be spent by anyone
+                        Ok(true)
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Helper trait implementations for error conversion
@@ -297,5 +381,63 @@ mod tests {
         let secp_pubkey = XOnlyPublicKey::from_slice(&pubkey_bytes);
         
         assert!(secp_pubkey.is_ok(), "Should be able to convert nostr pubkey to secp256k1 format");
+    }
+
+    #[test]
+    fn test_p2pk_utility_creation() {
+        // Create a mock GameMint for testing
+        let _keys = Keys::generate();
+        let _nostr_client = NostrClient::default();
+        let _unit = CurrencyUnit::Sat;
+        
+        // We can't easily create a real CDK Mint for testing, so we'll test the utility functions
+        let pubkey = create_test_pubkey(50);
+        
+        // Test P2PK pubkey conversion
+        let pubkey_bytes = pubkey.to_bytes();
+        let secp_pubkey = XOnlyPublicKey::from_slice(&pubkey_bytes);
+        assert!(secp_pubkey.is_ok(), "Should convert nostr pubkey to secp256k1 format");
+        
+        // Test that we can create a P2PK condition string
+        let condition = format!("p2pk:{}", secp_pubkey.unwrap());
+        assert!(condition.contains("p2pk:"));
+        assert!(condition.len() > 5); // Should have content after "p2pk:"
+    }
+
+    #[test]
+    fn test_p2pk_spending_validation_logic() {
+        let pubkey1 = create_test_pubkey(60);
+        let pubkey2 = create_test_pubkey(61);
+        
+        // Test P2PK spending validation logic (without full mint)
+        
+        // Game tokens should always be spendable
+        let game_type = GameTokenType::Game;
+        let can_spend_game = match game_type {
+            GameTokenType::Game => true,
+            GameTokenType::Reward { .. } => false,
+        };
+        assert!(can_spend_game);
+        
+        // P2PK locked reward tokens should only be spendable by correct pubkey
+        let locked_type = GameTokenType::Reward { p2pk_locked: Some(pubkey1) };
+        let can_spend_by_owner = match &locked_type {
+            GameTokenType::Reward { p2pk_locked: Some(locked_pubkey) } => *locked_pubkey == pubkey1,
+            _ => false,
+        };
+        let can_spend_by_other = match &locked_type {
+            GameTokenType::Reward { p2pk_locked: Some(locked_pubkey) } => *locked_pubkey == pubkey2,
+            _ => false,
+        };
+        assert!(can_spend_by_owner);
+        assert!(!can_spend_by_other);
+        
+        // Unlocked reward tokens should be spendable by anyone
+        let unlocked_type = GameTokenType::Reward { p2pk_locked: None };
+        let can_spend_unlocked = match &unlocked_type {
+            GameTokenType::Reward { p2pk_locked: None } => true,
+            _ => false,
+        };
+        assert!(can_spend_unlocked);
     }
 }

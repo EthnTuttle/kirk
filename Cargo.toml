@@ -42,3 +42,18 @@ tokio-test = "0.4"
 cdk-sqlite = { path = "deps/cdk/crates/cdk-sqlite", features = ["wallet"] }
 # Property-based testing
 proptest = "1.0"
+# UUID generation for mocks
+uuid = { version = "1.0", features = ["v4"] }
+
+# Example binaries
+[[example]]
+name = "demo_flow"
+path = "examples/demo_flow.rs"
+
+[[example]]
+name = "demo_flexibility"
+path = "examples/demo_flexibility.rs"
+
+[[example]]
+name = "usage_guide"
+path = "examples/usage_guide.rs"

@@ -217,6 +217,54 @@ impl GameToken {
     pub fn into_cdk_token(self) -> CashuToken {
         self.inner
     }
+    
+    /// Check if this P2PK locked token can be spent by the given pubkey
+    pub fn can_spend(&self, pubkey: &PublicKey) -> bool {
+        match &self.game_type {
+            GameTokenType::Game => true, // Game tokens are always spendable
+            GameTokenType::Reward { p2pk_locked } => {
+                match p2pk_locked {
+                    Some(locked_pubkey) => locked_pubkey == pubkey,
+                    None => true, // Unlocked reward tokens are spendable by anyone
+                }
+            }
+        }
+    }
+    
+    /// Unlock a P2PK locked reward token by converting it to an unlocked reward token
+    /// This is a metadata operation - the actual unlocking happens through CDK swap operations
+    pub fn unlock_p2pk_token(mut self) -> GameResult<Self> {
+        match &self.game_type {
+            GameTokenType::Reward { p2pk_locked: Some(_) } => {
+                // Convert to unlocked reward token
+                self.game_type = GameTokenType::Reward { p2pk_locked: None };
+                Ok(self)
+            }
+            GameTokenType::Reward { p2pk_locked: None } => {
+                // Already unlocked
+                Ok(self)
+            }
+            GameTokenType::Game => {
+                Err(GameProtocolError::InvalidToken(
+                    "Cannot unlock Game tokens - they are not P2PK locked".to_string()
+                ))
+            }
+        }
+    }
+    
+    /// Create a P2PK spending condition for this token
+    /// This would be used when creating swap requests to unlock P2PK tokens
+    pub fn create_p2pk_spending_condition(&self, pubkey: &PublicKey) -> GameResult<String> {
+        if !self.is_p2pk_locked() {
+            return Err(GameProtocolError::InvalidToken(
+                "Token is not P2PK locked".to_string()
+            ));
+        }
+        
+        // Create a spending condition string that would be used in CDK operations
+        // This is a simplified representation - actual P2PK conditions would be more complex
+        Ok(format!("p2pk:{}", pubkey))
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -311,5 +359,176 @@ mod tests {
         let serialized = serde_json::to_string(&locked).expect("Should serialize locked state");
         let deserialized: RewardTokenState = serde_json::from_str(&serialized).expect("Should deserialize locked state");
         assert!(matches!(deserialized, RewardTokenState::P2PKLocked { to_pubkey } if to_pubkey == pubkey));
+    }
+
+    #[test]
+    fn test_p2pk_token_spending_validation() {
+        let pubkey1 = create_test_pubkey(20);
+        let pubkey2 = create_test_pubkey(21);
+        let mock_token = create_mock_token();
+        
+        // Test Game token (always spendable)
+        let game_token = GameToken::new_game_token(mock_token.clone());
+        assert!(game_token.can_spend(&pubkey1));
+        assert!(game_token.can_spend(&pubkey2));
+        
+        // Test unlocked Reward token (spendable by anyone)
+        let unlocked_reward = GameToken::new_reward_token(mock_token.clone());
+        assert!(unlocked_reward.can_spend(&pubkey1));
+        assert!(unlocked_reward.can_spend(&pubkey2));
+        
+        // Test P2PK locked Reward token (only spendable by locked pubkey)
+        let locked_reward = GameToken::new_p2pk_reward_token(mock_token, pubkey1);
+        assert!(locked_reward.can_spend(&pubkey1));
+        assert!(!locked_reward.can_spend(&pubkey2));
+    }
+
+    #[test]
+    fn test_p2pk_token_unlocking() {
+        let pubkey = create_test_pubkey(30);
+        let mock_token = create_mock_token();
+        
+        // Test unlocking P2PK locked token
+        let locked_token = GameToken::new_p2pk_reward_token(mock_token.clone(), pubkey);
+        assert!(locked_token.is_p2pk_locked());
+        
+        let unlocked_token = locked_token.unlock_p2pk_token().expect("Should unlock P2PK token");
+        assert!(!unlocked_token.is_p2pk_locked());
+        assert!(unlocked_token.is_reward_token());
+        
+        // Test unlocking already unlocked token (should succeed)
+        let already_unlocked = GameToken::new_reward_token(mock_token.clone());
+        let still_unlocked = already_unlocked.unlock_p2pk_token().expect("Should handle already unlocked token");
+        assert!(!still_unlocked.is_p2pk_locked());
+        
+        // Test unlocking Game token (should fail)
+        let game_token = GameToken::new_game_token(mock_token);
+        let result = game_token.unlock_p2pk_token();
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), GameProtocolError::InvalidToken(_)));
+    }
+
+    #[test]
+    fn test_p2pk_spending_condition_creation() {
+        let pubkey = create_test_pubkey(40);
+        let mock_token = create_mock_token();
+        
+        // Test creating spending condition for P2PK locked token
+        let locked_token = GameToken::new_p2pk_reward_token(mock_token.clone(), pubkey);
+        let condition = locked_token.create_p2pk_spending_condition(&pubkey)
+            .expect("Should create P2PK spending condition");
+        assert!(condition.contains("p2pk:"));
+        assert!(condition.contains(&pubkey.to_string()));
+        
+        // Test creating spending condition for non-P2PK token (should fail)
+        let unlocked_token = GameToken::new_reward_token(mock_token);
+        let result = unlocked_token.create_p2pk_spending_condition(&pubkey);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), GameProtocolError::InvalidToken(_)));
+    }
+
+    #[test]
+    fn test_p2pk_token_state_transitions() {
+        let pubkey = create_test_pubkey(50);
+        
+        // Test state transition from locked to unlocked
+        let locked_state = RewardTokenState::create_p2pk_locked(pubkey);
+        assert!(locked_state.is_locked());
+        assert_eq!(locked_state.locked_pubkey(), Some(&pubkey));
+        
+        // Simulate unlocking by creating new unlocked state
+        let unlocked_state = RewardTokenState::create_unlocked();
+        assert!(!unlocked_state.is_locked());
+        assert!(unlocked_state.locked_pubkey().is_none());
+        
+        // Test that states have correct spending permissions
+        assert!(locked_state.can_spend(&pubkey));
+        assert!(unlocked_state.can_spend(&pubkey));
+        
+        let other_pubkey = create_test_pubkey(51);
+        assert!(!locked_state.can_spend(&other_pubkey));
+        assert!(unlocked_state.can_spend(&other_pubkey));
+    }
+
+    #[test]
+    fn test_game_token_type_consistency() {
+        let pubkey = create_test_pubkey(60);
+        let mock_token = create_mock_token();
+        
+        // Test Game token properties
+        let game_token = GameToken::new_game_token(mock_token.clone());
+        assert!(game_token.is_game_token());
+        assert!(!game_token.is_reward_token());
+        assert!(!game_token.is_p2pk_locked());
+        assert!(game_token.reward_state().is_none());
+        
+        // Test unlocked Reward token properties
+        let unlocked_reward = GameToken::new_reward_token(mock_token.clone());
+        assert!(!unlocked_reward.is_game_token());
+        assert!(unlocked_reward.is_reward_token());
+        assert!(!unlocked_reward.is_p2pk_locked());
+        let reward_state = unlocked_reward.reward_state().expect("Should have reward state");
+        assert!(matches!(reward_state, RewardTokenState::Unlocked));
+        
+        // Test P2PK locked Reward token properties
+        let locked_reward = GameToken::new_p2pk_reward_token(mock_token, pubkey);
+        assert!(!locked_reward.is_game_token());
+        assert!(locked_reward.is_reward_token());
+        assert!(locked_reward.is_p2pk_locked());
+        let locked_state = locked_reward.reward_state().expect("Should have reward state");
+        assert!(matches!(locked_state, RewardTokenState::P2PKLocked { .. }));
+        assert_eq!(locked_state.locked_pubkey(), Some(&pubkey));
+    }
+
+    #[test]
+    fn test_multiple_p2pk_tokens() {
+        let pubkey1 = create_test_pubkey(70);
+        let pubkey2 = create_test_pubkey(71);
+        let pubkey3 = create_test_pubkey(72);
+        let mock_token = create_mock_token();
+        
+        // Create tokens locked to different pubkeys
+        let token1 = GameToken::new_p2pk_reward_token(mock_token.clone(), pubkey1);
+        let token2 = GameToken::new_p2pk_reward_token(mock_token.clone(), pubkey2);
+        let token3 = GameToken::new_p2pk_reward_token(mock_token, pubkey3);
+        
+        // Test that each token can only be spent by its respective pubkey
+        assert!(token1.can_spend(&pubkey1));
+        assert!(!token1.can_spend(&pubkey2));
+        assert!(!token1.can_spend(&pubkey3));
+        
+        assert!(!token2.can_spend(&pubkey1));
+        assert!(token2.can_spend(&pubkey2));
+        assert!(!token2.can_spend(&pubkey3));
+        
+        assert!(!token3.can_spend(&pubkey1));
+        assert!(!token3.can_spend(&pubkey2));
+        assert!(token3.can_spend(&pubkey3));
+        
+        // Test spending conditions are different
+        let condition1 = token1.create_p2pk_spending_condition(&pubkey1).expect("Should create condition");
+        let condition2 = token2.create_p2pk_spending_condition(&pubkey2).expect("Should create condition");
+        
+        assert!(condition1.contains(&pubkey1.to_string()));
+        assert!(condition2.contains(&pubkey2.to_string()));
+        assert_ne!(condition1, condition2);
+    }
+
+    /// Helper to create a mock Cashu token for testing
+    fn create_mock_token() -> CashuToken {
+        // Create a minimal mock token for testing
+        let token_str = r#"cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6IjAwOWExZjI5MzI1M2U0MWUiLCJhbW91bnQiOjIsInNlY3JldCI6IjQwNzkxNWJjMjEyYmU2MWE3N2UzZTZkMmFlYjRjNzI3OTgwYmRhNTFjZDA2YTZhZmMyOWUyODYxNzY4YTc4MzciLCJDIjoiMDJiYzkwOTc5OTdkODFhZmIyY2M3MzQ2YjVlNGQ3YTI2MDEwNzAwMjY1NGI2ZjJkZjNmZjU0Y2ZjN2Y0MDMxNzNjIn1dLCJtaW50IjoiaHR0cHM6Ly84MzMzLnNwYWNlOjMzMzgifV19"#;
+        
+        use std::str::FromStr;
+        CashuToken::from_str(token_str)
+            .unwrap_or_else(|_| {
+                // Create a minimal token structure for testing
+                CashuToken::new(
+                    "https://test-mint.example.com".parse().unwrap(),
+                    vec![], // Empty proofs for testing
+                    None,
+                    cashu::CurrencyUnit::Sat,
+                )
+            })
     }
 }

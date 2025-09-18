@@ -199,9 +199,10 @@ mod tests {
     fn create_test_token(seed: u8) -> CashuToken {
         // Create a simple JSON structure that can be parsed as a CDK Token
         // Make each token significantly different to ensure proper testing
+        let unique_id = (seed as u32).wrapping_mul(31).wrapping_add(17).wrapping_rem(1000);
         let token_json = format!(
             r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_token_seed_{}_unique_{}","unit":"sat"}}"#,
-            seed, seed, (seed as u32 * 31 + 17) % 1000 // Add some variation to make tokens more distinct, avoid overflow
+            seed, seed, unique_id
         );
         
         // Parse as CDK token - this should work with the basic structure
@@ -616,9 +617,13 @@ mod property_tests {
 
     /// Generate a test token with deterministic content based on seed
     fn generate_test_token(seed: u32) -> CashuToken {
+        // Use wrapping arithmetic to avoid overflow panics
+        let mint_id = seed.wrapping_rem(100);
+        let unique_id = seed.wrapping_mul(31).wrapping_add(17).wrapping_rem(10000);
+        
         let token_json = format!(
             r#"{{"token":[{{"mint":"https://mint{}.example.com","proofs":[]}}],"memo":"test_token_seed_{}_unique_{}","unit":"sat"}}"#,
-            seed % 100, seed, (seed * 31 + 17) % 10000
+            mint_id, seed, unique_id
         );
         
         serde_json::from_str(&token_json)
