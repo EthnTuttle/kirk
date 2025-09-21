@@ -25,8 +25,8 @@ pub struct GameMint {
 impl GameMint {
     /// Create new GameMint wrapping existing CDK mint
     pub fn new(
-        mint: Arc<Mint>, 
-        nostr_client: NostrClient, 
+        mint: Arc<Mint>,
+        nostr_client: NostrClient,
         keys: Keys,
         unit: CurrencyUnit
     ) -> Self {
@@ -36,6 +36,15 @@ impl GameMint {
             keys,
             unit,
         }
+    }
+
+    /// Create a test GameMint with mock dependencies (for testing only)
+    #[cfg(test)]
+    pub fn new_test(_keys: Keys) -> Self {
+        // For now, we'll create a test stub that panics when used
+        // This allows compilation but tests that actually use the mint will fail
+        // TODO: Implement proper test mint creation
+        panic!("GameMint::new_test not properly implemented yet - tests need to be updated")
     }
     
     /// Get reference to underlying CDK mint
@@ -330,6 +339,17 @@ impl GameMint {
                 }
             }
         }
+    }
+}
+
+// Custom Debug implementation to avoid issues with CDK Mint
+impl std::fmt::Debug for GameMint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GameMint")
+            .field("nostr_client", &"<NostrClient>")
+            .field("keys", &"<Keys>")
+            .field("unit", &self.unit)
+            .finish()
     }
 }
 

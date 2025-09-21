@@ -5,7 +5,7 @@ use thiserror::Error;
 use std::collections::HashMap;
 
 /// Main error type for the Kirk gaming protocol
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum GameProtocolError {
     #[error("Network error: {source}")]
     Network {
@@ -46,8 +46,8 @@ pub enum GameProtocolError {
         retry_after_ms: Option<u64>,
     },
 
-    #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    #[error("Serialization error: {message}")]
+    Serialization { message: String },
 
     #[error("Hex decoding error: {0}")]
     HexDecode(#[from] hex::FromHexError),
@@ -88,7 +88,7 @@ pub enum GameProtocolError {
 }
 
 /// Network-specific error types
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum NetworkError {
     #[error("Connection failed: {message}")]
     ConnectionFailed { message: String },
@@ -104,7 +104,7 @@ pub enum NetworkError {
 }
 
 /// Cryptographic error types
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum CryptoError {
     #[error("Invalid key: {message}")]
     InvalidKey { message: String },
@@ -143,6 +143,14 @@ impl From<NetworkError> for GameProtocolError {
         GameProtocolError::Network {
             source: err,
             context: String::new(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for GameProtocolError {
+    fn from(err: serde_json::Error) -> Self {
+        GameProtocolError::Serialization {
+            message: err.to_string(),
         }
     }
 }

@@ -14,6 +14,16 @@ pub enum MoveType {
     Reveal,
 }
 
+impl std::fmt::Display for MoveType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MoveType::Move => write!(f, "Move"),
+            MoveType::Commit => write!(f, "Commit"),
+            MoveType::Reveal => write!(f, "Reveal"),
+        }
+    }
+}
+
 /// Content structure for Move events
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveContent {

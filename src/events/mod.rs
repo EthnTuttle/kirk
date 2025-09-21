@@ -40,7 +40,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Parse a ChallengeAccept event from a nostr Event
@@ -52,7 +52,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Parse a Move event from a nostr Event
@@ -64,7 +64,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Parse a Final event from a nostr Event
@@ -76,7 +76,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Parse a Reward event from a nostr Event
@@ -88,7 +88,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Parse a ValidationFailure event from a nostr Event
@@ -100,7 +100,7 @@ impl EventParser {
         }
         
         serde_json::from_str(&event.content)
-            .map_err(|e| GameProtocolError::Serialization(e))
+            .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })
     }
     
     /// Validate that an event is a game-related event
@@ -138,7 +138,7 @@ pub fn validate_event_structure(event: &Event) -> Result<(), GameProtocolError> 
     
     // Validate JSON structure
     let _: serde_json::Value = serde_json::from_str(&event.content)
-        .map_err(|e| GameProtocolError::Serialization(e))?;
+        .map_err(|e| GameProtocolError::Serialization { message: e.to_string() })?;
     
     // Validate event signature
     if !event.verify().is_ok() {
