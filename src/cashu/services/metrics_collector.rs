@@ -80,7 +80,10 @@ mod tests {
         let keys = Keys::generate();
         let mint = Arc::new(GameMint::new_test(keys));
         let nostr_client = nostr_sdk::Client::default();
-        ServiceContext::new(mint, nostr_client)
+        let observability = Arc::new(crate::observability::ObservabilityManager::new(
+            crate::observability::ObservabilityConfig::default()
+        ));
+        ServiceContext::new(mint, nostr_client, observability)
     }
 
     #[tokio::test]

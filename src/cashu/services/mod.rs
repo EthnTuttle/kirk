@@ -24,6 +24,7 @@ use nostr_sdk::Client as NostrClient;
 use crate::error::GameResult;
 use crate::game::GameSequence;
 use crate::cashu::GameMint;
+use crate::observability::ObservabilityManager;
 
 /// Configuration constants extracted from magic numbers
 #[derive(Debug, Clone)]
@@ -61,14 +62,16 @@ pub struct ServiceContext {
     pub mint: Arc<GameMint>,
     pub nostr_client: NostrClient,
     pub constants: ServiceConstants,
+    pub observability: Arc<ObservabilityManager>,
 }
 
 impl ServiceContext {
-    pub fn new(mint: Arc<GameMint>, nostr_client: NostrClient) -> Self {
+    pub fn new(mint: Arc<GameMint>, nostr_client: NostrClient, observability: Arc<ObservabilityManager>) -> Self {
         Self {
             mint,
             nostr_client,
             constants: ServiceConstants::default(),
+            observability,
         }
     }
 

@@ -13,6 +13,7 @@ pub mod client;
 pub mod error;
 pub mod security;
 pub mod config;
+pub mod observability;
 
 // Re-export commonly used types for convenience
 pub use error::GameProtocolError;
@@ -37,6 +38,9 @@ pub use security::{SecurityManager, SecurityConfig, SecurityMetrics};
 
 // Re-export configuration interfaces
 pub use config::{KirkConfig, NetworkConfig, GameConfig};
+
+// Re-export observability interfaces
+pub use observability::{ObservabilityManager, ObservabilityConfig, MetricsRegistry, HealthChecker, HealthStatus, CorrelationContext};
 
 // Re-export external dependencies for user convenience
 pub use nostr::{Event, EventId, PublicKey, Keys};
