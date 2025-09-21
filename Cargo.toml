@@ -42,9 +42,20 @@ chrono = { version = "0.4", features = ["serde"] }
 # UUID generation
 uuid = { version = "1.0", features = ["v4"] }
 
+# Input validation and security
+validator = "0.16"
+regex = "1.0"
+
+# Rate limiting
+tokio-util = "0.7"
+
+# Configuration management
+toml = "0.8"
+
 [dev-dependencies]
 # Testing utilities
 tokio-test = "0.4"
+tempfile = "3.0"
 # CDK SQLite for testing
 cdk-sqlite = { path = "deps/cdk/crates/cdk-sqlite", features = ["wallet"] }
 # Property-based testing

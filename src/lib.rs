@@ -11,6 +11,8 @@ pub mod game;
 pub mod cashu;
 pub mod client;
 pub mod error;
+pub mod security;
+pub mod config;
 
 // Re-export commonly used types for convenience
 pub use error::GameProtocolError;
@@ -29,6 +31,12 @@ pub use cashu::{GameToken, GameTokenType, GameMint, TokenCommitment, SequencePro
 
 // Re-export client interfaces
 pub use client::{PlayerClient, ValidationClient};
+
+// Re-export security interfaces
+pub use security::{SecurityManager, SecurityConfig, SecurityMetrics};
+
+// Re-export configuration interfaces
+pub use config::{KirkConfig, NetworkConfig, GameConfig};
 
 // Re-export external dependencies for user convenience
 pub use nostr::{Event, EventId, PublicKey, Keys};
