@@ -1,7 +1,8 @@
 //! Comprehensive unit tests for commitment methods and validation
 
 use kirk::{TokenCommitment, CommitmentMethod, CommitmentValidator, GameProtocolError};
-use cdk::nuts::{Token, Proof, Id, CurrencyUnit, Secret, PublicKey as CashuPublicKey};
+use cdk::nuts::{Token, Proof, Id, CurrencyUnit, PublicKey as CashuPublicKey};
+use cashu::secret::Secret;
 use cdk::Amount;
 use proptest::prelude::*;
 use std::collections::HashSet;

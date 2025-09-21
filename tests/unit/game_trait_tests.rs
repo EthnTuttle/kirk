@@ -3,7 +3,8 @@
 use kirk::{Game, ValidationResult, ValidationError, ValidationErrorType};
 use tests::mocks::{CoinFlipGame, reference_game::{CoinFlipMove, CoinSide}};
 use nostr::{Event, EventBuilder, Keys, EventId, Kind};
-use cdk::nuts::{Token, Proof, Id, CurrencyUnit, Secret, PublicKey as CashuPublicKey};
+use cdk::nuts::{Token, Proof, Id, CurrencyUnit, PublicKey as CashuPublicKey};
+use cashu::secret::Secret;
 use cdk::Amount;
 
 /// Helper to create a mock event for testing

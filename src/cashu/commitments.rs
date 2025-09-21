@@ -14,7 +14,7 @@ pub struct TokenCommitment {
 }
 
 /// Type of commitment construction used
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CommitmentType {
     Single,
     Multiple { method: CommitmentMethod },
@@ -37,6 +37,14 @@ impl TokenCommitment {
         sorted_tokens.sort_by_key(|t| Self::hash_token(t));
         
         let commitment_hash = match method {
+            CommitmentMethod::Single => {
+                if sorted_tokens.len() == 1 {
+                    hex::encode(Sha256::digest(&Self::hash_token(&sorted_tokens[0])))
+                } else {
+                    // For multiple tokens, fall back to concatenation
+                    Self::concatenation_commitment(&sorted_tokens)
+                }
+            },
             CommitmentMethod::Concatenation => Self::concatenation_commitment(&sorted_tokens),
             CommitmentMethod::MerkleTreeRadix4 => Self::merkle_tree_radix4_commitment(&sorted_tokens),
         };

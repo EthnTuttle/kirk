@@ -6,8 +6,10 @@ use crate::error::GameProtocolError;
 use super::FINAL_KIND;
 
 /// Method used for multi-token commitments
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum CommitmentMethod {
+    /// Single token commitment
+    Single,
     /// Simple concatenation of token hashes in ascending order
     Concatenation,
     /// Merkle tree with radix 4, tokens ordered ascending by token hash
@@ -36,6 +38,9 @@ impl FinalContent {
         // If commitment method is specified, validate it makes sense
         if let Some(ref method) = self.commitment_method {
             match method {
+                CommitmentMethod::Single => {
+                    // Single method is always valid
+                },
                 CommitmentMethod::Concatenation => {
                     // Concatenation method is always valid
                 },

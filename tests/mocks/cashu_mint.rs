@@ -2,7 +2,8 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use cdk::nuts::{Token, Proof, MintInfo, KeySet, Id, CurrencyUnit, MeltQuoteState, MintQuoteState, Secret, PublicKey as CashuPublicKey};
+use cdk::nuts::{Token, Proof, MintInfo, KeySet, Id, CurrencyUnit, MeltQuoteState, MintQuoteState, PublicKey as CashuPublicKey};
+use cashu::secret::Secret;
 use cdk::Amount;
 use nostr::PublicKey;
 use kirk::{GameProtocolError, GameToken, GameTokenType};

@@ -2,7 +2,8 @@
 
 use proptest::prelude::*;
 use kirk::{TokenCommitment, CommitmentMethod};
-use cdk::nuts::{Token, Proof, Id, CurrencyUnit, Secret, PublicKey as CashuPublicKey};
+use cdk::nuts::{Token, Proof, Id, CurrencyUnit, PublicKey as CashuPublicKey};
+use cashu::secret::Secret;
 use cdk::Amount;
 use std::collections::HashSet;
 
