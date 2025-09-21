@@ -8,8 +8,11 @@ pub mod reward;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+mod timeout_tests;
+
 // Re-export all event content types
-pub use challenge::{ChallengeContent, ChallengeAcceptContent};
+pub use challenge::{ChallengeContent, ChallengeAcceptContent, TimeoutConfig, TimeoutPhase};
 pub use move_event::{MoveContent, MoveType};
 pub use final_event::{FinalContent, CommitmentMethod};
 pub use reward::{RewardContent, ValidationFailureContent};

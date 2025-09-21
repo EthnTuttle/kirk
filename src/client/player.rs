@@ -7,7 +7,7 @@ use crate::error::GameProtocolError;
 use crate::cashu::{GameToken, TokenCommitment};
 use crate::events::{
     ChallengeContent, ChallengeAcceptContent, MoveContent, FinalContent,
-    MoveType, CommitmentMethod
+    MoveType, CommitmentMethod, TimeoutConfig
 };
 use crate::game::Game;
 
@@ -28,12 +28,23 @@ impl PlayerClient {
         }
     }
     
-    /// Create and publish challenge with configurable expiry
+    /// Create and publish challenge with configurable expiry and timeout configuration
     pub async fn create_challenge<G: Game>(
         &self,
         _game: &G, // Game parameter for future use in validation
         tokens: &[GameToken],
         expiry_seconds: Option<u64>
+    ) -> Result<EventId, GameProtocolError> {
+        self.create_challenge_with_timeouts(_game, tokens, expiry_seconds, None).await
+    }
+    
+    /// Create and publish challenge with configurable expiry and timeout configuration
+    pub async fn create_challenge_with_timeouts<G: Game>(
+        &self,
+        _game: &G, // Game parameter for future use in validation
+        tokens: &[GameToken],
+        expiry_seconds: Option<u64>,
+        timeout_config: Option<TimeoutConfig>
     ) -> Result<EventId, GameProtocolError> {
         // Validate tokens are Game tokens
         for token in tokens {
@@ -65,6 +76,7 @@ impl PlayerClient {
             commitment_hashes,
             game_parameters: serde_json::json!({}), // Game-specific parameters can be added later
             expiry: Some(expiry),
+            timeout_config,
         };
         
         // Validate challenge content
@@ -133,6 +145,18 @@ impl PlayerClient {
         move_data: G::MoveData,
         revealed_tokens: Option<Vec<GameToken>>
     ) -> Result<EventId, GameProtocolError> {
+        self.make_move_with_deadline::<G>(previous_event, move_type, move_data, revealed_tokens, None).await
+    }
+    
+    /// Make a move with an optional deadline
+    pub async fn make_move_with_deadline<G: Game>(
+        &self,
+        previous_event: EventId,
+        move_type: MoveType,
+        move_data: G::MoveData,
+        revealed_tokens: Option<Vec<GameToken>>,
+        deadline: Option<u64>
+    ) -> Result<EventId, GameProtocolError> {
         // Validate move type consistency
         match move_type {
             MoveType::Reveal => {
@@ -165,6 +189,7 @@ impl PlayerClient {
             move_type,
             move_data: serde_json::to_value(move_data)?,
             revealed_tokens: revealed_cdk_tokens,
+            deadline,
         };
         
         // Validate move content
@@ -424,12 +449,12 @@ mod tests {
             }
             
             fn validate_sequence(&self, _events: &[NostrEvent]) -> Result<crate::error::ValidationResult, GameProtocolError> {
-                Ok(crate::error::ValidationResult {
-                    is_valid: true,
-                    winner: None,
-                    errors: vec![],
-                    forfeited_player: None,
-                })
+                Ok(crate::error::ValidationResult::new(
+                    true,
+                    None,
+                    vec![],
+                    None,
+                ))
             }
             
             fn is_sequence_complete(&self, _events: &[NostrEvent]) -> Result<bool, GameProtocolError> {
@@ -474,12 +499,12 @@ mod tests {
             }
             
             fn validate_sequence(&self, _events: &[NostrEvent]) -> Result<crate::error::ValidationResult, GameProtocolError> {
-                Ok(crate::error::ValidationResult {
-                    is_valid: true,
-                    winner: None,
-                    errors: vec![],
-                    forfeited_player: None,
-                })
+                Ok(crate::error::ValidationResult::new(
+                    true,
+                    None,
+                    vec![],
+                    None,
+                ))
             }
             
             fn is_sequence_complete(&self, _events: &[NostrEvent]) -> Result<bool, GameProtocolError> {

@@ -144,7 +144,7 @@
   - Validate framework flexibility with second game type
   - _Requirements: 8.1, 8.2, 8.3, 8.7_
 
-- [ ] 17. Add comprehensive documentation
+- [x] 17. Add comprehensive documentation
 
   - Write API documentation for all public interfaces
   - Create usage guide with examples for each actor (player, mint, validator)
@@ -153,7 +153,7 @@
   - Create troubleshooting guide for common issues
   - _Requirements: 1.2, 1.3_
 
-- [ ] 18. Implement optional timeout and deadline management
+- [x] 18. Implement optional timeout and deadline management
   - Add configurable timeouts for commit/reveal sequences
   - Implement deadline checking in game validation
   - Add timeout-based forfeiture detection

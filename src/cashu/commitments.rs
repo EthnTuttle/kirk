@@ -176,11 +176,11 @@ impl TokenCommitment {
             (1, None) => Self::single(&tokens[0]),
             (_, Some(method)) => Self::multiple(tokens, method),
             (_, None) => {
-                return Err(ValidationError {
-                    event_id: nostr::EventId::from_hex("0".repeat(64)).unwrap(),
-                    error_type: crate::error::ValidationErrorType::InvalidCommitment,
-                    message: "Multiple tokens require commitment method specification".to_string(),
-                });
+                return Err(ValidationError::new(
+                    nostr::EventId::from_hex("0".repeat(64)).unwrap(),
+                    crate::error::ValidationErrorType::InvalidCommitment,
+                    "Multiple tokens require commitment method specification".to_string(),
+                ));
             }
         };
         

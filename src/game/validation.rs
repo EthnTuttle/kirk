@@ -3,8 +3,29 @@
 use nostr::{Event, EventId, PublicKey};
 use std::collections::HashMap;
 use crate::error::{GameProtocolError, ValidationError, ValidationErrorType, ValidationResult, GameResult};
-use crate::events::{EventParser, CHALLENGE_KIND, CHALLENGE_ACCEPT_KIND, MOVE_KIND, FINAL_KIND};
+use crate::events::{EventParser, CHALLENGE_KIND, CHALLENGE_ACCEPT_KIND, MOVE_KIND, FINAL_KIND, TimeoutConfig, TimeoutPhase};
 use crate::game::traits::Game;
+
+/// Represents a timeout violation in a game sequence
+#[derive(Debug, Clone)]
+pub struct TimeoutViolation {
+    pub phase: TimeoutPhase,
+    pub deadline: u64,
+    pub current_time: u64,
+    pub affected_player: Option<PublicKey>,
+}
+
+impl TimeoutViolation {
+    /// Get how long ago the deadline was exceeded (in seconds)
+    pub fn overdue_duration(&self) -> u64 {
+        self.current_time.saturating_sub(self.deadline)
+    }
+    
+    /// Check if this violation should result in forfeiture
+    pub fn should_forfeit(&self, grace_period: u64) -> bool {
+        self.overdue_duration() > grace_period
+    }
+}
 
 /// Represents a complete game sequence with state tracking
 #[derive(Debug, Clone)]
@@ -15,6 +36,10 @@ pub struct GameSequence {
     pub state: SequenceState,
     pub created_at: u64,
     pub last_activity: u64,
+    /// Timeout configuration for this game sequence
+    pub timeout_config: Option<TimeoutConfig>,
+    /// Deadlines for different phases of the game
+    pub phase_deadlines: HashMap<TimeoutPhase, u64>,
 }
 
 /// State transitions for game sequences
@@ -100,16 +125,29 @@ impl GameSequence {
             ));
         }
         
-        // Validate the challenge event content
-        EventParser::parse_challenge(&challenge_event)?;
+        // Validate and parse the challenge event content
+        let challenge_content = EventParser::parse_challenge(&challenge_event)?;
+        
+        let now = chrono::Utc::now().timestamp() as u64;
+        let timeout_config = challenge_content.timeout_config.clone();
+        
+        // Calculate initial phase deadlines
+        let mut phase_deadlines = HashMap::new();
+        if let Some(ref config) = timeout_config {
+            if let Some(accept_timeout) = config.accept_timeout {
+                phase_deadlines.insert(TimeoutPhase::Accept, now + accept_timeout);
+            }
+        }
         
         Ok(Self {
             challenge_id: challenge_event.id,
             players: [challenger, PublicKey::from_hex("0000000000000000000000000000000000000000000000000000000000000001").unwrap()], // Placeholder for second player
             events: vec![challenge_event],
             state: SequenceState::WaitingForAccept,
-            created_at: chrono::Utc::now().timestamp() as u64,
-            last_activity: chrono::Utc::now().timestamp() as u64,
+            created_at: now,
+            last_activity: now,
+            timeout_config,
+            phase_deadlines,
         })
     }
     
@@ -141,6 +179,9 @@ impl GameSequence {
         self.state = new_state;
         self.last_activity = chrono::Utc::now().timestamp() as u64;
         
+        // Update phase deadlines based on new state
+        self.update_phase_deadlines();
+        
         Ok(())
     }
     
@@ -150,29 +191,29 @@ impl GameSequence {
         
         // Validate event chain
         if let Err(e) = self.validate_complete_event_chain() {
-            errors.push(ValidationError {
-                event_id: self.challenge_id,
-                error_type: ValidationErrorType::InvalidSequence,
-                message: e.to_string(),
-            });
+            errors.push(ValidationError::new(
+                self.challenge_id,
+                ValidationErrorType::InvalidSequence,
+                e.to_string(),
+            ));
         }
         
         // Validate state consistency
         if let Err(e) = self.validate_state_consistency() {
-            errors.push(ValidationError {
-                event_id: self.challenge_id,
-                error_type: ValidationErrorType::InvalidSequence,
-                message: e.to_string(),
-            });
+            errors.push(ValidationError::new(
+                self.challenge_id,
+                ValidationErrorType::InvalidSequence,
+                e.to_string(),
+            ));
         }
         
         // Validate player consistency
         if let Err(e) = self.validate_player_consistency() {
-            errors.push(ValidationError {
-                event_id: self.challenge_id,
-                error_type: ValidationErrorType::InvalidSequence,
-                message: e.to_string(),
-            });
+            errors.push(ValidationError::new(
+                self.challenge_id,
+                ValidationErrorType::InvalidSequence,
+                e.to_string(),
+            ));
         }
         
         let is_valid = errors.is_empty();
@@ -194,12 +235,12 @@ impl GameSequence {
             _ => None,
         };
         
-        Ok(ValidationResult {
+        Ok(ValidationResult::new(
             is_valid,
             winner,
             errors,
             forfeited_player,
-        })
+        ))
     }
     
     /// Get events by type
@@ -470,6 +511,141 @@ impl GameSequence {
         
         Ok(())
     }
+    
+    /// Check if any timeouts have occurred
+    pub fn check_timeouts(&self) -> Vec<TimeoutViolation> {
+        let mut violations = Vec::new();
+        let now = chrono::Utc::now().timestamp() as u64;
+        
+        // Check phase-specific deadlines
+        for (phase, deadline) in &self.phase_deadlines {
+            if now > *deadline {
+                violations.push(TimeoutViolation {
+                    phase: *phase,
+                    deadline: *deadline,
+                    current_time: now,
+                    affected_player: self.determine_affected_player_for_phase(*phase),
+                });
+            }
+        }
+        
+        // Check move-specific deadlines
+        for event in &self.events {
+            if event.kind == MOVE_KIND {
+                if let Ok(move_content) = EventParser::parse_move(event) {
+                    if let Some(deadline) = move_content.deadline {
+                        if now > deadline {
+                            violations.push(TimeoutViolation {
+                                phase: TimeoutPhase::Move,
+                                deadline,
+                                current_time: now,
+                                affected_player: Some(event.pubkey),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        violations
+    }
+    
+    /// Determine which player is affected by a timeout in a specific phase
+    fn determine_affected_player_for_phase(&self, phase: TimeoutPhase) -> Option<PublicKey> {
+        match phase {
+            TimeoutPhase::Accept => {
+                // In accept phase, we're waiting for the second player
+                if matches!(self.state, SequenceState::WaitingForAccept) {
+                    // The affected player is anyone who could accept (not the challenger)
+                    None // No specific player, just waiting for any accepter
+                } else {
+                    None
+                }
+            },
+            TimeoutPhase::Move | TimeoutPhase::CommitReveal => {
+                // Determine whose turn it is based on the last event
+                if let Some(last_event) = self.events.last() {
+                    // The affected player is the one who should move next
+                    if last_event.pubkey == self.players[0] {
+                        Some(self.players[1])
+                    } else {
+                        Some(self.players[0])
+                    }
+                } else {
+                    None
+                }
+            },
+            TimeoutPhase::FinalEvent => {
+                // Check which players haven't submitted final events
+                let final_events = self.get_events_by_kind(FINAL_KIND);
+                let submitted_players: std::collections::HashSet<_> = 
+                    final_events.iter().map(|e| e.pubkey).collect();
+                
+                // Return the first player who hasn't submitted (simplified)
+                self.players.iter()
+                    .find(|p| !submitted_players.contains(p))
+                    .copied()
+            },
+        }
+    }
+    
+    /// Update phase deadlines based on state transitions
+    pub fn update_phase_deadlines(&mut self) {
+        let now = chrono::Utc::now().timestamp() as u64;
+        
+        if let Some(ref config) = self.timeout_config {
+            match &self.state {
+                SequenceState::InProgress => {
+                    // Set move timeout deadline
+                    if let Some(move_timeout) = config.move_timeout {
+                        self.phase_deadlines.insert(TimeoutPhase::Move, now + move_timeout);
+                    }
+                    // Remove accept timeout as it's no longer relevant
+                    self.phase_deadlines.remove(&TimeoutPhase::Accept);
+                },
+                SequenceState::WaitingForFinal => {
+                    // Set final event timeout deadline
+                    if let Some(final_timeout) = config.final_event_timeout {
+                        self.phase_deadlines.insert(TimeoutPhase::FinalEvent, now + final_timeout);
+                    }
+                    // Remove move timeout as moves are complete
+                    self.phase_deadlines.remove(&TimeoutPhase::Move);
+                    self.phase_deadlines.remove(&TimeoutPhase::CommitReveal);
+                },
+                SequenceState::Complete { .. } | SequenceState::Forfeited { .. } => {
+                    // Clear all deadlines for completed games
+                    self.phase_deadlines.clear();
+                },
+                _ => {}
+            }
+        }
+    }
+    
+    /// Check if the sequence has any active timeouts
+    pub fn has_active_timeouts(&self) -> bool {
+        !self.phase_deadlines.is_empty() || 
+        self.events.iter().any(|e| {
+            if e.kind == MOVE_KIND {
+                if let Ok(move_content) = EventParser::parse_move(e) {
+                    move_content.deadline.is_some()
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        })
+    }
+    
+    /// Get the next upcoming deadline
+    pub fn get_next_deadline(&self) -> Option<(TimeoutPhase, u64)> {
+        let now = chrono::Utc::now().timestamp() as u64;
+        
+        self.phase_deadlines.iter()
+            .filter(|(_, deadline)| **deadline > now)
+            .min_by_key(|(_, deadline)| *deadline)
+            .map(|(phase, deadline)| (*phase, *deadline))
+    }
 }
 
 #[cfg(test)]
@@ -488,6 +664,7 @@ mod tests {
             commitment_hashes: vec!["abc123".to_string()],
             game_parameters: serde_json::json!({}),
             expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+            timeout_config: None,
         };
         
         EventBuilder::new(CHALLENGE_KIND, serde_json::to_string(&content).unwrap(), Vec::<nostr::Tag>::new())
@@ -512,6 +689,7 @@ mod tests {
             move_type: MoveType::Move,
             move_data: serde_json::json!({"action": "test_move"}),
             revealed_tokens: None,
+            deadline: None,
         };
         
         EventBuilder::new(MOVE_KIND, serde_json::to_string(&content).unwrap(), Vec::<nostr::Tag>::new())

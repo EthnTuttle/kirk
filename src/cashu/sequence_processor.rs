@@ -9,7 +9,8 @@ use nostr::{Event, EventId, PublicKey, Filter, Timestamp};
 use nostr_sdk::Client as NostrClient;
 use crate::error::{GameProtocolError, GameResult};
 use crate::game::{GameSequence, SequenceState};
-use crate::events::{EventParser, ValidationFailureContent, CHALLENGE_KIND};
+use crate::game::validation::TimeoutViolation;
+use crate::events::{EventParser, ValidationFailureContent, CHALLENGE_KIND, TimeoutPhase};
 use crate::cashu::GameMint;
 
 
@@ -588,37 +589,28 @@ impl SequenceProcessor {
     /// Check for timeouts and handle them
     pub async fn check_timeouts(&mut self) -> GameResult<Vec<ProcessingResult>> {
         let mut results = Vec::new();
-        let now = chrono::Utc::now().timestamp() as u64;
         let mut timed_out_sequences = Vec::new();
 
+        // Check each active sequence for timeout violations
         for (challenge_id, sequence) in &self.active_sequences {
-            let timeout_occurred = match &sequence.state {
-                SequenceState::WaitingForAccept => {
-                    // Check if challenge has expired
-                    now > sequence.created_at + self.config.move_timeout
-                },
-                SequenceState::InProgress => {
-                    // Check if moves have timed out
-                    now > sequence.last_activity + self.config.move_timeout
-                },
-                SequenceState::WaitingForFinal => {
-                    // Check if final events have timed out
-                    now > sequence.last_activity + self.config.final_event_timeout
-                },
-                _ => false, // Complete or forfeited sequences don't timeout
-            };
-
-            if timeout_occurred {
-                timed_out_sequences.push(*challenge_id);
+            let violations = sequence.check_timeouts();
+            
+            if !violations.is_empty() {
+                timed_out_sequences.push((*challenge_id, violations));
             }
         }
 
-        // Handle timeouts
-        for challenge_id in timed_out_sequences {
-            match self.handle_timeout(challenge_id).await {
-                Ok(result) => results.push(result),
-                Err(e) => {
-                    eprintln!("Error handling timeout for sequence {}: {}", challenge_id, e);
+        // Handle timeouts with grace period
+        let grace_period = 300; // 5 minutes grace period
+        for (challenge_id, violations) in timed_out_sequences {
+            for violation in violations {
+                if violation.should_forfeit(grace_period) {
+                    match self.handle_timeout_violation(challenge_id, violation).await {
+                        Ok(result) => results.push(result),
+                        Err(e) => {
+                            eprintln!("Error handling timeout violation for sequence {}: {}", challenge_id, e);
+                        }
+                    }
                 }
             }
         }
@@ -626,60 +618,93 @@ impl SequenceProcessor {
         Ok(results)
     }
 
-    /// Handle a timeout for a specific sequence
+    /// Handle a timeout violation for a specific sequence
+    async fn handle_timeout_violation(
+        &mut self, 
+        challenge_id: EventId, 
+        violation: TimeoutViolation
+    ) -> GameResult<ProcessingResult> {
+        let sequence = self.active_sequences.get(&challenge_id)
+            .ok_or_else(|| GameProtocolError::SequenceError(
+                "Sequence not found for timeout handling".to_string()
+            ))?;
+
+        match violation.phase {
+            TimeoutPhase::Accept => {
+                // Challenge acceptance timed out, remove the sequence
+                self.active_sequences.remove(&challenge_id);
+                Ok(ProcessingResult::SequenceExpired { challenge_id })
+            },
+            TimeoutPhase::Move | TimeoutPhase::CommitReveal => {
+                // Player timed out during gameplay
+                let forfeited_player = violation.affected_player
+                    .unwrap_or_else(|| {
+                        // Fallback: forfeit the player who should have moved next
+                        if let Some(last_event) = sequence.events.last() {
+                            if last_event.pubkey == sequence.players[0] {
+                                sequence.players[1]
+                            } else {
+                                sequence.players[0]
+                            }
+                        } else {
+                            sequence.players[0]
+                        }
+                    });
+                
+                let reason = format!(
+                    "Player timed out during {} phase (deadline: {}, overdue by: {} seconds)",
+                    match violation.phase {
+                        TimeoutPhase::Move => "move",
+                        TimeoutPhase::CommitReveal => "commit/reveal",
+                        _ => "gameplay"
+                    },
+                    violation.deadline,
+                    violation.overdue_duration()
+                );
+                
+                self.handle_fraud_detection(
+                    challenge_id,
+                    forfeited_player,
+                    reason,
+                    None
+                ).await
+            },
+            TimeoutPhase::FinalEvent => {
+                // Player timed out submitting final event
+                let forfeited_player = violation.affected_player
+                    .unwrap_or(sequence.players[0]); // Fallback
+                
+                let reason = format!(
+                    "Player timed out submitting final event (deadline: {}, overdue by: {} seconds)",
+                    violation.deadline,
+                    violation.overdue_duration()
+                );
+                
+                self.handle_fraud_detection(
+                    challenge_id,
+                    forfeited_player,
+                    reason,
+                    None
+                ).await
+            },
+        }
+    }
+    
+    /// Handle a timeout for a specific sequence (legacy method for backward compatibility)
     async fn handle_timeout(&mut self, challenge_id: EventId) -> GameResult<ProcessingResult> {
         let sequence = self.active_sequences.get(&challenge_id)
             .ok_or_else(|| GameProtocolError::SequenceError(
                 "Sequence not found for timeout handling".to_string()
             ))?;
 
-        match &sequence.state {
-            SequenceState::WaitingForAccept => {
-                // Challenge expired, remove it
-                self.active_sequences.remove(&challenge_id);
-                Ok(ProcessingResult::SequenceExpired { challenge_id })
-            },
-            SequenceState::InProgress => {
-                // Determine which player should be forfeited based on last activity
-                // This is simplified - real implementation would track per-player timeouts
-                let last_event = sequence.events.last().unwrap();
-                let other_player = if last_event.pubkey == sequence.players[0] {
-                    sequence.players[1]
-                } else {
-                    sequence.players[0]
-                };
-                
-                self.handle_fraud_detection(
-                    challenge_id,
-                    other_player,
-                    "Player timed out during gameplay".to_string(),
-                    None
-                ).await
-            },
-            SequenceState::WaitingForFinal => {
-                // Determine which players haven't submitted final events
-                let final_events = sequence.get_events_by_kind(crate::events::FINAL_KIND);
-                let submitted_players: std::collections::HashSet<_> = 
-                    final_events.iter().map(|e| e.pubkey).collect();
-                
-                // Forfeit the first player who hasn't submitted (simplified)
-                let forfeited_player = sequence.players.iter()
-                    .find(|p| !submitted_players.contains(p))
-                    .copied()
-                    .unwrap_or(sequence.players[0]); // Fallback
-                
-                self.handle_fraud_detection(
-                    challenge_id,
-                    forfeited_player,
-                    "Player timed out submitting final event".to_string(),
-                    None
-                ).await
-            },
-            _ => {
-                Err(GameProtocolError::SequenceError(
-                    "Cannot timeout completed or forfeited sequence".to_string()
-                ))
-            }
+        // Check for timeout violations and handle the first one
+        let violations = sequence.check_timeouts();
+        if let Some(violation) = violations.first() {
+            self.handle_timeout_violation(challenge_id, violation.clone()).await
+        } else {
+            Err(GameProtocolError::SequenceError(
+                "No timeout violations found for sequence".to_string()
+            ))
         }
     }
 
@@ -773,6 +798,7 @@ mod tests {
             commitment_hashes: vec!["abc123".to_string()],
             game_parameters: serde_json::json!({}),
             expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+            timeout_config: None,
         };
         
         EventBuilder::new(CHALLENGE_KIND, serde_json::to_string(&content).unwrap(), Vec::<nostr::Tag>::new())

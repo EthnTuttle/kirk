@@ -57,16 +57,16 @@ impl ValidationClient {
                 sequence_valid: false,
                 commitment_valid: false,
                 events_collected: 0,
-                validation_result: ValidationResult {
-                    is_valid: false,
-                    winner: None,
-                    errors: vec![ValidationError {
-                        event_id: challenge_id,
-                        error_type: ValidationErrorType::InvalidSequence,
-                        message: "No events found for challenge".to_string(),
-                    }],
-                    forfeited_player: None,
-                },
+                validation_result: ValidationResult::new(
+                    false,
+                    None,
+                    vec![ValidationError::new(
+                        challenge_id,
+                        ValidationErrorType::InvalidSequence,
+                        "No events found for challenge".to_string(),
+                    )],
+                    None,
+                ),
                 commitment_errors: vec![],
                 sequence_errors: vec!["No events found for challenge".to_string()],
             });
@@ -443,16 +443,16 @@ impl ValidationClient {
                 sequence_valid: false,
                 commitment_valid: false,
                 events_collected: 0,
-                validation_result: ValidationResult {
-                    is_valid: false,
-                    winner: None,
-                    errors: vec![ValidationError {
-                        event_id: challenge_id,
-                        error_type: ValidationErrorType::InvalidSequence,
-                        message: "No events provided for validation".to_string(),
-                    }],
-                    forfeited_player: None,
-                },
+                validation_result: ValidationResult::new(
+                    false,
+                    None,
+                    vec![ValidationError::new(
+                        challenge_id,
+                        ValidationErrorType::InvalidSequence,
+                        "No events provided for validation".to_string(),
+                    )],
+                    None,
+                ),
                 commitment_errors: vec![],
                 sequence_errors: vec!["No events provided for validation".to_string()],
             });
@@ -544,6 +544,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)], // Valid 64-char hex
             game_parameters: serde_json::json!({}),
             expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+            timeout_config: None,
         };
         
         EventBuilder::new(CHALLENGE_KIND, serde_json::to_string(&content).unwrap(), Vec::<nostr::Tag>::new())
@@ -568,6 +569,7 @@ mod tests {
             move_type: MoveType::Move,
             move_data: serde_json::json!({"action": "test_move"}),
             revealed_tokens: None,
+            deadline: None,
         };
         
         EventBuilder::new(MOVE_KIND, serde_json::to_string(&content).unwrap(), Vec::<nostr::Tag>::new())
@@ -812,12 +814,12 @@ mod tests {
     #[test]
     fn test_validation_report_structure() {
         let challenge_id = EventId::from_hex("0".repeat(64)).unwrap();
-        let validation_result = ValidationResult {
-            is_valid: true,
-            winner: None,
-            errors: vec![],
-            forfeited_player: None,
-        };
+        let validation_result = ValidationResult::new(
+            true,
+            None,
+            vec![],
+            None,
+        );
         
         let report = ValidationReport {
             challenge_id,

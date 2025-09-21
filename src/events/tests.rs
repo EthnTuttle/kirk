@@ -56,6 +56,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({"param1": "value1"}),
             expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+            timeout_config: None,
         };
 
         let event = challenge.to_event(&keys).unwrap();
@@ -70,6 +71,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({}),
             expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+            timeout_config: None,
         };
 
         // Valid challenge should pass
@@ -143,6 +145,7 @@ mod tests {
             move_type: MoveType::Move,
             move_data: json!({"action": "test"}),
             revealed_tokens: None,
+            deadline: None,
         };
 
         let event = move_content.to_event(&keys).unwrap();
@@ -160,6 +163,7 @@ mod tests {
             move_type: MoveType::Reveal,
             move_data: json!({}),
             revealed_tokens: None,
+            deadline: None,
         };
         assert!(reveal_move.validate().is_err());
 
@@ -169,6 +173,7 @@ mod tests {
             move_type: MoveType::Reveal,
             move_data: json!({}),
             revealed_tokens: Some(vec![create_dummy_cashu_token()]),
+            deadline: None,
         };
         assert!(reveal_move.validate().is_ok());
 
@@ -178,6 +183,7 @@ mod tests {
             move_type: MoveType::Commit,
             move_data: json!({}),
             revealed_tokens: Some(vec![create_dummy_cashu_token()]),
+            deadline: None,
         };
         assert!(commit_move.validate().is_err());
 
@@ -187,6 +193,7 @@ mod tests {
             move_type: MoveType::Commit,
             move_data: json!({}),
             revealed_tokens: None,
+            deadline: None,
         };
         assert!(commit_move.validate().is_ok());
 
@@ -196,6 +203,7 @@ mod tests {
             move_type: MoveType::Move,
             move_data: json!({}),
             revealed_tokens: Some(vec![]),
+            deadline: None,
         };
         assert!(move_with_empty_tokens.validate().is_err());
     }
@@ -327,6 +335,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({"param1": "value1"}),
             expiry: None,
+            timeout_config: None,
         };
 
         let event = challenge.to_event(&keys).unwrap();
@@ -344,6 +353,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({}),
             expiry: None,
+            timeout_config: None,
         };
 
         let event = challenge.to_event(&keys).unwrap();
@@ -364,6 +374,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({}),
             expiry: None,
+            timeout_config: None,
         };
         let event = challenge.to_event(&keys).unwrap();
         assert!(EventParser::is_game_event(&event));
@@ -383,6 +394,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({}),
             expiry: None,
+            timeout_config: None,
         };
         let event = challenge.to_event(&keys).unwrap();
         assert_eq!(EventParser::get_event_type_name(&event), Some("Challenge"));
@@ -402,6 +414,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64)],
             game_parameters: json!({}),
             expiry: None,
+            timeout_config: None,
         };
         let event = challenge.to_event(&keys).unwrap();
         assert!(validate_event_structure(&event).is_ok());
@@ -422,6 +435,7 @@ mod tests {
             commitment_hashes: vec!["a".repeat(64), "b".repeat(64)],
             game_parameters: json!({"rounds": 3, "timeout": 300}),
             expiry: Some(1234567890),
+            timeout_config: None,
         };
         
         let event = challenge.to_event(&keys).unwrap();

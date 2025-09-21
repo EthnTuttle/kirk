@@ -3,3 +3,4 @@
 pub mod full_game_tests;
 pub mod mint_validation_tests;
 pub mod event_chain_tests;
+pub mod timeout_integration_tests;

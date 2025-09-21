@@ -21,6 +21,8 @@ pub struct MoveContent {
     pub move_type: MoveType,
     pub move_data: serde_json::Value,
     pub revealed_tokens: Option<Vec<CashuToken>>,
+    /// Optional deadline for this move (Unix timestamp)
+    pub deadline: Option<u64>,
 }
 
 impl MoveContent {
@@ -61,6 +63,18 @@ impl MoveContent {
                 return Err(GameProtocolError::InvalidMove(
                     "If revealed_tokens is present, it cannot be empty".to_string()
                 ));
+            }
+        }
+        
+        // Validate deadline if present
+        if let Some(deadline) = self.deadline {
+            let now = chrono::Utc::now().timestamp() as u64;
+            if deadline <= now {
+                return Err(GameProtocolError::Timeout {
+                    message: "Move deadline has already passed".to_string(),
+                    duration_ms: 0, // Deadline already passed
+                    operation: "move_deadline_validation".to_string(),
+                });
             }
         }
         

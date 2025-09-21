@@ -49,6 +49,7 @@ fn test_create_challenge_event() {
             "timeout": 3600
         }),
         expiry: Some(chrono::Utc::now().timestamp() as u64 + 3600),
+        timeout_config: None,
     };
     
     let event_result = content.to_event(&keys);
@@ -99,6 +100,7 @@ fn test_create_move_event() {
             "position": [1, 2]
         }),
         revealed_tokens: None,
+        deadline: None,
     };
     
     let event_result = content.to_event(&keys);

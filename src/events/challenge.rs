@@ -12,6 +12,21 @@ pub struct ChallengeContent {
     pub commitment_hashes: Vec<String>,
     pub game_parameters: serde_json::Value,
     pub expiry: Option<u64>,
+    /// Optional timeout configuration for the game
+    pub timeout_config: Option<TimeoutConfig>,
+}
+
+/// Timeout configuration for game sequences
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimeoutConfig {
+    /// Maximum time to wait for challenge acceptance (seconds)
+    pub accept_timeout: Option<u64>,
+    /// Maximum time between moves during gameplay (seconds)
+    pub move_timeout: Option<u64>,
+    /// Maximum time to wait for commit/reveal sequences (seconds)
+    pub commit_reveal_timeout: Option<u64>,
+    /// Maximum time to wait for final events after game completion (seconds)
+    pub final_event_timeout: Option<u64>,
 }
 
 impl ChallengeContent {
@@ -60,6 +75,11 @@ impl ChallengeContent {
             }
         }
         
+        // Validate timeout configuration if present
+        if let Some(ref timeout_config) = self.timeout_config {
+            timeout_config.validate()?;
+        }
+        
         Ok(())
     }
 }
@@ -69,6 +89,107 @@ impl ChallengeContent {
 pub struct ChallengeAcceptContent {
     pub challenge_id: EventId,
     pub commitment_hashes: Vec<String>,
+}
+
+impl TimeoutConfig {
+    /// Create a new timeout configuration with default values
+    pub fn new() -> Self {
+        Self {
+            accept_timeout: Some(3600),      // 1 hour
+            move_timeout: Some(1800),        // 30 minutes
+            commit_reveal_timeout: Some(600), // 10 minutes
+            final_event_timeout: Some(3600), // 1 hour
+        }
+    }
+    
+    /// Create a timeout configuration with custom values
+    pub fn custom(
+        accept_timeout: Option<u64>,
+        move_timeout: Option<u64>,
+        commit_reveal_timeout: Option<u64>,
+        final_event_timeout: Option<u64>,
+    ) -> Self {
+        Self {
+            accept_timeout,
+            move_timeout,
+            commit_reveal_timeout,
+            final_event_timeout,
+        }
+    }
+    
+    /// Validate timeout configuration
+    pub fn validate(&self) -> Result<(), GameProtocolError> {
+        // Validate that timeouts are reasonable (not too short or too long)
+        let min_timeout = 60; // 1 minute minimum
+        let max_timeout = 86400; // 24 hours maximum
+        
+        if let Some(timeout) = self.accept_timeout {
+            if timeout < min_timeout || timeout > max_timeout {
+                return Err(GameProtocolError::Timeout {
+                    message: format!("Accept timeout must be between {} and {} seconds", min_timeout, max_timeout),
+                    duration_ms: timeout * 1000,
+                    operation: "accept_timeout_validation".to_string(),
+                });
+            }
+        }
+        
+        if let Some(timeout) = self.move_timeout {
+            if timeout < min_timeout || timeout > max_timeout {
+                return Err(GameProtocolError::Timeout {
+                    message: format!("Move timeout must be between {} and {} seconds", min_timeout, max_timeout),
+                    duration_ms: timeout * 1000,
+                    operation: "move_timeout_validation".to_string(),
+                });
+            }
+        }
+        
+        if let Some(timeout) = self.commit_reveal_timeout {
+            if timeout < min_timeout || timeout > max_timeout {
+                return Err(GameProtocolError::Timeout {
+                    message: format!("Commit/reveal timeout must be between {} and {} seconds", min_timeout, max_timeout),
+                    duration_ms: timeout * 1000,
+                    operation: "commit_reveal_timeout_validation".to_string(),
+                });
+            }
+        }
+        
+        if let Some(timeout) = self.final_event_timeout {
+            if timeout < min_timeout || timeout > max_timeout {
+                return Err(GameProtocolError::Timeout {
+                    message: format!("Final event timeout must be between {} and {} seconds", min_timeout, max_timeout),
+                    duration_ms: timeout * 1000,
+                    operation: "final_event_timeout_validation".to_string(),
+                });
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Get the timeout for a specific phase
+    pub fn get_timeout_for_phase(&self, phase: TimeoutPhase) -> Option<u64> {
+        match phase {
+            TimeoutPhase::Accept => self.accept_timeout,
+            TimeoutPhase::Move => self.move_timeout,
+            TimeoutPhase::CommitReveal => self.commit_reveal_timeout,
+            TimeoutPhase::FinalEvent => self.final_event_timeout,
+        }
+    }
+}
+
+impl Default for TimeoutConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Different phases of gameplay that can have timeouts
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TimeoutPhase {
+    Accept,
+    Move,
+    CommitReveal,
+    FinalEvent,
 }
 
 impl ChallengeAcceptContent {
