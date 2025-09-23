@@ -8,7 +8,6 @@ pub mod sequence_manager;
 pub mod fraud_detector;
 pub mod reward_distributor;
 pub mod timeout_manager;
-pub mod metrics_collector;
 
 // Re-export main service interfaces
 pub use event_processor::EventProcessor;
@@ -16,7 +15,6 @@ pub use sequence_manager::SequenceManager;
 pub use fraud_detector::FraudDetector;
 pub use reward_distributor::RewardDistributor;
 pub use timeout_manager::TimeoutManager;
-pub use metrics_collector::MetricsCollector;
 
 use std::sync::Arc;
 use nostr::{Event, EventId, PublicKey};
@@ -24,7 +22,6 @@ use nostr_sdk::Client as NostrClient;
 use crate::error::GameResult;
 use crate::game::GameSequence;
 use crate::cashu::GameMint;
-use crate::observability::ObservabilityManager;
 
 /// Configuration constants extracted from magic numbers
 #[derive(Debug, Clone)]
@@ -62,16 +59,14 @@ pub struct ServiceContext {
     pub mint: Arc<GameMint>,
     pub nostr_client: NostrClient,
     pub constants: ServiceConstants,
-    pub observability: Arc<ObservabilityManager>,
 }
 
 impl ServiceContext {
-    pub fn new(mint: Arc<GameMint>, nostr_client: NostrClient, observability: Arc<ObservabilityManager>) -> Self {
+    pub fn new(mint: Arc<GameMint>, nostr_client: NostrClient) -> Self {
         Self {
             mint,
             nostr_client,
             constants: ServiceConstants::default(),
-            observability,
         }
     }
 
@@ -152,7 +147,6 @@ pub struct GameService {
     fraud_detector: FraudDetector,
     reward_distributor: RewardDistributor,
     timeout_manager: TimeoutManager,
-    metrics_collector: MetricsCollector,
 }
 
 impl GameService {
@@ -163,7 +157,6 @@ impl GameService {
         let fraud_detector = FraudDetector::new(context.clone());
         let reward_distributor = RewardDistributor::new(context.clone());
         let timeout_manager = TimeoutManager::new(context.clone());
-        let metrics_collector = MetricsCollector::new(context.clone());
 
         Self {
             context,
@@ -172,7 +165,6 @@ impl GameService {
             fraud_detector,
             reward_distributor,
             timeout_manager,
-            metrics_collector,
         }
     }
 
@@ -193,9 +185,6 @@ impl GameService {
             let result = self.process_single_event(event).await?;
             results.push(result);
         }
-
-        // Update metrics
-        self.metrics_collector.record_batch_processed(results.len()).await?;
 
         Ok(results)
     }
@@ -249,24 +238,10 @@ impl GameService {
         })
     }
 
-    /// Get system metrics and statistics
-    pub async fn get_metrics(&self) -> GameResult<crate::cashu::SequenceStatistics> {
-        self.metrics_collector.get_current_metrics().await
-    }
-
     /// Perform periodic maintenance tasks
     pub async fn perform_maintenance(&mut self) -> GameResult<()> {
         // Clean up old sequences
         self.sequence_manager.cleanup_old_sequences().await?;
-
-        // Check for global timeouts
-        let timeout_results = self.timeout_manager.check_all_timeouts().await?;
-        for timeout in timeout_results {
-            self.metrics_collector.record_timeout(&timeout).await?;
-        }
-
-        // Update metrics
-        self.metrics_collector.update_system_metrics().await?;
 
         Ok(())
     }

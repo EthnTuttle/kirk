@@ -10,6 +10,7 @@ use super::REWARD_KIND;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RewardContent {
     pub game_sequence_root: EventId,
+    pub game_sequence: Vec<EventId>,
     pub winner_pubkey: PublicKey,
     pub reward_tokens: Vec<GameToken>,
     pub unlock_instructions: Option<String>,
@@ -46,6 +47,7 @@ impl RewardContent {
 }
 
 /// Content structure for ValidationFailure events
+// TODO: move out to another file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationFailureContent {
     pub game_sequence_root: EventId,

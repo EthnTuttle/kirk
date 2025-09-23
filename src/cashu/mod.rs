@@ -15,5 +15,5 @@ pub use sequence_processor::{SequenceProcessor, SequenceProcessorConfig, Process
 // Re-export new service architecture
 pub use services::{
     GameService, ServiceContext, ServiceResult, ServiceConstants,
-    EventProcessor, SequenceManager, FraudDetector, RewardDistributor, TimeoutManager, MetricsCollector
+    EventProcessor, SequenceManager, FraudDetector, RewardDistributor, TimeoutManager
 };

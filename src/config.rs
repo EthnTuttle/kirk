@@ -3,14 +3,11 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use crate::security::SecurityConfig;
 use crate::error::GameProtocolError;
 
 /// Main configuration for the Kirk protocol
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KirkConfig {
-    /// Security configuration
-    pub security: SecurityConfig,
     /// Network configuration
     pub network: NetworkConfig,
     /// Game configuration
@@ -20,7 +17,6 @@ pub struct KirkConfig {
 impl Default for KirkConfig {
     fn default() -> Self {
         Self {
-            security: SecurityConfig::default(),
             network: NetworkConfig::default(),
             game: GameConfig::default(),
         }
@@ -46,6 +42,7 @@ impl Default for NetworkConfig {
             default_relays: vec![
                 "wss://relay.damus.io".to_string(),
                 "wss://nos.lol".to_string(),
+                "wss://relay.primal.net".to_string(),
             ],
             connection_timeout: 10,
             max_connections: 10,
@@ -159,40 +156,6 @@ impl KirkConfig {
     /// Create a production-ready configuration
     pub fn production() -> Self {
         Self {
-            security: SecurityConfig {
-                rate_limit: crate::security::RateLimitConfig {
-                    requests_per_minute: 30,    // Stricter rate limiting
-                    burst_size: 5,
-                    global_rate_limit: 500,     // Reduced global limit
-                    window_duration: 60,
-                },
-                timeout_config: crate::security::SecureTimeoutConfig {
-                    min_timeout_seconds: 120,   // Longer minimum timeouts
-                    max_timeout_seconds: 3600,  // Shorter maximum timeouts
-                    clock_skew_tolerance: 15,   // Tighter clock skew tolerance
-                    network_grace_period: 5,    // Shorter grace period
-                },
-                validation_rules: crate::security::ValidationRules {
-                    max_content_length: 32768,  // Smaller max content
-                    max_tags_per_event: 50,     // Fewer tags allowed
-                    max_tag_value_length: 512,  // Shorter tag values
-                    allowed_content_patterns: vec![
-                        r"^[a-zA-Z0-9\s\{\}\[\],:._-]+$".to_string(),
-                    ],
-                    blocked_content_patterns: vec![
-                        "<script.*?</script>".to_string(),
-                        "javascript:".to_string(),
-                        "data:.*base64".to_string(),
-                        r"<.*?on\w+\s*=".to_string(),  // Block event handlers
-                    ],
-                },
-                crypto_config: crate::security::CryptoSecurityConfig {
-                    min_hash_bits: 256,
-                    commitment_entropy_bits: 128,
-                    enable_constant_time_ops: true,
-                    max_commitment_batch_size: 100,  // Smaller batches
-                },
-            },
             network: NetworkConfig {
                 default_relays: vec![
                     "wss://relay.damus.io".to_string(),
@@ -215,21 +178,6 @@ impl KirkConfig {
     /// Create a development configuration with relaxed settings
     pub fn development() -> Self {
         Self {
-            security: SecurityConfig {
-                rate_limit: crate::security::RateLimitConfig {
-                    requests_per_minute: 120,   // More permissive
-                    burst_size: 20,
-                    global_rate_limit: 2000,
-                    window_duration: 60,
-                },
-                timeout_config: crate::security::SecureTimeoutConfig {
-                    min_timeout_seconds: 30,    // Shorter for testing
-                    max_timeout_seconds: 86400,
-                    clock_skew_tolerance: 60,   // More tolerant
-                    network_grace_period: 30,
-                },
-                ..Default::default()
-            },
             network: NetworkConfig {
                 default_relays: vec![
                     "ws://localhost:8080".to_string(), // Local relay for testing
@@ -252,7 +200,6 @@ impl KirkConfig {
 mod tests {
     use super::*;
     use tempfile::NamedTempFile;
-    use std::io::Write;
 
     #[test]
     fn test_default_config_validation() {
@@ -294,7 +241,7 @@ mod tests {
         let original_config = KirkConfig::production();
 
         // Create a temporary file
-        let mut temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().unwrap();
         let temp_path = temp_file.path();
 
         // Save config to file

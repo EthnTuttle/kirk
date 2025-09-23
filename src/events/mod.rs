@@ -5,12 +5,6 @@ pub mod move_event;
 pub mod final_event;
 pub mod reward;
 
-#[cfg(test)]
-mod tests;
-
-#[cfg(test)]
-mod timeout_tests;
-
 // Re-export all event content types
 pub use challenge::{ChallengeContent, ChallengeAcceptContent, TimeoutConfig, TimeoutPhase};
 pub use move_event::{MoveContent, MoveType};

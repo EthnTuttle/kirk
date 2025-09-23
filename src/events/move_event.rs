@@ -54,6 +54,7 @@ impl MoveContent {
                         "Reveal moves must include revealed tokens".to_string()
                     ));
                 }
+                // TODO: reference move_data and handle it
             },
             MoveType::Commit => {
                 if self.revealed_tokens.is_some() {
@@ -61,9 +62,11 @@ impl MoveContent {
                         "Commit moves should not include revealed tokens".to_string()
                     ));
                 }
+                // TODO: reference move_data and handle it
             },
             MoveType::Move => {
                 // Regular moves may or may not have revealed tokens
+                // TODO: need a generic trait for Move validation, probably referencing move_data
             }
         }
         

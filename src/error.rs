@@ -49,6 +49,12 @@ pub enum GameProtocolError {
     #[error("Serialization error: {message}")]
     Serialization { message: String },
 
+    #[error("System error: {message}")]
+    SystemError {
+        message: String,
+        context: Option<String>,
+    },
+
     #[error("Hex decoding error: {0}")]
     HexDecode(#[from] hex::FromHexError),
 

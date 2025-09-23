@@ -518,10 +518,18 @@ impl SequenceProcessor {
     ) -> GameResult<EventId> {
         // Mint reward tokens locked to winner
         let reward_tokens = self.mint.mint_reward_tokens(reward_amount, winner).await?;
-
+        let sequence_events = self.completed_sequences.get(&challenge_id)
+            .ok_or_else(|| GameProtocolError::SequenceError(
+                "Sequence not found for reward distribution".to_string()
+            ))?
+            .events
+            .iter()
+            .map(|e| e.id)
+            .collect();
         // Publish reward event
         self.mint.publish_game_result(
             challenge_id,
+            sequence_events,
             winner,
             reward_tokens
         ).await

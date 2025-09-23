@@ -178,6 +178,7 @@ impl GameMint {
     pub async fn publish_game_result(
         &self,
         game_sequence_root: EventId,
+        game_sequence: Vec<EventId>,
         winner: PublicKey,
         reward_tokens: Vec<GameToken>
     ) -> GameResult<EventId> {
@@ -192,6 +193,7 @@ impl GameMint {
         
         let reward_content = RewardContent {
             game_sequence_root,
+            game_sequence,
             winner_pubkey: winner,
             reward_tokens,
             unlock_instructions: Some(
