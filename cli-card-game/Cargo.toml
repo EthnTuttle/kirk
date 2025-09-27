@@ -1,0 +1,74 @@
+[package]
+name = "kirk-cli-card-game"
+version = "0.1.0"
+edition = "2021"
+description = "CLI card game demonstrating the Kirk gaming protocol"
+license = "MIT"
+authors = ["Kirk Protocol Team"]
+
+[[bin]]
+name = "kirk-cards"
+path = "src/main.rs"
+
+[dependencies]
+# Kirk protocol library (parent directory)
+kirk = { path = ".." }
+
+# Bevy ECS minimal (no rendering/audio)
+bevy = "0.16"
+
+# Cashu integration via CDK
+cdk = { path = "../deps/cdk/crates/cdk" }
+cashu = { path = "../deps/cdk/crates/cashu" }
+
+# Nostr integration
+nostr = "0.35"
+nostr-sdk = "0.35"
+
+# Key derivation dependencies
+hkdf = "0.12"
+rand = "0.8"
+sha2 = "0.10"
+
+# CLI dependencies
+clap = { version = "4.0", features = ["derive"] }
+rustyline = "13.0"
+colored = "2.0"
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Hex encoding
+hex = "0.4"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.0"
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
+# Optional: Uncomment the following line if you are on macOS and have slow compile times
+# This improves compile times, but reduces the amount of debug info to 'line number tables only'
+# [profile.dev.package."*"]
+# debug = true
