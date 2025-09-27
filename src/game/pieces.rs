@@ -1,15 +1,9 @@
 //! Game piece decoding utilities from Cashu C values
 
 /// Utilities for extracting game pieces from Cashu token C values
-/// 
+///
 /// C values provide cryptographic randomness that can be decoded into
 /// game-specific pieces like cards, dice rolls, or other random elements.
-
-/// Extract bytes from C value for game piece generation
-pub fn extract_game_bytes(c_value: &[u8; 32]) -> &[u8] {
-    // Return the full C value as source of randomness
-    c_value
-}
 
 /// Convert C value bytes to a number in a given range
 pub fn c_value_to_range(c_value: &[u8; 32], max: u32) -> u32 {
