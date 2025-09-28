@@ -7,7 +7,7 @@ use crate::error::GameProtocolError;
 use super::MOVE_KIND;
 
 /// Type of move being made
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MoveType {
     Move,
     Commit,

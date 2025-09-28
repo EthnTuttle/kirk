@@ -4,7 +4,9 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 
 use crate::config::GameConfig;
+use crate::keys::MasterKeyManager;
 use crate::repl::{GameStatus, ReplCommand, ReplInterface};
+use crate::resources::{GameStatusDisplay, ReplCommandQueue};
 
 pub struct GameApp {
     bevy_app: App,
@@ -19,6 +21,9 @@ impl GameApp {
         let (command_sender, command_receiver) = mpsc::unbounded_channel();
         let (status_sender, status_receiver) = mpsc::unbounded_channel();
         
+        // Initialize master key manager
+        let key_manager = MasterKeyManager::load_or_generate(config.master_seed_file.as_deref()).await?;
+        
         // Create Bevy app with minimal plugins (no rendering/audio)
         let mut bevy_app = App::new();
         bevy_app.add_plugins(MinimalPlugins);
@@ -26,21 +31,16 @@ impl GameApp {
         // Insert configuration as resource
         bevy_app.insert_resource(config.clone());
         
+        // Insert master key manager as resource
+        bevy_app.insert_resource(key_manager);
+        
         // Insert command queue resource
         bevy_app.insert_resource(ReplCommandQueue {
             commands: std::collections::VecDeque::new(),
         });
         
         // Insert status display resource
-        bevy_app.insert_resource(GameStatusDisplay {
-            current_status: "Starting...".to_string(),
-            active_games_count: 0,
-            pending_challenges: 0,
-            player_pubkey: "".to_string(),
-            mint_pubkey: "".to_string(),
-            game_token_balance: 0,
-            reward_token_balance: 0,
-        });
+        bevy_app.insert_resource(GameStatusDisplay::default());
         
         // Add startup systems
         bevy_app.add_systems(Startup, (
@@ -110,22 +110,7 @@ impl GameApp {
     }
 }
 
-// Bevy ECS Resources
-#[derive(Resource)]
-pub struct ReplCommandQueue {
-    pub commands: std::collections::VecDeque<ReplCommand>,
-}
-
-#[derive(Resource)]
-pub struct GameStatusDisplay {
-    pub current_status: String,
-    pub active_games_count: usize,
-    pub pending_challenges: usize,
-    pub player_pubkey: String,
-    pub mint_pubkey: String,
-    pub game_token_balance: u64,
-    pub reward_token_balance: u64,
-}
+// Resources are now defined in resources.rs module
 
 // Placeholder systems (will be implemented in later tasks)
 fn setup_logging() {
@@ -139,6 +124,7 @@ fn initialize_placeholder_systems() {
 fn process_commands_placeholder(
     mut queue: ResMut<ReplCommandQueue>,
     mut status: ResMut<GameStatusDisplay>,
+    key_manager: Res<MasterKeyManager>,
 ) {
     while let Some(command) = queue.commands.pop_front() {
         match command {
@@ -151,6 +137,9 @@ fn process_commands_placeholder(
                 println!("  balance            - Show token balances");
                 println!("  mint [amount]      - Mint new Game tokens");
                 println!("  unlock <token_id>  - Unlock Reward tokens");
+                println!("  backup <file>      - Create backup of master seed");
+                println!("  restore <file>     - Restore from backup file");
+                println!("  verify-keys        - Verify key derivation integrity");
                 println!("  help               - Show this help");
                 println!("  quit               - Exit the application");
             }
@@ -161,6 +150,27 @@ fn process_commands_placeholder(
                 println!("Game tokens: {}", status.game_token_balance);
                 println!("Reward tokens: {}", status.reward_token_balance);
             }
+            ReplCommand::Backup { file_path } => {
+                // Spawn async task to handle backup
+                let key_manager_clone = key_manager.clone();
+                let file_path_clone = file_path.clone();
+                tokio::spawn(async move {
+                    match key_manager_clone.save_backup_to_file(&file_path_clone).await {
+                        Ok(()) => println!("✅ Backup saved to {}", file_path_clone),
+                        Err(e) => eprintln!("❌ Failed to save backup: {}", e),
+                    }
+                });
+            }
+            ReplCommand::Restore { file_path } => {
+                println!("⚠️  Restore functionality requires application restart");
+                println!("   Use --seed-file {} when starting the application", file_path);
+            }
+            ReplCommand::VerifyKeys => {
+                match key_manager.verify_key_derivation() {
+                    Ok(()) => println!("✅ Key derivation verification passed"),
+                    Err(e) => eprintln!("❌ Key derivation verification failed: {}", e),
+                }
+            }
             _ => {
                 println!("Command received: {:?} (not yet implemented)", command);
             }
@@ -168,11 +178,16 @@ fn process_commands_placeholder(
     }
 }
 
-fn update_status_display_placeholder(mut status: ResMut<GameStatusDisplay>) {
-    // Placeholder - will be replaced with actual status updates
+fn update_status_display_placeholder(
+    mut status: ResMut<GameStatusDisplay>,
+    key_manager: Res<MasterKeyManager>,
+) {
+    // Update status with actual keys from MasterKeyManager
     if status.current_status == "Starting..." {
-        status.current_status = "Ready".to_string();
-        status.player_pubkey = "placeholder_player_key".to_string();
-        status.mint_pubkey = "placeholder_mint_key".to_string();
+        status.update_status("Ready");
+        status.update_keys(
+            &key_manager.get_player_keys().public_key().to_string(),
+            &key_manager.get_mint_keys().public_key().to_string()
+        );
     }
 }

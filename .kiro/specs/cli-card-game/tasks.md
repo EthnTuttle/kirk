@@ -9,25 +9,25 @@
   - Add CLI dependencies (clap, rustyline, colored)
   - _Requirements: 1.1, 1.5_
 
-- [ ] 2. Implement master key management system
+- [x] 2. Implement master key management system
 
-  - [ ] 2.1 Create MasterKeyManager resource with HKDF key derivation
+  - [x] 2.1 Create MasterKeyManager resource with HKDF key derivation
 
     - Implement master seed generation using cryptographically secure RNG
     - Implement HKDF-based key derivation for Nostr and mint keys
     - Add methods for deterministic key generation from master seed
     - _Requirements: 10.1, 10.2_
 
-  - [ ] 2.2 Add seed persistence and recovery functionality
+  - [x] 2.2 Add seed persistence and recovery functionality
     - Implement optional master seed file storage
     - Add seed loading from disk on application startup
     - Add secure seed backup and recovery mechanisms
     - Write unit tests for key derivation consistency
     - _Requirements: 12.4, 12.5_
 
-- [ ] 3. Create Bevy ECS components and resources
+- [x] 3. Create Bevy ECS components and resources
 
-  - [ ] 3.1 Define core ECS components for game entities
+  - [x] 3.1 Define core ECS components for game entities
 
     - Implement Player component with pubkey and balance tracking
     - Implement GameToken component with CDK token integration
@@ -35,7 +35,7 @@
     - Implement Challenge component for game challenge tracking
     - _Requirements: 8.1, 8.2_
 
-  - [ ] 3.2 Define ECS components for game state management
+  - [x] 3.2 Define ECS components for game state management
 
     - Implement ActiveGame component for ongoing games
     - Implement GameSequence component for event chain tracking
@@ -43,16 +43,16 @@
     - Implement PendingReward component for reward processing queue
     - _Requirements: 3.1, 5.1_
 
-  - [ ] 3.3 Create ECS resources for global state
+  - [x] 3.3 Create ECS resources for global state
     - Implement EmbeddedMint resource wrapping CDK mint
     - Implement NostrClient resource for event communication
     - Implement command and event queues for thread communication
     - Implement GameStatusDisplay resource for REPL feedback
     - _Requirements: 1.1, 1.5, 6.1_
 
-- [ ] 4. Implement card game logic using Kirk protocol
+- [x] 4. Implement card game logic using Kirk protocol
 
-  - [ ] 4.1 Create CardGame implementation of Game trait
+  - [x] 4.1 Create CardGame implementation of Game trait
 
     - Implement C value to playing card conversion (52-card deck)
     - Implement game sequence validation for card reveals
@@ -60,7 +60,7 @@
     - Add tie-breaking rules and edge case handling
     - _Requirements: 3.1, 3.2, 8.1_
 
-  - [ ] 4.2 Add card game specific data structures
+  - [x] 4.2 Add card game specific data structures
     - Define PlayingCard struct with Suit and Rank enums
     - Implement card comparison and ordering logic
     - Add card display formatting for REPL output

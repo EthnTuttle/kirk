@@ -2,8 +2,11 @@ use anyhow::Result;
 use clap::Parser;
 
 mod app;
+mod components;
 mod config;
+mod keys;
 mod repl;
+mod resources;
 
 use app::GameApp;
 use config::GameConfig;

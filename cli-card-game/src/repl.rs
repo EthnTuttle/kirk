@@ -22,6 +22,12 @@ pub enum ReplCommand {
     // System Operations
     Help,
     Config { key: String, value: String },
+    
+    // Backup Operations
+    Backup { file_path: String },
+    Restore { file_path: String },
+    VerifyKeys,
+    
     Quit,
 }
 
@@ -164,6 +170,13 @@ impl ReplInterface {
                 key: key.to_string(), 
                 value: value.to_string() 
             }),
+            ["backup", file_path] => Ok(ReplCommand::Backup { 
+                file_path: file_path.to_string() 
+            }),
+            ["restore", file_path] => Ok(ReplCommand::Restore { 
+                file_path: file_path.to_string() 
+            }),
+            ["verify"] | ["verify-keys"] => Ok(ReplCommand::VerifyKeys),
             ["quit"] | ["exit"] => Ok(ReplCommand::Quit),
             [] => Err(anyhow::anyhow!("Empty command")),
             _ => Err(anyhow::anyhow!(
