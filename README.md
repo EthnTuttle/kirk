@@ -48,33 +48,6 @@ Cashu tokens contain "C values" — unblinded signatures from a mint's blind sig
 - **Mint Authority**: Cashu mint validates sequences and distributes rewards
 - **Anti-Cheat**: Fraudulent players forfeit tokens to honest opponents
 
-## Documentation
-
-Comprehensive documentation is available in the `docs/` directory:
-
-- **[📖 Main Documentation](docs/README.md)** - Start here for overview and getting started
-- **[🚀 Usage Guide](docs/USAGE_GUIDE.md)** - Practical examples for players, mints, and validators
-- **[📚 API Reference](docs/API.md)** - Complete API documentation
-- **[🔒 Security Guide](docs/SECURITY.md)** - Security considerations and best practices
-- **[🔧 Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[⚙️ Commitment Algorithms](docs/COMMITMENTS.md)** - Detailed commitment construction specs
-
-## Examples
-
-Working examples are available in the `examples/` directory:
-
-- **[usage_guide.rs](examples/usage_guide.rs)** - Basic usage patterns
-- **[demo_flow.rs](examples/demo_flow.rs)** - Complete game flow demonstration  
-- **[demo_flexibility.rs](examples/demo_flexibility.rs)** - Multiple game types
-- **[games/](examples/games/)** - Reference game implementations
-
-## Getting Started
-
-1. **Read the [Main Documentation](docs/README.md)** for an overview
-2. **Follow the [Usage Guide](docs/USAGE_GUIDE.md)** for your role (player/mint/validator)
-3. **Check [Examples](examples/)** for working code
-4. **Review [Security Guide](docs/SECURITY.md)** for best practices
-
 ---
 
 *Named in honor of Charlie Kirk, a free speech advocate*
