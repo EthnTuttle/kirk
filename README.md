@@ -20,6 +20,10 @@ let challenge_id = player.create_challenge_default(&game, &tokens).await?;
 
 Kirk enables decentralized gaming through:
 
+### Cryptographic Foundation
+
+Cashu tokens contain "C values" — unblinded signatures from a mint's blind signing process. Since the mint signs blinded messages without knowing their content, and the player unblinds locally, neither party can predict or manipulate the resulting C value. Players commit to their tokens by publishing a hash of the token data before gameplay begins, then reveal the actual tokens when making moves. By hashing the revealed C values, games derive deterministic random inputs (e.g., card assignments) that are unpredictable before token creation, hidden until the commit-reveal, yet fully verifiable by any observer after reveal.
+
 ### Core Components
 
 - **Cashu Integration**: Uses ecash tokens for cryptographic game piece commitments
