@@ -131,8 +131,9 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 
 ## 7bis. Orchestration protocol
 
-- Grunt workers: `tff/glm-5.3-flash`, `tff/deepseek-v4.1-flash`,
-  `tff/nemotron-3-super`. Reviewer: `tff/kimi-k3#high`.
+- Workers: `tff/kimi-k3` (default variant) ONLY — flash-tier models
+  provably return garbage/no output here (re-confirmed 2026-10-14: a flash
+  verifier agent emitted pure noise). Planning/review: `tff/kimi-k3#high`.
 - Workers get: exact files, contracts, style rules; must run `cargo test -p <crate>`.
 - Reviewer gets: diff only + contract; returns issue list. Worker fixes.
 - Orchestrator commits after each green milestone. Concise conventional commits.

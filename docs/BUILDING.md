@@ -5,6 +5,12 @@ plain Rust with no native deps. The visual shell is the `crusade-desktop`
 Bevy binary in the same crate, gated behind the Cargo feature `bevy-ui`
 (so headless/CI builds of the client never pay for a graphics stack).
 
+> **Submodule gate.** `deps/cdk` (vendored cashu/cdk path deps) is a git
+> submodule; uninitialized, every cargo build/test fails with `error:
+> failed to get 'cashu' as a dependency`. Fresh clones must run
+> `git submodule update --init deps/cdk` (or clone `--recurse-submodules`)
+> before any cargo/trunk command.
+
 ## (a) Desktop
 
 ```console
@@ -91,7 +97,9 @@ then open the printed localhost URL (service workers need a secure context;
 `crusade-app/web/dist/`; build it standalone with `trunk build --release`
 (add `--public-url /kirk/` when targeting Pages).
 
-One-time setup for building locally:
+One-time setup for building locally — the submodule gate applies: run
+`git submodule update --init deps/cdk` before the first `trunk` command,
+then:
 
 ```console
 $ rustup target add wasm32-unknown-unknown
