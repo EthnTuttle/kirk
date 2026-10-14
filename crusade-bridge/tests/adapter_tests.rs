@@ -265,6 +265,219 @@ fn error_messages(result: &kirk::error::ValidationResult) -> Vec<String> {
     result.errors.iter().map(|e| e.message.clone()).collect()
 }
 
+// ---------- forced-switch fixture (multi-champion, mid-chain faint) ----------
+
+/// True while the engine owes `side` a forced switch (same probe the live
+/// DuelSession uses: legal actions degenerate to only-Switch).
+fn switch_pending(b: &Battle, side: u8) -> bool {
+    let legal = b.legal_actions(side);
+    !legal.is_empty() && legal.iter().all(|a| matches!(a, Action::Switch { .. }))
+}
+
+/// A fabricated battle whose engine transcript REQUIRES a forced switch:
+/// side 0 fields one Prince of Pride (lvl 50, rite 8 "Flail of Penance",
+/// MultiHit), side 1 fields two Squire Audrics (lvl 5, rite 1). The prince
+/// fells the first Audric mid-chain, which raises ForcedSwitchNeeded on
+/// side 1; the second Audric falls right after and decides it.
+struct SwitchFixture {
+    keys: [Keys; 2],
+    winner_side: u8,
+    events: Vec<NostrEvent>,
+    /// (index into `events`, declared turn, party_idx) of side 1's
+    /// forced-switch Move event, for the tamper variant.
+    switch_move: (usize, u32, u8),
+}
+
+fn build_forced_switch_fixture() -> SwitchFixture {
+    let keys = [Keys::generate(), Keys::generate()];
+    let tokens = [vec![mock_token(1)], vec![mock_token(2)]];
+    let hashes: [Vec<String>; 2] = [
+        tokens[0]
+            .iter()
+            .map(TokenCommitment::hash_single_token)
+            .collect(),
+        tokens[1]
+            .iter()
+            .map(TokenCommitment::hash_single_token)
+            .collect(),
+    ];
+    let challenge = sign(
+        CHALLENGE_KIND,
+        &ChallengeContent {
+            game_type: "crusade_battle".to_string(),
+            commitment_hashes: hashes[0].clone(),
+            game_parameters: serde_json::json!({"game": "deus-vult", "level": 50}),
+            expiry: None,
+            timeout_config: None,
+        },
+        &keys[0],
+        0,
+    );
+    let accept = sign(
+        CHALLENGE_ACCEPT_KIND,
+        &ChallengeAcceptContent {
+            challenge_id: challenge.id,
+            commitment_hashes: hashes[1].clone(),
+        },
+        &keys[1],
+        10,
+    );
+    let seed =
+        derive_battle_seed_from_reveal(&challenge.id.to_hex(), &accept.id.to_hex(), &[], &[])
+            .expect("event ids are 32-byte hex");
+    let parties = [
+        vec![mkchamp(101, 50, &[8])], // Prince of Pride: Flail of Penance
+        vec![mkchamp(1, 5, &[1]), mkchamp(1, 5, &[1])], // two Squire Audrics
+    ];
+
+    // Script through the real engine exactly as DuelSession drives it:
+    // normal turns pair both actions through apply_turn; a pending forced
+    // switch resolves through a lone apply_forced_switch (canonical side
+    // order 0 then 1) BEFORE the next pair can run — apply_turn itself
+    // rejects anything while a switch is owed.
+    let mut battle =
+        Battle::new(parties[0].clone(), parties[1].clone(), seed).expect("legal fixture battle");
+    let mut records: Vec<Vec<(usize, Action)>> = Vec::new();
+    let mut forced_seen = false;
+    while battle.winner.is_none() {
+        if switch_pending(&battle, 0) || switch_pending(&battle, 1) {
+            let s = u8::from(!switch_pending(&battle, 0));
+            let idx = (0..battle.sides[usize::from(s)].party.len())
+                .find(|&i| {
+                    battle.sides[usize::from(s)].alive(i)
+                        && i != battle.sides[usize::from(s)].active_idx
+                })
+                .expect("a pending forced switch has an alive replacement");
+            battle
+                .apply_forced_switch(s, idx as u8)
+                .expect("scripted forced switch resolves");
+            records.push(vec![(
+                usize::from(s),
+                Action::Switch {
+                    party_idx: idx as u8,
+                },
+            )]);
+            forced_seen = true;
+        } else {
+            let pair = (Action::Rite { slot: 0 }, Action::Rite { slot: 0 });
+            battle
+                .apply_turn(pair.0, pair.1)
+                .expect("scripted turn resolves");
+            records.push(vec![(0, pair.0), (1, pair.1)]);
+        }
+        assert!(
+            records.len() < 64,
+            "forced-switch fixture must terminate quickly"
+        );
+    }
+    assert!(
+        forced_seen,
+        "fixture battle must raise a forced switch mid-chain"
+    );
+    let winner_side = battle.winner.expect("scripted battle decided");
+
+    // Fabricate Move events. Record slots number 1..=N consecutively: a
+    // turn pair shares its slot number, a forced switch takes its own.
+    let mut events = vec![challenge.clone(), accept.clone()];
+    let mut prev = accept.id;
+    let mut secs = 20u64;
+    let mut reveal_done = [false; 2];
+    let mut switch_move = (0usize, 0u32, 0u8);
+    for (slot, group) in records.iter().enumerate() {
+        let turn = (slot + 1) as u32;
+        for &(side, action) in group {
+            let first = !reveal_done[side];
+            reveal_done[side] = true;
+            let ev = sign_move(
+                &keys[side],
+                prev,
+                secs,
+                turn,
+                action,
+                first.then(|| parties[side].clone()),
+                first.then(|| tokens[side].clone()),
+            );
+            if let (1, Action::Switch { party_idx }) = (group.len(), action) {
+                switch_move = (events.len(), turn, party_idx);
+            }
+            prev = ev.id;
+            secs += 10;
+            events.push(ev);
+        }
+    }
+    for k in &keys {
+        let ev = sign(
+            FINAL_KIND,
+            &FinalContent {
+                game_sequence_root: challenge.id,
+                commitment_method: None,
+                final_state: serde_json::json!({"winner_side": winner_side}),
+            },
+            k,
+            secs,
+        );
+        secs += 10;
+        events.push(ev);
+    }
+
+    SwitchFixture {
+        keys,
+        winner_side,
+        events,
+        switch_move,
+    }
+}
+
+// ---------- relay-order canon ----------
+
+/// Full verdict of validate_sequence, canonicalized so any relay collection
+/// order must compare equal: validity, winner, and the sorted set of error
+/// findings (event id + type + message).
+fn verdict(
+    adapter: &BattleAdapter,
+    events: &[NostrEvent],
+) -> (bool, Option<nostr::PublicKey>, Vec<String>) {
+    let r = adapter.validate_sequence(events).unwrap();
+    let mut findings: Vec<String> = r
+        .errors
+        .iter()
+        .map(|e| format!("{}::{:?}::{}", e.event_id, e.error_type, e.message))
+        .collect();
+    findings.sort();
+    (r.is_valid, r.winner, findings)
+}
+
+/// The orderings two relays would each produce independently: tail-first
+/// and a cross-interleave of the front/back halves of the poll window.
+fn relay_orderings(events: &[NostrEvent]) -> Vec<(&'static str, Vec<NostrEvent>)> {
+    let mut reversed = events.to_vec();
+    reversed.reverse();
+    let mid = events.len().div_ceil(2);
+    let (lo, hi) = (&events[..mid], &events[mid..]);
+    let mut interleaved = Vec::with_capacity(events.len());
+    for (i, e) in lo.iter().enumerate() {
+        interleaved.push(e.clone());
+        if let Some(e) = hi.get(i) {
+            interleaved.push(e.clone());
+        }
+    }
+    vec![("reversed", reversed), ("interleaved", interleaved)]
+}
+
+/// Every relay collection order must reach the input-order verdict's
+/// findings, byte-identical.
+fn assert_order_independent(events: &[NostrEvent]) {
+    let adapter = BattleAdapter;
+    let base = verdict(&adapter, events);
+    for (name, permuted) in relay_orderings(events) {
+        assert_eq!(
+            verdict(&adapter, &permuted),
+            base,
+            "{name} order changed the verdict"
+        );
+    }
+}
+
 // ---------- tests ----------
 
 /// Happy path: a full, honestly played 3-turn battle chain must validate,
@@ -413,4 +626,139 @@ fn decided_chain_without_finals_is_valid_but_incomplete() {
         adapter.determine_winner(events).unwrap(),
         Some(fx.keys[fx.winner_side as usize].public_key())
     );
+}
+
+/// Multi-champion chain whose engine transcript requires a forced switch
+/// mid-battle: the replay must thread the lone Switch record through
+/// apply_forced_switch (a turn pair would be engine-rejected while the
+/// switch is owed) and still reach the engine-decided winner.
+#[test]
+fn forced_switch_chain_replays_to_engine_winner() {
+    let fx = build_forced_switch_fixture();
+    let adapter = BattleAdapter;
+
+    let result = adapter.validate_sequence(&fx.events).unwrap();
+    assert!(
+        result.is_valid,
+        "honest forced-switch chain must validate: {:?}",
+        error_messages(&result)
+    );
+    assert_eq!(
+        fx.winner_side, 0,
+        "the level-50 prince must sweep two level-5 squires"
+    );
+    let expected = fx.keys[0].public_key();
+    assert_eq!(result.winner, Some(expected));
+    assert!(adapter.is_sequence_complete(&fx.events).unwrap());
+    assert_eq!(
+        adapter.determine_winner(&fx.events).unwrap(),
+        Some(expected)
+    );
+}
+
+/// Relay collection order must not matter: reversed and interleaved copies
+/// of honest chains (with and without a mid-chain forced switch) reach
+/// byte-identical verdicts.
+#[test]
+fn honest_chains_validate_identically_under_any_relay_order() {
+    let fx = build_fixture();
+    assert_order_independent(&fx.events);
+    let fx = build_forced_switch_fixture();
+    assert_order_independent(&fx.events);
+}
+
+/// Tamper: side 1's forced-switch record re-signed by side 0. Replay faces
+/// a side-0 action where canonical order requires side 1's forced switch —
+/// invalid, with identical findings under every relay order.
+#[test]
+fn forced_switch_record_signed_by_wrong_side_is_invalid() {
+    let fx = build_forced_switch_fixture();
+    let adapter = BattleAdapter;
+    let (idx, turn, party_idx) = fx.switch_move;
+
+    let mut tampered = fx.events.clone();
+    tampered[idx] = sign_move(
+        &fx.keys[0],
+        fx.events[idx - 1].id,
+        1000,
+        turn,
+        Action::Switch { party_idx },
+        None,
+        None,
+    );
+
+    let result = adapter.validate_sequence(&tampered).unwrap();
+    assert!(
+        !result.is_valid,
+        "wrong-side forced-switch record must not validate"
+    );
+    assert!(result.winner.is_none());
+    assert!(
+        result
+            .errors
+            .iter()
+            .any(|e| matches!(e.error_type, ValidationErrorType::InvalidSequence)),
+        "expected a sequencing error, got {:?}",
+        error_messages(&result)
+    );
+    assert!(!adapter.is_sequence_complete(&tampered).unwrap());
+    assert_eq!(adapter.determine_winner(&tampered).unwrap(), None);
+    assert_order_independent(&tampered);
+}
+
+/// Relay feeds can carry foreign events that reference chain ids (kirk's
+/// collector links moves by previous_event_id, which anyone can point at).
+/// Foreign pubkeys must be skipped silently — the honest verdict stands,
+/// with identical findings under every relay order.
+#[test]
+fn foreign_pubkey_events_are_skipped_silently() {
+    let fx = build_fixture();
+    let adapter = BattleAdapter;
+    let outsider = Keys::generate();
+    let mut events = fx.events.clone();
+
+    // A foreign move pointing into the chain, declaring a bogus turn.
+    let foreign_move = sign_move(
+        &outsider,
+        fx.events[1].id,
+        997,
+        99,
+        Action::Yield,
+        None,
+        None,
+    );
+    // A foreign move whose content is not even a MoveContent.
+    let foreign_garbage = sign(
+        MOVE_KIND,
+        &serde_json::json!({"bogus": true}),
+        &outsider,
+        998,
+    );
+    // A foreign Final event referencing this sequence root.
+    let foreign_final = sign(
+        FINAL_KIND,
+        &FinalContent {
+            game_sequence_root: fx.events[0].id,
+            commitment_method: None,
+            final_state: serde_json::json!({"impostor": true}),
+        },
+        &outsider,
+        999,
+    );
+    events.insert(0, foreign_garbage);
+    events.insert(events.len() / 2, foreign_final);
+    events.push(foreign_move);
+
+    let result = adapter.validate_sequence(&events).unwrap();
+    assert!(
+        result.is_valid,
+        "foreign noise must not sway an honest chain: {:?}",
+        error_messages(&result)
+    );
+    assert_eq!(
+        result.winner,
+        Some(fx.keys[fx.winner_side as usize].public_key())
+    );
+    assert!(adapter.is_sequence_complete(&events).unwrap());
+    assert_order_independent(&events);
 }

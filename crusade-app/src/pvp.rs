@@ -362,7 +362,9 @@ impl NetDuelDriver {
     /// Exchange FinalDigest with the peer, then — on verified agreement —
     /// sign the transcript attestation (if keys were supplied) and apply the
     /// Elo ladder result to `store`. Runs its protocol step exactly once:
-    /// calls after success are no-ops.
+    /// the FinalDigest exchange is single-shot, a mid-exchange failure
+    /// desynchronizes the pair and ENDS the session (never retry after an
+    /// error), and calls after success are no-ops.
     ///
     /// M6-wire simplifications, to unwind when the kirk challenge flow lands:
     /// ratings move on a verified FinalDigest alone (mutual attestation
@@ -378,8 +380,10 @@ impl NetDuelDriver {
             ));
         };
         self.session.finalize(&*self.transport).await?;
-        // The transport exchange is consumed on success; from here on a
-        // retry only redoes the local steps (attestation, rating).
+        // Single-shot: the FinalDigest exchange was just consumed, so the
+        // error return above ends the session rather than allowing a retry
+        // (the peer may already have read our digest). On success the flag
+        // below makes every later call a no-op.
         self.finalized = true;
         if let Some(keys) = &self.keys {
             let att = Attestation {

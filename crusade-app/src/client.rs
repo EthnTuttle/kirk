@@ -34,6 +34,8 @@ const FOE_SIDE: u8 = 1;
 pub(crate) const LOG_CAP: usize = 200;
 /// How many log lines a snapshot exposes.
 pub(crate) const LOG_TAIL: usize = 8;
+/// Cap for the raw event queue a snapshot drains (UI animations only).
+const FRESH_EVENTS_CAP: usize = 512;
 /// Practice battles use a fixed seed; real duels arrive via commit-reveal.
 const PRACTICE_SEED: [u8; 32] = [0x50; 32];
 /// Deterministic practice theme team (ids into the species table).
@@ -405,7 +407,7 @@ impl ClientGame {
                 && acts.iter().all(|a| matches!(a, Action::Switch { .. }))
         };
         self.push_log(lines);
-        self.fresh_events.borrow_mut().extend(events);
+        self.push_fresh_events(events);
         if let Some(w) = result {
             self.on_battle_end(w)?;
         } else if my_forced {
@@ -518,9 +520,21 @@ impl ClientGame {
         let events = b.events()[from..].to_vec();
         let lines = render_events(b, &events, &mut actives, MY_SIDE);
         self.push_log(lines);
-        self.fresh_events.borrow_mut().extend(events);
+        self.push_fresh_events(events);
         self.phase = Phase::InBattle;
         Ok(())
+    }
+
+    /// Queue raw events for the next snapshot's take-drain (UI animation
+    /// queue only). Growth is capped: beyond FRESH_EVENTS_CAP the oldest
+    /// undrained events are dropped so only the newest 512 survive.
+    fn push_fresh_events(&mut self, events: Vec<BattleEvent>) {
+        let mut queue = self.fresh_events.borrow_mut();
+        queue.extend(events);
+        let excess = queue.len().saturating_sub(FRESH_EVENTS_CAP);
+        if excess > 0 {
+            queue.drain(..excess);
+        }
     }
 
     fn push_log(&mut self, lines: Vec<String>) {

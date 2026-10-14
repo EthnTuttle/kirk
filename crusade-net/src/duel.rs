@@ -298,7 +298,10 @@ impl DuelSession {
         Ok(true)
     }
 
-    /// Exchange FinalDigest after battle end; verify equality.
+    /// Exchange FinalDigest after battle end; verify equality. Single-shot:
+    /// the exchange is consumed by the first call, so a mid-exchange failure
+    /// desynchronizes the pair (the peer may already have read our digest)
+    /// and ends the session — callers must NOT retry after an error.
     pub async fn finalize(&mut self, t: &dyn Transport) -> Result<(), NetError> {
         let hash = self.transcript_hash;
         t.send(&NetMsg::FinalDigest { hash }).await?;
