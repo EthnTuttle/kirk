@@ -20,6 +20,7 @@ pub mod transport;
 pub mod iroh_transport;
 
 pub mod nostr_transport;
+pub mod zaps;
 
 pub use duel::*;
 pub use msg::*;
