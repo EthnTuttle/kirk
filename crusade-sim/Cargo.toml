@@ -7,3 +7,9 @@ license = "MIT"
 
 [dependencies]
 crusade-core = { path = "../crusade-core" }
+rand = { version = "0.8", features = ["small_rng"] }
+rand_chacha = "0.3"
+
+[[bin]]
+name = "crusade-sim"
+path = "src/main.rs"
