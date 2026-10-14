@@ -193,6 +193,17 @@ pub struct ViewSnapshot {
     pub fresh_events: Vec<BattleEvent>,
 }
 
+/// The honor-system ladder Elo line for the menu and lobby screens
+/// (SHIPPING.md limitation 4: self-scored until mint arbitration ships —
+/// the "(self-kept)" honesty suffix stays). `None` (no rating in the store
+/// yet) reads as unranked. One helper so both screens agree verbatim.
+pub fn ladder_line(rating: Option<u64>) -> String {
+    match rating {
+        Some(r) => format!("Ladder: {r} (self-kept)"),
+        None => "Ladder: unranked".to_string(),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ClientInput {
     OpenRoster,
@@ -235,4 +246,15 @@ pub enum ClientInput {
     /// Async bridge report (lobby session / duel lifecycle). Drives the
     /// synchronous lobby view-state; net handles never enter the client.
     LobbyNet(LobbyNet),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ladder_line_marks_a_rating_self_kept_and_absent_as_unranked() {
+        assert_eq!(ladder_line(Some(1200)), "Ladder: 1200 (self-kept)");
+        assert_eq!(ladder_line(None), "Ladder: unranked");
+    }
 }

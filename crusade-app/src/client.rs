@@ -23,7 +23,7 @@ use crusade_data::RosterStore;
 use nostr::Keys;
 
 use crate::policy::greedy_action;
-use crate::pvp::record_ladder_result;
+use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
     BattleChampionView, CampaignView, ChampionCard, ClientInput, LobbyNet, LobbyStage, LobbyView,
     Phase, RiteCard, ViewSnapshot,
@@ -230,6 +230,21 @@ impl ClientGame {
     /// the lobby session from this + [`ClientGame::lobby_relays`]).
     pub fn net_identity(&self) -> Option<Keys> {
         self.nostr_keys.clone()
+    }
+
+    /// The honor-system ladder Elo, read from the store key
+    /// [`record_ladder_result`] writes (SHIPPING.md limitation 4). `None`
+    /// (key absent or unparseable) is the unranked state the menu/lobby
+    /// render. Exposed as an accessor like [`Self::roster_cards`] rather
+    /// than a [`ViewSnapshot`] field: the net-duel driver builds its own
+    /// snapshot literal, and the rating is menu/lobby chrome, not battle
+    /// data.
+    pub fn ladder_rating(&self) -> Option<u64> {
+        self.store
+            .setting(LADDER_RATING_KEY)
+            .ok()
+            .flatten()
+            .and_then(|s| s.parse::<u64>().ok())
     }
 
     /// The relay list the bridge connects the lobby to: the store's
@@ -1382,6 +1397,30 @@ mod lobby_tests {
                 event_id: hex::encode([9u8; 32]),
             })
             .is_err());
+    }
+
+    #[test]
+    fn ladder_rating_flows_from_the_store_unrated_until_written() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_eq!(
+            game.ladder_rating(),
+            None,
+            "absent key reads unranked (menu/lobby render 'Ladder: unranked')"
+        );
+
+        game.store()
+            .set_setting(LADDER_RATING_KEY, "1212")
+            .expect("rating writable");
+        assert_eq!(game.ladder_rating(), Some(1212));
+
+        game.store()
+            .set_setting(LADDER_RATING_KEY, "not-a-rating")
+            .expect("rating writable");
+        assert_eq!(
+            game.ladder_rating(),
+            None,
+            "unparseable rating degrades to unranked, never to a crash"
+        );
     }
 
     #[test]

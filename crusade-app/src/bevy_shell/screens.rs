@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use crusade_app::{ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot};
+use crusade_app::{ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot};
 
 use crate::battle;
 use crate::state::{
@@ -36,9 +36,13 @@ pub fn rebuild_ui(
     for root in &roots {
         commands.entity(root).despawn(); // children go with it
     }
-    let (snap, roster) = {
+    let (snap, roster, ladder) = {
         let game = shell.game.lock().expect("game mutex poisoned");
-        (game.snapshot(), game.roster_cards())
+        (
+            game.snapshot(),
+            game.roster_cards(),
+            game.ladder_rating(),
+        )
     };
     // Net-duel mailbox state takes precedence over the client phase (the
     // client sits in BattleSetup for the duel's duration). The driver's
@@ -65,7 +69,7 @@ pub fn rebuild_ui(
             _ => (battle::battle_screen(&mut commands, &duel), false),
         },
         _ => match snap.phase {
-            Phase::Menu => (menu_screen(&mut commands), true),
+            Phase::Menu => (menu_screen(&mut commands, ladder), true),
             Phase::Roster => (roster_screen(&mut commands, &roster), false),
             Phase::BattleSetup => (
                 vec![text_node(
@@ -82,7 +86,7 @@ pub fn rebuild_ui(
             }
             Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap), true),
-            Phase::Lobby => (lobby_screen(&mut commands, &snap), false),
+            Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
         },
     };
     commands
@@ -165,7 +169,7 @@ pub(crate) fn log_panel(cmd: &mut Commands, title: &str, lines: &[String]) -> En
 
 // ---------- Menu ----------
 
-fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
+fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
     vec![
         text_node(cmd, "DEUS VULT".into(), style::title_font(), style::GOLD),
         text_node(
@@ -182,6 +186,7 @@ fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
         action_button(cmd, "Tournament of Virtue".into(), ClientInput::EnterLobby),
+        text_node(cmd, ladder_line(ladder), style::small_font(), style::DIM),
         support_button(cmd),
         text_node(
             cmd,
@@ -398,7 +403,7 @@ fn over_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
 
 /// The lobby screen: identity + heralds, the notice line, the open
 /// challenges with per-challenge accept buttons, and the control row.
-fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot, ladder: Option<u64>) -> Vec<Entity> {
     let Some(lobby) = snap.lobby.as_ref() else {
         // The phase guarantees a lobby view; stay defensive, never panic.
         return vec![text_node(
@@ -427,6 +432,7 @@ fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
             style::small_font(),
             style::GOLD_DIM,
         ),
+        text_node(cmd, ladder_line(ladder), style::small_font(), style::DIM),
         text_node(
             cmd,
             if lobby.relays.is_empty() {
