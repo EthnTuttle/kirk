@@ -1,5 +1,5 @@
 [workspace]
-members = ["crusade-core", "crusade-data", "crusade-net", "crusade-sim", "crusade-app"]
+members = ["crusade-core", "crusade-data", "crusade-net", "crusade-sim", "crusade-app", "crusade-bridge"]
 exclude = ["cli-card-game", "deps"]
 resolver = "2"
 

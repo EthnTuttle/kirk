@@ -1155,6 +1155,22 @@ name = "crusade-app"
 version = "0.1.0"
 
 [[package]]
+name = "crusade-bridge"
+version = "0.1.0"
+dependencies = [
+ "crusade-core",
+ "crusade-net",
+ "hex",
+ "kirk",
+ "nostr 0.35.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "crusade-core"
 version = "0.1.0"
 dependencies = [
