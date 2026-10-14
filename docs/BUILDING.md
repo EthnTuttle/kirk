@@ -107,8 +107,9 @@ $ cargo install trunk
 ```
 
 The trunk entry point is [`crusade-app/web/index.html`](../crusade-app/web/index.html);
-it builds the same `crusade-desktop` bin with `--features bevy-ui` and
-injects the wasm-bindgen loader. Serve it with:
+`crusade-app/web/Trunk.toml` anchors trunk ≥0.21's config discovery (older
+trunk inferred the html entry; 0.21+ hard-errors without a config file). Match
+the CI-pinned trunk version (`web-pages.yml`) locally to avoid drift. Serve it with:
 
 ```console
 $ cd crusade-app/web

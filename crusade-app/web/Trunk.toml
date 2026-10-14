@@ -1,0 +1,10 @@
+# Trunk ≥0.21 hard-errors without a config file ("Unable to find any Trunk
+# configuration") when run from this directory, because there is no Cargo.toml
+# here to fall back on. This file is the config anchor for both CI
+# (.github/workflows/web-pages.yml) and local `trunk serve/build`.
+# The /kirk/ public-url prefix is passed by CI via --public-url (still a valid
+# CLI flag in 0.21); local builds stay rooted at "/" by default.
+trunk-version = ">=0.21"
+
+[build]
+target = "index.html"

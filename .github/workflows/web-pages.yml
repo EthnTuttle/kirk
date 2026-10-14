@@ -40,8 +40,11 @@ jobs:
       - name: Install cargo-binstall
         run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
+      # Pinned: unpinned `cargo binstall trunk` tracked latest and broke this
+      # workflow when trunk 0.21 changed config discovery (hard error without
+      # a Trunk.toml). Bump deliberately.
       - name: Install trunk (prebuilt binary via cargo-binstall)
-        run: cargo binstall --no-confirm trunk
+        run: cargo binstall --no-confirm trunk@0.21.14
 
       - name: Build web bundle (release wasm + js + PWA shell)
         working-directory: crusade-app/web
