@@ -202,7 +202,7 @@ mod tests {
         let mut names: Vec<&str> = CALLINGS.iter().map(|c| c.name).collect();
         for n in &names {
             assert!(!n.is_empty());
-            assert!(n.chars().all(|ch| ch.is_ascii()));
+            assert!(n.is_ascii());
         }
         names.sort_unstable();
         names.dedup();

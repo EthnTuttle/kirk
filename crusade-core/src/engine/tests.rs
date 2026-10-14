@@ -3,7 +3,6 @@
 
 use super::*;
 use crate::data;
-use crate::types::*;
 
 fn mkchamp(species_id: u16, level: u8, rite_ids: &[u16]) -> ChampionInstance {
     let sp = data::species_by_id(species_id).expect("fixture species");
@@ -125,7 +124,7 @@ fn terminates_with_winner_under_500_turns() {
             }
             turns += 1;
         };
-        assert_eq!(outcome.is_some(), true, "seed {seed} should terminate");
+        assert!(outcome.is_some(), "seed {seed} should terminate");
     }
 }
 

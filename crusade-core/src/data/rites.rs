@@ -569,7 +569,7 @@ mod tests {
     fn names_nonempty_ascii() {
         for r in RITES {
             assert!(!r.name.is_empty());
-            assert!(r.name.chars().all(|c| c.is_ascii()), "{}", r.name);
+            assert!(r.name.is_ascii(), "{}", r.name);
         }
     }
 

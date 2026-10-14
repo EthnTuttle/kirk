@@ -311,9 +311,9 @@ mod tests {
     fn names_and_lore_nonempty_ascii() {
         for sp in SPECIES {
             assert!(!sp.name.is_empty());
-            assert!(sp.name.chars().all(|c| c.is_ascii()), "{}", sp.name);
+            assert!(sp.name.is_ascii(), "{}", sp.name);
             assert!(!sp.lore.is_empty(), "{} has empty lore", sp.name);
-            assert!(sp.lore.chars().all(|c| c.is_ascii()), "{}", sp.name);
+            assert!(sp.lore.is_ascii(), "{}", sp.name);
         }
     }
 
