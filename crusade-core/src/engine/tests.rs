@@ -418,8 +418,7 @@ fn battle_rejects_champion_with_zero_resolve() {
         vec![audric(20, &[])],
         [1u8; 32],
     )
-    .err()
-    .expect("zero-resolve champion must not enter battle");
+    .expect_err("zero-resolve champion must not enter battle");
     assert_eq!(
         err,
         BattleError::IllegalChampion(1, InstanceError::NotBattleReady)
