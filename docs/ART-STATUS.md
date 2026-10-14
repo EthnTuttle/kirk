@@ -109,17 +109,14 @@ after any in-flight shell work touching `bevy_shell/`).
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
   oldest-first on pushes touching `crusade-*/**`.
 - Merged today: B1 lobby `02b8303` → wasm-panic fix round → B2 `401b11a`
-  (Tournament of Virtue, review SHIP) → B4 Elo display `4b86dd4`.
-- **B3b (post-duel attestation + "offer alms to the victor" zap CTA) was
-  IN FLIGHT when agents were paused.** Its author session
-  `ses_ec46412acffeakFA8kTsu6Fw5z` left UNCOMMITTED edits in the working tree:
-  `crusade-app/Cargo.toml`, `src/bevy_shell/{main,screens,state}.rs`,
-  `src/pvp.rs`, `Cargo.lock`. Git-safety rule: B-card workers never
-  `git add/commit`; nothing half-built is committed. On resume: either (a) the
-  origin box still has the session → it will report, then review
-  (tff/kimi-k3#high) + commit; or (b) on a new machine, diff the dirty tree,
-  seal or discard it deliberately, and re-dispatch B3b from
-  `docs/V1-SHIP-PLAN.md` if discarded.
+  (Tournament of Virtue, review SHIP) → B4 Elo display `4b86dd4` →
+  art handoff `41fad0f` → **B3b attestation + alms CTA `67e35b8`
+  (tff/kimi-k3#high review: SHIP).** The paused B3b session completed after
+  the first push and was sealed per this section's plan (a). **v1.1 surface
+  is feature-complete; working tree clean.** B3b review minors on record:
+  native desktop alms arms are compile-gated via the wasm check only;
+  `nostr_duel` relay test is pre-existing flaky; lobby commands drop
+  post-settle by design.
 - The 9 `kirk::cashu` test panics remain pre-existing/out-of-scope (v1.2 mint).
 - Known cosmetic debt: `screens.rs` menu subtitle tofu glyphs (embedded font
   lacks emoji); RECV_TIMEOUT liveness flake; mutex `.expect()` hardening —
