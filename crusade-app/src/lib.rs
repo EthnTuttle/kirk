@@ -21,6 +21,7 @@
 //! and net duels unchanged.
 
 pub mod client;
+pub mod lobby;
 pub mod persist;
 pub mod policy;
 pub mod pvp;

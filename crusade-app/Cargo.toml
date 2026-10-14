@@ -16,10 +16,17 @@ crusade-bridge = { path = "../crusade-bridge" }
 crusade-core = { path = "../crusade-core" }
 crusade-data = { path = "../crusade-data" }
 crusade-net = { path = "../crusade-net" }
+# Workspace-internal kirk crate (already in this crate's graph via
+# crusade-bridge): lobby reuses its 9259/9260/9261 builders & parsers.
+kirk = { path = ".." }
 hex = "0.4"
 nostr = "0.35"
+# Relay client for the lobby; already declared by crusade-net (same version,
+# wasm-safe websockets) — no new external package enters the tree.
+nostr-sdk = "0.35"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sha2 = "0.10"
 thiserror = "1.0"
 bevy = { version = "0.18", optional = true, default-features = false, features = [
     "default_app",
@@ -43,3 +50,5 @@ required-features = ["bevy-ui"]
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
+# Embedded relay fixture for lobby tests (same dev-dep crusade-net uses).
+nostr-relay-builder = "0.35"
