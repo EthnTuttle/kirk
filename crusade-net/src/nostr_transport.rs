@@ -159,7 +159,8 @@ fn decode_event(
     netmsg_from_json(json.as_bytes())
 }
 
-#[async_trait]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl Transport for NostrTransport {
     async fn send(&self, msg: &NetMsg) -> Result<(), NetError> {
         let builder = encode(msg, &self.secret_key, self.peer, &self.battle_id)?;

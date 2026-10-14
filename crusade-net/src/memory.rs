@@ -28,7 +28,8 @@ pub fn memory_pair() -> (MemoryTransport, MemoryTransport) {
     )
 }
 
-#[async_trait]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl Transport for MemoryTransport {
     async fn send(&self, msg: &NetMsg) -> Result<(), NetError> {
         self.tx.send(msg.clone()).map_err(|_| NetError::Closed)

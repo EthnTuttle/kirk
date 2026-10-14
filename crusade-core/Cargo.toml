@@ -16,3 +16,8 @@ rand_chacha = "0.3" # ChaCha8Rng: stable across platforms, wasm-safe
 [dev-dependencies]
 proptest = "1.0"
 serde_json = "1.0"
+
+# wasm32-unknown-unknown: proptest's rand 0.9 pulls getrandom 0.3, which
+# needs its `wasm_js` backend to compile wasm test/check builds.
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }

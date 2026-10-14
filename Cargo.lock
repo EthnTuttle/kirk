@@ -1183,6 +1183,7 @@ dependencies = [
 name = "crusade-core"
 version = "0.1.0"
 dependencies = [
+ "getrandom 0.3.3",
  "proptest",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -1197,6 +1198,7 @@ version = "0.1.0"
 dependencies = [
  "automerge",
  "crusade-core",
+ "getrandom 0.4.3",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
