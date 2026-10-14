@@ -86,7 +86,8 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
 - [x] M0: plan + workspace scaffold, domain type contract in crusade-core.
 - [x] M1-core: 42 rites, 19 species, 25 callings, effectiveness wheel,
       deterministic engine; 53 tests; review pass 1 + adjudicated fixes.
-- [ ] M1-tail: crusade-sim harness AI-v-AI seeded duels + balance fuzzing.
+- [x] M1-tail: crusade-sim harness (fuzz + duel). Balance debt noted:
+      Cantor Sabina underperforms across levels; revisit in M6 content pass.
 - [ ] M2: crusade-net transport + nostr fallback + iroh; transcripts.
 - [ ] M3: crusade-data CRDT store + sync.
 - [ ] M4: cashu/kirk binding: commit-reveal battle seeding, wagers.
