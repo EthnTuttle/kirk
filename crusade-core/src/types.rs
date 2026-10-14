@@ -53,15 +53,20 @@ pub enum Sin {
     Greed,
 }
 
-/// Defender typing: Champions bear virtues (up to two), sin-spawn bear one Sin.
+/// Creature typing: Champions bear virtues (up to two), sin-spawn bear one Sin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DefenderTypes {
+pub enum Typing {
     Virtues([Option<Virtue>; 2]),
     Sin(Sin),
 }
 
-/// Type of a Rite. `None` = typeless (never STAB, chart 1x).
-pub type RiteType = Option<Virtue>;
+/// Type of a Rite. `Typeless` = never STAB, chart 1x.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RiteType {
+    Typeless,
+    Virtue(Virtue),
+    Sin(Sin),
+}
 
 // ---------- Stats ----------
 
@@ -199,8 +204,8 @@ pub struct LearnEntry {
 pub struct SpeciesBase {
     pub id: u16,
     pub name: &'static str,
-    /// One or two virtues; second None when single-typed.
-    pub virtues: [Option<Virtue>; 2],
+    /// Champion: Typing::Virtues([Some(v), maybe Second]); sin-spawn: Typing::Sin.
+    pub typing: Typing,
     pub base: Stats,
     pub learnset: &'static [LearnEntry],
     /// xp needed to reach level n is `XP_SLOPE * n^3 / XP_DIV`.

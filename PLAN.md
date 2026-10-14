@@ -31,9 +31,11 @@ Tone rules (avoid heresy, glorify God):
 - **Virtues (7)**: Humility, Charity, Chastity, Diligence, Patience, Temperance,
   Kindness. Each opposes one Sin: Pride, Envy, Lust, Sloth, Wrath, Gluttony,
   Greed. Champions have 1 (rarely 2) virtues. Sin-spawn have 1 sin.
-- **Effectiveness chart**: virtue rites deal 2x vs opposed sin, 0.5x vs two
-  "resisted" virtues per a fixed wheel, otherwise 1x. Chart lives in
-  `crusade-core/src/data/chart.rs` as a static table.
+- **Effectiveness chart**: virtue rites deal 2x vs their opposed sin (and vice
+  versa); among virtues a fixed 7-wheel makes each virtue hit the next one 2x,
+  resisted by itself and the previous one (0.5x). Dual typing multiplies.
+  Exact percent rules documented on `data::effectiveness`; table in
+  `crusade-core/src/data/chart.rs`. Sin-typed rites exist for sin-spawn.
 - **Stats** (per Champion species): Resolve (HP), Valour (Atk), Piety (SpA),
   Guard (Def), Aegis (SpD), Alacrity (Spe). Base stats 30..130.
 - **Instances**: level 1-50, XP curve (medium-slow), IV-equivalent

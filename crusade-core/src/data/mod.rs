@@ -25,9 +25,16 @@ pub fn calling_by_id(id: u8) -> Option<&'static Calling> {
     callings::CALLINGS.iter().find(|c| c.id == id)
 }
 
-/// Effectiveness percent: 0, 50, 100, or 200.
-/// `att` = rite typing (None = typeless => always 100).
-pub fn effectiveness(att: RiteType, def: DefenderTypes) -> u8 {
+/// Effectiveness percent (25..=400 via dual-type product; see chart rules).
+///
+/// Wheel order W = [Humility, Charity, Chastity, Diligence, Patience,
+/// Temperance, Kindness]. For Virtue(V) at index i vs virtue defender D:
+///   D==V -> 50; D==W[(i+1)%7] -> 200; D==W[(i+6)%7] -> 50; else 100.
+/// Dual defenders multiply (p1*p2/100).
+/// Virtue(V) vs Sin(s): 200 iff V.opposed_sin()==s else 100.
+/// Sin(s) vs Virtues: 200 iff any virtue V has V.opposed_sin()==s else 100.
+/// Sin(s) vs Sin(d): 50 if same else 100. Typeless: always 100.
+pub fn effectiveness(att: RiteType, def: Typing) -> u8 {
     chart::effectiveness(att, def)
 }
 
