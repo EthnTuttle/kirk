@@ -91,6 +91,7 @@ impl Battle {
                 .map(|b| b.typing)
                 .expect("validated");
             let eff = data::effectiveness(rite.rite_type, def_typing);
+            // reserved for future immunities; the current chart never yields 0
             if eff == 0 {
                 self.emit(BattleEvent::Immune { side: s as u8 });
                 continue;
@@ -136,6 +137,11 @@ impl Battle {
         dmg: u16,
         rng: &mut BattleRng,
     ) {
+        // battle decided by the hit itself: no recoil/drain/ailments after
+        // BattleEnded (recoil double-KO must not flip the winner).
+        if self.winner.is_some() {
+            return;
+        }
         for sec in rite.secondaries {
             match *sec {
                 Secondary::Ailment {
@@ -168,7 +174,7 @@ impl Battle {
                         continue;
                     }
                     let turns = match volatile_ {
-                        Volatile::Confusion => rng.range_u8(2, 5),
+                        Volatile::Confusion => rng.range_u8(2, 4),
                         // cleared at EOT / on switch
                         Volatile::Flinch | Volatile::SeedLeech => u8::MAX,
                     };
@@ -226,7 +232,8 @@ impl Battle {
                     if dmg == 0 || !self.sides[s].alive(self.sides[s].active_idx) {
                         continue;
                     }
-                    self.heal_active(s, dmg * pct as u16 / 100);
+                    // u32 widening: dmg * pct can exceed u16::MAX.
+                    self.heal_active(s, ((dmg as u32 * pct as u32) / 100) as u16);
                 }
                 Secondary::Recoil { pct } => {
                     if dmg == 0 || !self.sides[s].alive(self.sides[s].active_idx) {
@@ -292,6 +299,8 @@ impl Battle {
         }
     }
 
+    // `s` legitimately indexes parallel arrays in the switch/yield loops.
+    #[allow(clippy::needless_range_loop)]
     pub fn apply_turn(&mut self, a: Action, b: Action) -> Result<Vec<BattleEvent>, BattleError> {
         if self.winner.is_some() {
             return Err(BattleError::BattleOver);

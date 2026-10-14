@@ -65,6 +65,11 @@ fn rite(slot: u8) -> Action {
     Action::Rite { slot }
 }
 
+// Calibration constants for the scripted tests below: seeds chosen (via a
+// one-off scan over 0..=40) so the seeded rolls land as the test requires.
+const RECOIL_SEED: u8 = 21;
+const SLEEP_SWITCH_SEED: u8 = 5;
+
 #[test]
 fn determinism_same_seed_same_log() {
     let script = |seed: u8| {
@@ -328,4 +333,176 @@ fn no_panic_across_random_actions_many_seeds() {
             );
         }
     }
+}
+
+#[test]
+fn recoil_double_ko_keeps_first_decided_winner() {
+    // Side 1 KOs side 0's last champion with Glorious Burden (rite 19,
+    // Recoil 33%); the attacker sits at 1 hp so its own recoil would finish
+    // it too. The first faint must stand: exactly one BattleEnded in the
+    // whole log, winner == 1 (the defender fainted first).
+    let mut romilda = mkchamp(10, 20, &[19]); // learns Glorious Burden at 16
+    romilda.current_resolve = 1;
+    let mut b = Battle::new(vec![audric(1, &[])], vec![romilda], [RECOIL_SEED; 32])
+        .expect("legal fixture battle");
+    let ev = b.apply_turn(rite(0), rite(0)).expect("turn resolves");
+    let battle_ended: Vec<&BattleEvent> = b
+        .events()
+        .iter()
+        .filter(|e| matches!(e, BattleEvent::BattleEnded { .. }))
+        .collect();
+    assert_eq!(
+        battle_ended.len(),
+        1,
+        "exactly one BattleEnded expected: {:?}",
+        b.events()
+    );
+    assert!(
+        matches!(battle_ended[0], BattleEvent::BattleEnded { winner: 1 }),
+        "winner must be the side whose foe fainted first: {:?}",
+        b.events()
+    );
+    assert!(ev
+        .iter()
+        .any(|e| matches!(e, BattleEvent::BattleEnded { winner: 1 })));
+    assert_eq!(b.winner, Some(1));
+}
+
+#[test]
+fn slumber_wears_off_when_champion_leaves_field() {
+    // Side 0 Mabel casts Litany of Stillness (rite 5) on side 1's Audric;
+    // next turn side 1 switches to its reserve. The outgoing champion's
+    // Slumber must be cleared and AilmentEnded emitted.
+    let mut b = battle(
+        vec![mkchamp(2, 20, &[5])],
+        vec![audric(20, &[]), audric(20, &[])],
+        SLEEP_SWITCH_SEED,
+    );
+    let ev1 = b.apply_turn(rite(0), rite(0)).unwrap();
+    assert!(
+        ev1.iter().any(|e| matches!(
+            e,
+            BattleEvent::AilmentApplied {
+                side: 1,
+                ailment: Ailment::Slumber
+            }
+        )),
+        "litany must land on turn 1 with this seed: {ev1:?}"
+    );
+    assert_eq!(b.sides[1].party[0].ailment, Some(Ailment::Slumber));
+    let ev2 = b
+        .apply_turn(rite(0), Action::Switch { party_idx: 1 })
+        .unwrap();
+    assert_eq!(
+        b.sides[1].party[0].ailment, None,
+        "outgoing sleeper must wake on leaving the field"
+    );
+    assert!(
+        ev2.iter().any(|e| matches!(
+            e,
+            BattleEvent::AilmentEnded {
+                side: 1,
+                ailment: Ailment::Slumber
+            }
+        )),
+        "AilmentEnded(Slumber) expected on switch-out: {ev2:?}"
+    );
+}
+
+#[test]
+fn battle_rejects_champion_with_zero_resolve() {
+    let mut dead = audric(20, &[]);
+    dead.current_resolve = 0;
+    let err = Battle::new(
+        vec![audric(20, &[]), dead],
+        vec![audric(20, &[])],
+        [1u8; 32],
+    )
+    .err()
+    .expect("zero-resolve champion must not enter battle");
+    assert_eq!(
+        err,
+        BattleError::IllegalChampion(1, InstanceError::NotBattleReady)
+    );
+}
+
+/// Fixed mixed script (rites + switches) run twice with the same seed; the
+/// FULL serialized battle state must be identical after every turn, not
+/// just the emitted events.
+#[test]
+fn replay_full_state_identical() {
+    let run = || {
+        let mut b = battle(
+            vec![audric(20, &[2]), audric(20, &[])],
+            vec![mkchamp(3, 20, &[1, 6]), mkchamp(2, 20, &[1, 4])],
+            42,
+        );
+        let script: [(Action, Action); 8] = [
+            (rite(0), rite(0)),
+            (rite(1), rite(0)),
+            (Action::Switch { party_idx: 1 }, rite(1)),
+            (rite(0), rite(0)),
+            (Action::Switch { party_idx: 0 }, rite(0)),
+            (rite(0), rite(1)),
+            (rite(1), rite(0)),
+            (rite(0), rite(0)),
+        ];
+        let mut snaps = Vec::with_capacity(script.len());
+        for (a, act) in script {
+            b.apply_turn(a, act).expect("scripted turn must resolve");
+            snaps.push(serde_json::to_string(&b).expect("battle serializes"));
+        }
+        snaps
+    };
+    assert_eq!(run(), run());
+}
+
+/// FNV-1a 64-bit over bytes; test-local helper for the golden digest.
+fn fnv1a64(bytes: &[u8]) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for &b in bytes {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    h
+}
+
+/// Golden digest of a fixed 12-turn script under seed [7;32] (includes a
+/// slumber attempt and stage changes). INTENTIONAL logic changes must
+/// recalibrate the constant (run with --nocapture to see the new value).
+#[test]
+fn golden_digest() {
+    const GOLDEN_DIGEST: u64 = 0xcc09aa9f2b276900;
+    // eprintln calibration line; keep it so recalibration stays easy.
+    let mut b = Battle::new(
+        vec![mkchamp(12, 30, &[5, 1, 26]), audric(20, &[2])],
+        vec![mkchamp(3, 12, &[1, 6]), mkchamp(3, 12, &[1, 6])],
+        [7u8; 32],
+    )
+    .expect("legal fixture battle");
+    let script: [(Action, Action); 12] = [
+        (rite(0), rite(1)), // slumber attempt; Bastien Oath of Patience
+        (rite(2), rite(0)),
+        (rite(0), rite(0)),
+        (Action::Switch { party_idx: 1 }, rite(1)),
+        (rite(1), rite(0)), // Audric: Steady Ward stage change
+        (rite(0), rite(1)),
+        (rite(0), rite(0)),
+        (Action::Switch { party_idx: 0 }, rite(0)),
+        (rite(0), rite(0)),
+        (rite(1), rite(0)),
+        (rite(0), rite(0)),
+        (rite(2), rite(1)),
+    ];
+    for (a, act) in script {
+        b.apply_turn(a, act).expect("scripted turn must resolve");
+    }
+    let mut blob = serde_json::to_string(&b).expect("battle serializes");
+    blob.push_str(&serde_json::to_string(b.events()).expect("events serialize"));
+    let h = fnv1a64(blob.as_bytes());
+    eprintln!("golden_digest = {h:#018x}");
+    assert_eq!(
+        h, GOLDEN_DIGEST,
+        "battle logic changed; if intentional, recalibrate GOLDEN_DIGEST"
+    );
 }

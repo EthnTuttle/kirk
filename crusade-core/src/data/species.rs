@@ -195,7 +195,11 @@ pub static SPECIES: &[SpeciesBase] = &[
         name: "Prince of Pride",
         typing: Typing::Sin(Sin::Pride),
         base: Stats { resolve: 60, valour: 55, piety: 55, guard: 50, aegis: 50, alacrity: 45 },
-        learnset: &[LearnEntry { level: 1, rite_id: 8 }],
+        learnset: &[
+            LearnEntry { level: 1, rite_id: 8 },
+            LearnEntry { level: 1, rite_id: 41 },
+            LearnEntry { level: 8, rite_id: 42 },
+        ],
         xp_slope: 4,
         xp_div: 5,
         lore: "A crowned shadow that whispers to every champion that he alone deserves the victory.",
@@ -407,7 +411,7 @@ mod tests {
                 "no species for sin {s:?}"
             );
         }
-        for sp in SPECIES.iter().filter(|s| s.id >= 102) {
+        for sp in SPECIES.iter().filter(|s| s.id >= 101) {
             let Typing::Sin(own) = sp.typing else {
                 panic!("{} is not Sin-typed", sp.name);
             };
@@ -425,6 +429,35 @@ mod tests {
             for r in sin_rites {
                 assert_eq!(r.rite_type, RiteType::Sin(own), "{}: {}", sp.name, r.name);
             }
+        }
+    }
+
+    #[test]
+    fn base_stats_in_range_and_sin_spawn_have_two_sin_rites() {
+        for sp in SPECIES {
+            for stat in [
+                sp.base.resolve,
+                sp.base.valour,
+                sp.base.piety,
+                sp.base.guard,
+                sp.base.aegis,
+                sp.base.alacrity,
+            ] {
+                assert!(
+                    (20..=130).contains(&stat),
+                    "{} base stat {stat} out of 20..=130",
+                    sp.name
+                );
+            }
+        }
+        for sp in SPECIES.iter().filter(|s| (101..=107).contains(&s.id)) {
+            let n = sp
+                .learnset
+                .iter()
+                .filter_map(|e| rite_by_id(e.rite_id))
+                .filter(|r| matches!(r.rite_type, RiteType::Sin(_)))
+                .count();
+            assert!(n >= 2, "{} has {n} Sin-typed rites, need >= 2", sp.name);
         }
     }
 

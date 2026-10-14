@@ -37,7 +37,7 @@ Tone rules (avoid heresy, glorify God):
   Exact percent rules documented on `data::effectiveness`; table in
   `crusade-core/src/data/chart.rs`. Sin-typed rites exist for sin-spawn.
 - **Stats** (per Champion species): Resolve (HP), Valour (Atk), Piety (SpA),
-  Guard (Def), Aegis (SpD), Alacrity (Spe). Base stats 30..130.
+  Guard (Def), Aegis (SpD), Alacrity (Spe). Base stats 20..130.
 - **Instances**: level 1-50, XP curve (medium-slow), IV-equivalent
   "Grace" (0-15 per stat), EV-equivalent "Devotion" (0-63 per stat, 130 total),
   4 Rite slots, 25 natures -> 5x5 "Callings" (+10%/-10% two stats).
@@ -84,16 +84,17 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
 ## 6. Milestones
 
 - [x] M0: plan + workspace scaffold, domain type contract in crusade-core.
-- [ ] M1: core data tables (9 launch Champions?, 30 rites, chart) + engine with
-      tests; sim harness AI-v-AI runs seeded duels.  (workers A,B; review)
+- [x] M1-core: 42 rites, 19 species, 25 callings, effectiveness wheel,
+      deterministic engine; 53 tests; review pass 1 + adjudicated fixes.
+- [ ] M1-tail: crusade-sim harness AI-v-AI seeded duels + balance fuzzing.
 - [ ] M2: crusade-net transport + nostr fallback + iroh; transcripts.
 - [ ] M3: crusade-data CRDT store + sync.
 - [ ] M4: cashu/kirk binding: commit-reveal battle seeding, wagers.
 - [ ] M5: crusade-app: wasm shell + sim UI slices; mobile shells.
 - [ ] M6: campaign content (sin-spawn bosses, Chapter Houses), PvP ladder.
 
-Launch roster target: 12 Champions, 40 rites, 7 sin-bosses. Numbers live in
-data tables, not code.
+Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
+7 sin-bosses. Numbers live in data tables, not code.
 
 ## 7. Orchestration protocol
 

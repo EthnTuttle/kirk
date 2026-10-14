@@ -148,7 +148,7 @@ pub enum Ailment {
 /// Volatile (non-persistent) conditions; cleared on switch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Volatile {
-    Confusion, // 1-4 turns, 33% self-hit at power 40 typeless
+    Confusion, // 2-4 action attempts, 33% self-hit at power 40 typeless
     Flinch,    // this turn only
     SeedLeech, // drains 1/16 to opponent per turn
 }
@@ -280,7 +280,12 @@ pub struct ComputedStats {
     pub alacrity: u16,
 }
 
-/// Validate an instance against species data (levels, caps, learnset legality).
+/// Validate an instance against species data. This checks BATTLE-ENTRY
+/// legality: levels, grace/devotion caps, learnset legality, rites carrying
+/// full zeal, and resolve that is full-or-partial-but-nonzero (the
+/// `current_resolve > 0` half is enforced by `Battle::new` via
+/// [`InstanceError::NotBattleReady`]). Mid-campaign persistence (wounded
+/// champions, spent zeal) uses partial validation elsewhere.
 pub fn validate_instance(
     _c: &ChampionInstance,
     _species: &SpeciesBase,
@@ -347,4 +352,6 @@ pub enum InstanceError {
     IllegalRite(u16),
     #[error("resolve exceeds computed maximum")]
     ResolveOverflow,
+    #[error("current_resolve is 0")]
+    NotBattleReady,
 }

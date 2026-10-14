@@ -1,9 +1,8 @@
-//! Rite table. Worker A fills (40 rites, ids 1..=40).
+//! Rite table. Worker A fills (42 rites, ids 1..=42).
 //!
 //! Ids 1..=8 are contract-fixed. Ids 9..=28 round out the champion arsenal
-//! (three rites per virtue, more Typeless utility); ids 29..=40 are Sin-typed
-//! rites for sin-spawn, two for each of Envy, Lust, Sloth, Wrath, Gluttony,
-//! and Greed.
+//! (three rites per virtue, more Typeless utility); ids 29..=42 are Sin-typed
+//! rites for sin-spawn, two for each of the seven sins.
 
 use crate::types::*;
 
@@ -530,6 +529,28 @@ pub static RITES: &[Rite] = &[
             chance_pct: 100,
         }],
     },
+    Rite {
+        id: 41,
+        name: "Blade of Vainglory",
+        rite_type: RiteType::Sin(Sin::Pride),
+        category: RiteCategory::Martial,
+        power: 60,
+        accuracy: 95,
+        zeal: 15,
+        priority: 0,
+        secondaries: &[],
+    },
+    Rite {
+        id: 42,
+        name: "Tirade of Scorn",
+        rite_type: RiteType::Sin(Sin::Pride),
+        category: RiteCategory::Spiritual,
+        power: 50,
+        accuracy: 100,
+        zeal: 20,
+        priority: 0,
+        secondaries: &[],
+    },
 ];
 
 #[cfg(test)]
@@ -537,8 +558,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn rites_sorted_unique_ids_1_to_40() {
-        assert_eq!(RITES.len(), 40);
+    fn rites_sorted_unique_ids_1_to_42() {
+        assert_eq!(RITES.len(), 42);
         for (i, r) in RITES.iter().enumerate() {
             assert_eq!(r.id, i as u16 + 1);
         }

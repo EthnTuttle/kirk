@@ -8,6 +8,11 @@ impl Battle {
     }
 
     pub(crate) fn finish(&mut self, winner: u8) {
+        // first faint decides the battle; later KOs (e.g. recoil in the same
+        // rite) must not flip the winner or emit a second BattleEnded.
+        if self.winner.is_some() {
+            return;
+        }
         self.winner = Some(winner);
         self.emit(BattleEvent::BattleEnded { winner });
     }
@@ -17,10 +22,16 @@ impl Battle {
     }
 
     /// Subtract resolve from side `t`'s active; faint/victory chain.
+    ///
+    /// Once the battle is decided the hp state is still updated, but no
+    /// events are emitted and no faint chain runs (double-KO guard).
     pub(crate) fn apply_damage(&mut self, t: usize, amount: u16) {
         let side = &mut self.sides[t];
         let c = side.active_mut();
         c.current_resolve = c.current_resolve.saturating_sub(amount);
+        if self.winner.is_some() {
+            return;
+        }
         if c.current_resolve == 0 {
             let idx = side.active_idx as u8;
             self.emit(BattleEvent::ChampionYielded {
@@ -55,6 +66,17 @@ impl Battle {
             || idx == self.sides[s].active_idx
         {
             return Err(BattleError::BadSwitch);
+        }
+        // Sleep wears off when a champion leaves the field (its counter lives
+        // on ActiveState, which is reset; leaving the ailment behind would
+        // keep it Slumbering forever on switch-back).
+        let out = self.sides[s].active_idx;
+        if self.sides[s].party[out].ailment == Some(Ailment::Slumber) {
+            self.sides[s].party[out].ailment = None;
+            self.emit(BattleEvent::AilmentEnded {
+                side: s as u8,
+                ailment: Ailment::Slumber,
+            });
         }
         self.sides[s].active_idx = idx;
         self.sides[s].active_state = ActiveState::default();

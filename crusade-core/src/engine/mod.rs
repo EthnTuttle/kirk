@@ -11,7 +11,8 @@
 //!    (base -> STAB -> effectiveness -> roll 85..=100 -> crit; min 1 unless
 //!    immune) -> secondaries (chance-gated, declared order).
 //! 6. End of turn (side 0 then 1): Brand max/16, Venom max/8, SeedLeech
-//!    drain max/16 to opponent; volatile timers tick; Flinch removed.
+//!    drain max/16 to opponent; Flinch volatile removed (confusion/leech
+//!    timers are handled at gate/seeded drains).
 //! 7. Faints: ChampionYielded -> ForcedSwitchNeeded (pending flag) or
 //!    BattleEnded. turn += 1.
 //!
@@ -22,6 +23,8 @@
 //! - Confusion self-hit: power 40, Typeless, Martial vs own Guard, staged,
 //!   no STAB, no variance, no crit.
 //! - Sleep counter (1..=3 turns) rolled at application time.
+//! - Sleep wears off when a champion leaves the field (switch or forced
+//!   switch): the outgoing champion's Slumber ailment is cleared.
 //! - Ailment chip min 1.
 
 use serde::{Deserialize, Serialize};
@@ -204,6 +207,12 @@ impl Battle {
                 ))?;
                 validate_instance(c, sp)
                     .map_err(|e| BattleError::IllegalChampion((i * 6 + j) as u8, e))?;
+                if c.current_resolve == 0 {
+                    return Err(BattleError::IllegalChampion(
+                        (i * 6 + j) as u8,
+                        InstanceError::NotBattleReady,
+                    ));
+                }
             }
         }
         Ok(Self {
