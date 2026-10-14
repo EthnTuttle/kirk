@@ -156,18 +156,38 @@ pub enum Volatile {
 /// Secondary effect attached to a Rite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Secondary {
-    Ailment { ailment: Ailment, chance_pct: u8 },
-    Volatile { volatile_: Volatile, chance_pct: u8 },
+    Ailment {
+        ailment: Ailment,
+        chance_pct: u8,
+    },
+    Volatile {
+        volatile_: Volatile,
+        chance_pct: u8,
+    },
     /// +/- stages (-6..=6) on a stat of the *target*.
-    StageOnTarget { stat: BattleStat, delta: i8, chance_pct: u8 },
+    StageOnTarget {
+        stat: BattleStat,
+        delta: i8,
+        chance_pct: u8,
+    },
     /// +/- stages on the *user*.
-    StageOnSelf { stat: BattleStat, delta: i8, chance_pct: u8 },
+    StageOnSelf {
+        stat: BattleStat,
+        delta: i8,
+        chance_pct: u8,
+    },
     /// Heal user for pct of max Resolve.
-    HealSelf { pct: u8 },
+    HealSelf {
+        pct: u8,
+    },
     /// Drain pct of damage dealt.
-    Drain { pct: u8 },
+    Drain {
+        pct: u8,
+    },
     /// Recoil pct of damage dealt.
-    Recoil { pct: u8 },
+    Recoil {
+        pct: u8,
+    },
     /// Multi-hit 2..=5 times.
     MultiHit,
     /// Increased crit stage (+1).
@@ -261,8 +281,56 @@ pub struct ComputedStats {
 }
 
 /// Validate an instance against species data (levels, caps, learnset legality).
-pub fn validate_instance(_c: &ChampionInstance, _species: &SpeciesBase) -> Result<(), InstanceError> {
-    Ok(()) // Worker A implements.
+pub fn validate_instance(
+    _c: &ChampionInstance,
+    _species: &SpeciesBase,
+) -> Result<(), InstanceError> {
+    if _c.level == 0 || _c.level > MAX_LEVEL {
+        return Err(InstanceError::BadLevel(_c.level));
+    }
+    for g in [
+        _c.grace.resolve,
+        _c.grace.valour,
+        _c.grace.piety,
+        _c.grace.guard,
+        _c.grace.aegis,
+        _c.grace.alacrity,
+    ] {
+        if g > GRACE_MAX {
+            return Err(InstanceError::BadGrace(g));
+        }
+    }
+    let devotions = [
+        _c.devotion.resolve,
+        _c.devotion.valour,
+        _c.devotion.piety,
+        _c.devotion.guard,
+        _c.devotion.aegis,
+        _c.devotion.alacrity,
+    ];
+    for d in devotions {
+        if d > DEVOTION_MAX {
+            return Err(InstanceError::BadDevotion(d));
+        }
+    }
+    let devotion_total: u16 = devotions.iter().map(|&d| d as u16).sum();
+    if devotion_total > DEVOTION_TOTAL_MAX {
+        return Err(InstanceError::BadDevotionTotal(devotion_total));
+    }
+    for slot in _c.rites.iter().flatten() {
+        let learnable = _species
+            .learnset
+            .iter()
+            .any(|e| e.rite_id == slot.rite_id && e.level <= _c.level);
+        let max_zeal = crate::data::rite_by_id(slot.rite_id).map(|r| r.zeal);
+        if !learnable || max_zeal != Some(slot.zeal_left) {
+            return Err(InstanceError::IllegalRite(slot.rite_id));
+        }
+    }
+    if _c.current_resolve > crate::data::compute_stats(_c, _species).max_resolve {
+        return Err(InstanceError::ResolveOverflow);
+    }
+    Ok(())
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
