@@ -31,9 +31,9 @@ use crate::AppError;
 const MY_SIDE: u8 = 0;
 const FOE_SIDE: u8 = 1;
 /// Ring buffer bound for the human-readable log.
-const LOG_CAP: usize = 200;
+pub(crate) const LOG_CAP: usize = 200;
 /// How many log lines a snapshot exposes.
-const LOG_TAIL: usize = 8;
+pub(crate) const LOG_TAIL: usize = 8;
 /// Practice battles use a fixed seed; real duels arrive via commit-reveal.
 const PRACTICE_SEED: [u8; 32] = [0x50; 32];
 /// Deterministic practice theme team (ids into the species table).
@@ -138,8 +138,8 @@ impl ClientGame {
             self.phase,
             Phase::InBattle | Phase::ForcedSwitchSelect | Phase::BattleOver
         ) {
-            snap.me = Some(champion_view(b, MY_SIDE));
-            snap.foe = Some(champion_view(b, FOE_SIDE));
+            snap.me = Some(champion_view(b, MY_SIDE, MY_SIDE));
+            snap.foe = Some(champion_view(b, FOE_SIDE, MY_SIDE));
             snap.turn = b.turn;
             snap.my_rites = rite_cards(b.sides[usize::from(MY_SIDE)].active());
             snap.can_switch_to = b
@@ -396,7 +396,7 @@ impl ClientGame {
         let foe = greedy_action(b, FOE_SIDE);
         let mut events = b.apply_turn(mine, foe)?;
         events.extend(resolve_foe_forced(b)?);
-        let lines = render_events(b, &events, &mut actives);
+        let lines = render_events(b, &events, &mut actives, MY_SIDE);
         let result = b.winner;
         let my_forced = {
             let acts = b.legal_actions(MY_SIDE);
@@ -516,7 +516,7 @@ impl ClientGame {
         let from = b.events().len();
         b.apply_forced_switch(MY_SIDE, party_idx)?;
         let events = b.events()[from..].to_vec();
-        let lines = render_events(b, &events, &mut actives);
+        let lines = render_events(b, &events, &mut actives, MY_SIDE);
         self.push_log(lines);
         self.fresh_events.borrow_mut().extend(events);
         self.phase = Phase::InBattle;
@@ -634,19 +634,22 @@ fn practice_champion(species_id: u16, level: u8) -> Result<ChampionInstance, App
 
 // ---------- View helpers (pure rendering over battle/store state) ----------
 
-fn species_name(c: &ChampionInstance) -> String {
+pub(crate) fn species_name(c: &ChampionInstance) -> String {
     data::species_by_id(c.species_id).map_or_else(
         || format!("Champion #{}", c.species_id),
         |sp| sp.name.to_string(),
     )
 }
 
-fn champion_view(b: &Battle, side: u8) -> BattleChampionView {
+/// Render one side's active champion. `local` is the side the UI controls:
+/// it gets `ours: true`. Practice/campaign pass MY_SIDE; the net driver
+/// passes its own side (a joiner sees the duel from side 1).
+pub(crate) fn champion_view(b: &Battle, side: u8, local: u8) -> BattleChampionView {
     let s = &b.sides[usize::from(side)];
     let c = s.active();
     let sp = data::species_by_id(c.species_id);
     BattleChampionView {
-        ours: side == MY_SIDE,
+        ours: side == local,
         species_name: sp.map_or_else(|| format!("Champion #{}", c.species_id), |s| s.name.into()),
         level: c.level,
         current_resolve: c.current_resolve,
@@ -665,7 +668,7 @@ fn champion_view(b: &Battle, side: u8) -> BattleChampionView {
     }
 }
 
-fn rite_cards(c: &ChampionInstance) -> Vec<RiteCard> {
+pub(crate) fn rite_cards(c: &ChampionInstance) -> Vec<RiteCard> {
     c.rites
         .iter()
         .enumerate()
@@ -798,8 +801,16 @@ fn volatile_struck(v: Volatile) -> &'static str {
 
 // ---------- Event -> log line rendering ----------
 
-fn render_events(b: &Battle, events: &[BattleEvent], actives: &mut [usize; 2]) -> Vec<String> {
-    events.iter().map(|e| render_event(b, e, actives)).collect()
+pub(crate) fn render_events(
+    b: &Battle,
+    events: &[BattleEvent],
+    actives: &mut [usize; 2],
+    local: u8,
+) -> Vec<String> {
+    events
+        .iter()
+        .map(|e| render_event(b, e, actives, local))
+        .collect()
 }
 
 fn party_name(b: &Battle, side: u8, party_idx: usize) -> String {
@@ -816,10 +827,11 @@ fn active_name(b: &Battle, side: u8, actives: &[usize; 2]) -> String {
 
 /// Render one event as a short human line. `actives` tracks each side's
 /// active party index across the batch; `Switched` updates it so following
-/// lines attribute names correctly. Unknown future variants degrade to
-/// their Debug form.
+/// lines attribute names correctly. `local` is the UI-controlled side, used
+/// for the "you" phrasing on forced switches. Unknown future variants
+/// degrade to their Debug form.
 #[allow(unreachable_patterns)] // forward-compat: future BattleEvent variants hit the catch-all
-fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2]) -> String {
+fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2], local: u8) -> String {
     match e {
         BattleEvent::TurnStart { turn } => format!("— Turn {turn} —"),
         BattleEvent::RiteUsed { side, rite_id } => {
@@ -919,7 +931,7 @@ fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2]) -> String
             )
         }
         BattleEvent::ForcedSwitchNeeded { side } => {
-            if *side == MY_SIDE {
+            if *side == local {
                 "Choose your next champion.".to_string()
             } else {
                 "The foe must send out another champion.".to_string()
