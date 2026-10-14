@@ -94,8 +94,14 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
       transcripts deferred to M4 (kirk binding).
 - [x] M3: crusade-data automerge roster store (merge/save/load tested).
       Wire-sync of doc bytes over crusade-net deferred to app milestone.
-- [ ] M4: cashu/kirk binding: commit-reveal battle seeding, wagers.
-- [ ] M5: crusade-app: wasm shell + sim UI slices; mobile shells.
+- [x] M4: crusade-bridge: seed derivation from revealed C values, kind-9265
+      dual attestation of transcript digests. Defers: full kirk Game-trait
+      adapter for mint-side replay validation; wager escrow wiring.
+- [x] M5a: crusade-app client core: frontend-agnostic ClientGame API,
+      serde view snapshots, input handling, headless AI duels (wasm-ready,
+      no native deps).
+- [ ] M5b: Bevy visual shell + wasm32/mobile targets (needs wasm32 target
+      installed and mobile SDKs; big standalone effort).
 - [ ] M6: campaign content (sin-spawn bosses, Chapter Houses), PvP ladder.
 
 Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),

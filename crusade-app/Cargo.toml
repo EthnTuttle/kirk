@@ -2,5 +2,16 @@
 name = "crusade-app"
 version = "0.1.0"
 edition = "2021"
-description = "Bevy client: android, ios, wasm32 web. Added at M5."
+description = "Client core for Deus Vult: frontend-agnostic game client API (roster, headless duels, view snapshots). Bevy shell + wasm/mobile targets land in M5b."
 license = "MIT"
+
+[dependencies]
+crusade-core = { path = "../crusade-core" }
+crusade-data = { path = "../crusade-data" }
+crusade-net = { path = "../crusade-net" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
