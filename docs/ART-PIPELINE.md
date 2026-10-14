@@ -1,5 +1,11 @@
 # Art Pipeline — Pixel Art for Deus Vult
 
+> **2026-10-14 update:** the bake-off ran, winners picked, and the working
+> state moved to **`docs/ART-STATUS.md`** (live doc) + `tools/artbake/`
+> (scripts) + `art/roster-staging/` (quantized candidates). The "nothing
+> built / Retro Diffusion" verdict below is historical context; PayPerQ
+> `nano-banana-2-1` (128×128 production canvas) + `gpt-image-1.5` won instead.
+
 Status: researched plan, nothing built. Tone/IP constraints from `PLAN.md`
 §1–§2 bind every sprite: reverent, no mockery, sin-bosses as Spenser/Dante
 grotesque allegories, zero Nintendo-derivative designs, original names.
