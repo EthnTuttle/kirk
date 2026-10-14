@@ -596,7 +596,8 @@ fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2]) -> String
             format!("{}'s rite missed.", active_name(b, *side, actives))
         }
         BattleEvent::Immune { side } => {
-            format!("{} is unaffected.", active_name(b, 1 - *side, actives))
+            let other = 1usize.saturating_sub(*side as usize) as u8;
+            format!("{} is unaffected.", active_name(b, other, actives))
         }
         BattleEvent::Damage {
             side,

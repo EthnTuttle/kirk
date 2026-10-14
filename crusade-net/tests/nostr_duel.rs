@@ -79,23 +79,31 @@ struct DriveOut {
     turns: u32,
 }
 
+/// Resolve pending forced switches in CANONICAL side order: side 0's switch
+/// round (announce/await + digest exchange) completes fully before side
+/// 1's begins, so the two sides' TurnDigest pairings never cross-fire.
+async fn resolve_switches<T: Transport>(
+    s: &mut DuelSession,
+    side: u8,
+    t: &T,
+) -> Result<(), NetError> {
+    for owed in 0..2u8 {
+        while let Some(idx) = forced_target(s.battle(), owed) {
+            let applied = if owed == side {
+                s.announce_forced_switch(t, idx).await?
+            } else {
+                s.await_forced_switch(t).await?
+            };
+            debug_assert!(applied, "pending switch for side {owed} must apply");
+        }
+    }
+    Ok(())
+}
+
 async fn drive<T: Transport>(mut s: DuelSession, side: u8, t: &T) -> Result<DriveOut, NetError> {
     let mut turns = 0u32;
     while s.battle().winner.is_none() {
-        loop {
-            let mut progressed = false;
-            if let Some(idx) = forced_target(s.battle(), side) {
-                if s.announce_forced_switch(t, idx).await? {
-                    progressed = true;
-                }
-            }
-            if s.await_forced_switch(t).await? {
-                progressed = true;
-            }
-            if !progressed {
-                break;
-            }
-        }
+        resolve_switches(&mut s, side, t).await?;
         if s.battle().winner.is_some() {
             break;
         }

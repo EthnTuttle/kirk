@@ -35,6 +35,21 @@ fn json_err(e: serde_json::Error) -> StoreError {
     StoreError::Json(e.to_string())
 }
 
+/// Input cap for `load_bytes`/`merge_bytes`: anything larger is rejected
+/// before automerge ever sees it (a hostile doc would otherwise burn memory
+/// and CPU inside `AutoCommit::load`).
+const MAX_DOC_BYTES: usize = 8 * 1024 * 1024;
+
+/// Cap on entries returned by `list_champions`.
+const MAX_LISTED: usize = 10_000;
+
+fn reject_oversized(bytes: &[u8]) -> Result<(), StoreError> {
+    if bytes.len() > MAX_DOC_BYTES {
+        return Err(StoreError::Automerge("doc too large".to_string()));
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub struct RosterStore {
     doc: AutoCommit,
@@ -105,10 +120,18 @@ impl RosterStore {
     }
 
     pub fn list_champions(&self) -> Result<Vec<(String, ChampionInstance)>, StoreError> {
-        let mut out = Vec::with_capacity(self.doc.length(&self.champions));
+        // Poisoned entries (bad JSON, wrong value type) are omitted rather
+        // than failing the whole listing; direct `get_champion` stays strict.
+        // The list itself is capped so an inflated map can't exhaust memory.
+        let mut out = Vec::with_capacity(self.doc.length(&self.champions).min(MAX_LISTED));
         for id in self.doc.keys(&self.champions) {
-            let c = self.get_champion(&id)?;
+            let Ok(c) = self.get_champion(&id) else {
+                continue;
+            };
             out.push((id, c));
+            if out.len() >= MAX_LISTED {
+                break;
+            }
         }
         Ok(out)
     }
@@ -166,15 +189,27 @@ impl RosterStore {
 
     /// Load a document previously produced by `save_bytes`.
     pub fn load_bytes(bytes: &[u8]) -> Result<Self, StoreError> {
+        reject_oversized(bytes)?;
         let doc = AutoCommit::load(bytes).map_err(am_err)?;
         Self::bootstrap(doc)
     }
 
     /// Merge a peer's document bytes (both forks then compare equal).
     pub fn merge_bytes(&mut self, peer: &[u8]) -> Result<(), StoreError> {
+        reject_oversized(peer)?;
         let mut peer_doc = AutoCommit::load(peer).map_err(am_err)?;
         self.doc.merge(&mut peer_doc).map_err(am_err)?;
         Ok(())
+    }
+
+    /// Test-only backdoor: write an arbitrary string into the champions map
+    /// (bypassing JSON validation) so tests can craft poisoned entries.
+    #[cfg(test)]
+    #[doc(hidden)]
+    pub fn __put_raw_champion(&mut self, id: &str, json: &str) {
+        self.doc
+            .put(&self.champions, id, json)
+            .expect("test-only raw put");
     }
 }
 
@@ -411,5 +446,40 @@ mod tests {
         assert_eq!(s.add_item("shards", -10).unwrap(), 0);
         assert_eq!(s.inventory().unwrap(), vec![("shards".to_string(), 0u64)]);
         assert_eq!(s.add_item("shards", i64::MIN).unwrap(), 0);
+    }
+
+    /// 9 MiB of (pseudo-random) bytes must be refused before automerge
+    /// parsing, from both the load and merge entry points.
+    #[test]
+    fn oversized_docs_rejected() {
+        let mut big = vec![0u8; 9 * 1024 * 1024];
+        // xorshift32 fill — content is irrelevant, size gate fires first.
+        let mut x = 0x9E3779B9u32;
+        for b in big.iter_mut() {
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            *b = x as u8;
+        }
+        let want = StoreError::Automerge("doc too large".to_string());
+        assert_eq!(RosterStore::load_bytes(&big).unwrap_err(), want);
+        let mut s = RosterStore::new();
+        assert_eq!(s.merge_bytes(&big).unwrap_err(), want);
+    }
+
+    /// A map holding both valid champions and poisoned entries must list the
+    /// good ones; direct get on a poisoned id still errors.
+    #[test]
+    fn poisoned_champion_entries_are_skipped() {
+        let mut s = RosterStore::new();
+        let good = mkchamp(1, 10, &[1]);
+        let good_id = s.add_champion(&good).unwrap();
+        s.__put_raw_champion("bad-json", "{not a champion");
+        s.__put_raw_champion("bad-shape", "12345");
+
+        let listed = s.list_champions().unwrap();
+        assert_eq!(listed, vec![(good_id, good)]);
+        assert!(s.get_champion("bad-json").is_err());
+        assert!(s.get_champion("bad-shape").is_err());
     }
 }

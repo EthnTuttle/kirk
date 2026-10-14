@@ -34,10 +34,12 @@ const MAX_STREAM_RETRIES: usize = 3;
 
 /// Lazily materialized receive path: ONE relay subscription per transport.
 /// The `broadcast::Receiver` is created BEFORE the REQ so no matching event
-/// can land while the subscription is being registered.
+/// can land while the subscription is being registered. `seen` persists
+/// across recv calls so relay-redelivered events never resurface.
 struct RecvState {
     sub_id: SubscriptionId,
     rx: broadcast::Receiver<RelayPoolNotification>,
+    seen: HashSet<EventId>,
 }
 
 pub struct NostrTransport {
@@ -189,6 +191,7 @@ impl Transport for NostrTransport {
                         *guard = Some(RecvState {
                             sub_id: output.val,
                             rx,
+                            seen: HashSet::new(),
                         });
                         break;
                     }
@@ -211,7 +214,6 @@ impl Transport for NostrTransport {
 
         let deadline = Instant::now() + RECV_TIMEOUT;
         let mut stream_retries = 0usize;
-        let mut seen: HashSet<EventId> = HashSet::new();
         loop {
             let now = Instant::now();
             if now >= deadline {
@@ -244,7 +246,7 @@ impl Transport for NostrTransport {
                     if subscription_id != st.sub_id || event.pubkey != self.peer {
                         continue;
                     }
-                    if !seen.insert(event.id) {
+                    if !st.seen.insert(event.id) {
                         continue;
                     }
                     match decode_event(&event, &self.secret_key, self.my_pubkey, &self.battle_id) {

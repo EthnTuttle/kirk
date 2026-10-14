@@ -67,8 +67,8 @@ pub struct ViewSnapshot {
     pub turn: u32,
     pub my_rites: Vec<RiteCard>,
     pub can_switch_to: Vec<String>, // roster-party indices we may switch to
-    pub log_tail: Vec<String>,    // human-readable renderings of recent events
-    pub battle_result: Option<u8>, // Some(winner) when over
+    pub log_tail: Vec<String>,      // human-readable renderings of recent events
+    pub battle_result: Option<u8>,  // Some(winner) when over
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }
@@ -79,9 +79,15 @@ pub enum ClientInput {
     CloseToMenu,
     /// Start practice duel vs built-in policy AI with the first `party`
     /// roster champions at a given level.
-    StartPractice { level: u8 },
-    PickRite { slot: u8 },
-    PickSwitch { party_idx: u8 },
+    StartPractice {
+        level: u8,
+    },
+    PickRite {
+        slot: u8,
+    },
+    PickSwitch {
+        party_idx: u8,
+    },
     Concede,
     /// After BattleOver: clear back to menu.
     AcknowledgeResult,

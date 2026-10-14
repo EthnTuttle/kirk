@@ -89,28 +89,38 @@ fn forced_target(b: &Battle, side: u8) -> Option<u8> {
     None
 }
 
+/// Resolve pending forced switches in CANONICAL side order: side 0's switch
+/// round (announce/await + digest exchange) completes fully before side
+/// 1's begins, so the two sides' TurnDigest pairings never cross-fire.
+async fn resolve_switches<T: Transport>(
+    s: &mut DuelSession,
+    side: u8,
+    t: &T,
+) -> Result<u32, NetError> {
+    let mut announced = 0u32;
+    for owed in 0..2u8 {
+        while let Some(idx) = forced_target(s.battle(), owed) {
+            let applied = if owed == side {
+                s.announce_forced_switch(t, idx).await?
+            } else {
+                s.await_forced_switch(t).await?
+            };
+            debug_assert!(applied, "pending switch for side {owed} must apply");
+            if owed == side {
+                announced += 1;
+            }
+        }
+    }
+    Ok(announced)
+}
+
 /// Play to completion: legal rite slot 0 policy; forced-switch rounds via
-/// the announce/await pair; FinalDigest exchange at the end.
+/// the announce/await pair in canonical side order; FinalDigest at the end.
 async fn drive<T: Transport>(mut s: DuelSession, side: u8, t: &T) -> Result<DriveOut, NetError> {
     let mut turns = 0u32;
     let mut announced = 0u32;
     while s.battle().winner.is_none() {
-        // Resolve pending forced switches (either side) before the next turn.
-        loop {
-            let mut progressed = false;
-            if let Some(idx) = forced_target(s.battle(), side) {
-                if s.announce_forced_switch(t, idx).await? {
-                    announced += 1;
-                    progressed = true;
-                }
-            }
-            if s.await_forced_switch(t).await? {
-                progressed = true;
-            }
-            if !progressed {
-                break;
-            }
-        }
+        announced += resolve_switches(&mut s, side, t).await?;
         if s.battle().winner.is_some() {
             break;
         }
@@ -187,6 +197,78 @@ async fn forced_switch_protocol() {
     );
     assert_eq!(out0.session.battle().winner, Some(0));
     assert_eq!(out1.session.battle().winner, Some(0));
+}
+
+/// The ruling assertion for switch-round digests: forced-switch events are
+/// folded into the rolling transcript hash at switch time, so both
+/// replicas' transcripts agree IMMEDIATELY after the switch round — no
+/// deferral to battle end. Reuses the forced_switch_protocol fixture.
+#[tokio::test]
+async fn forced_switch_round_syncs_transcripts() {
+    let party_a = vec![mkchamp(101, 50, &[8])];
+    let party_b = vec![mkchamp(1, 5, &[1]), mkchamp(1, 5, &[1])];
+    let (mut s0, mut s1, t0, mut t1) = duel_setup(party_a, party_b, [7; 32]);
+
+    fn rite0(s: &DuelSession, side: u8) -> Action {
+        s.battle()
+            .legal_actions(side)
+            .into_iter()
+            .find(|a| matches!(a, Action::Rite { .. }))
+            .unwrap_or(Action::Yield)
+    }
+
+    // Play turns until side1 owes a forced switch (the Prince's Flail of
+    // Penance KOs a level-5 Audric while its mate waits in the party).
+    while forced_target(s1.battle(), 1).is_none() && s0.battle().winner.is_none() {
+        let a0 = rite0(&s0, 0);
+        let a1 = rite0(&s1, 1);
+        let s1_turn = tokio::spawn(async move { s1.run_turn(&t1, a1).await.map(|_| (s1, t1)) });
+        s0.run_turn(&t0, a0).await.expect("side0 turn");
+        (s1, t1) = s1_turn.await.expect("side1 join").expect("side1 turn");
+    }
+    assert!(
+        forced_target(s1.battle(), 1).is_some(),
+        "fixture must raise a forced switch for side1 before battle end"
+    );
+    assert_eq!(
+        s0.transcript_hash(),
+        s1.transcript_hash(),
+        "turn digests kept transcripts in sync so far"
+    );
+
+    // The switch round: side1 announces (party idx 0 is the fainted active —
+    // first legal switch target), side0 awaits. Canonical side order is
+    // trivially satisfied: only side 1 owes a switch.
+    let idx = forced_target(s1.battle(), 1).expect("pending switch");
+    let s1_announce =
+        tokio::spawn(async move { s1.announce_forced_switch(&t1, idx).await.map(|_| (s1, t1)) });
+    assert!(
+        s0.await_forced_switch(&t0).await.expect("side0 await"),
+        "side0 must apply side1's announced switch"
+    );
+    let (s1, t1) = s1_announce
+        .await
+        .expect("side1 join")
+        .expect("side1 announce");
+
+    // Transcripts must agree RIGHT NOW, before another turn runs or the
+    // battle ends — the switch events were digested by both replicas.
+    assert_eq!(
+        s0.transcript_hash(),
+        s1.transcript_hash(),
+        "transcripts must agree immediately after the forced-switch round"
+    );
+    assert!(s0.battle().winner.is_none(), "battle still running");
+
+    // Both sides must still complete and finalize cleanly afterwards.
+    let s1_drive = tokio::spawn(async move { drive(s1, 1, &t1).await });
+    let out0 = drive(s0, 0, &t0).await.expect("side0 drive");
+    let out1 = s1_drive.await.expect("side1 join").expect("side1 drive");
+    assert_eq!(
+        out0.session.transcript_hash(),
+        out1.session.transcript_hash()
+    );
+    assert_eq!(out0.session.battle().winner, Some(0));
 }
 
 /// Wraps a MemoryTransport and corrupts every outgoing Reveal's action
@@ -303,4 +385,33 @@ async fn digest_catching() {
 
     let r1 = side1.await.expect("side1 join");
     assert!(r1.is_ok(), "forging side's local view is self-consistent");
+}
+
+/// A reveal that opens its commitment correctly but is not in the peer's
+/// legal action set (here: rite slot 3 on a champion with only slots 0..1)
+/// must be rejected BEFORE engine state is applied, with an Abort sent to
+/// the peer.
+#[tokio::test]
+async fn illegal_reveal_rejected() {
+    let party_a = vec![mkchamp(1, 20, &[1, 2])];
+    let party_b = vec![mkchamp(3, 20, &[1, 6])];
+    let (mut s0, mut s1, t0, t1) = duel_setup(party_a, party_b, [5; 32]);
+
+    // side1 commits and reveals an out-of-roster slot — the commit is
+    // honest, the action is not in side1's legal action set.
+    let side1 = tokio::spawn(async move { s1.run_turn(&t1, Action::Rite { slot: 3 }).await });
+
+    let err = s0
+        .run_turn(&t0, Action::Rite { slot: 0 })
+        .await
+        .expect_err("illegal reveal must be rejected");
+    assert_eq!(err, NetError::Protocol("illegal action".into()));
+    assert_eq!(s0.battle().turn, 1, "turn must not advance");
+    assert!(s0.battle().events().is_empty(), "no events applied");
+    assert_eq!(s0.transcript_hash(), [0u8; 32], "digest untouched");
+
+    // The forger's own replica then refuses the turn too (engine BadSlot);
+    // the Abort from the honest side is left unread, which is fine.
+    let r1 = side1.await.expect("side1 join");
+    assert!(r1.is_err(), "forging side cannot apply the turn either");
 }
