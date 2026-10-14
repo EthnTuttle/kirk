@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- Web shell for crusade-desktop (M5b). Trunk builds the wasm binary with
+     the `bevy-ui` feature enabled and injects the wasm-bindgen loader. Serve
+     from this directory: `trunk serve --release` (release is essential; a
+     debug bevy wasm bundle is unusably slow). -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Deus Vult — Champions of the Cross</title>
+    <link
+      data-trunk
+      rel="rust"
+      data-cargo-manifest-path="../Cargo.toml"
+      data-bin="crusade-desktop"
+      data-cargo-features="bevy-ui"
+      data-wasm-opt="z"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0b0e1b; /* matches the shell's deep navy */
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body></body>
+</html>
