@@ -1,0 +1,68 @@
+# Build the crusade-desktop wasm bundle and ship it as an offline-capable
+# PWA on GitHub Pages.
+#
+# NOTE (one-time, repo owner): Settings -> Pages -> Source must be set to
+# "GitHub Actions" for the deploy step to work.
+name: Web PWA -> GitHub Pages
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "crusade-*/**"
+      - ".github/workflows/web-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one in-flight pages run plus one queued run at most.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true # deps/cdk is a vendored path dependency
+
+      - name: Install Rust (stable) + wasm target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install cargo-binstall
+        run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install trunk (prebuilt binary via cargo-binstall)
+        run: cargo binstall --no-confirm trunk
+
+      - name: Build web bundle (release wasm + js + PWA shell)
+        working-directory: crusade-app/web
+        # GitHub Pages serves this repo under /<repo>/, i.e. /kirk/.
+        run: trunk build --release --public-url /kirk/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: crusade-app/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

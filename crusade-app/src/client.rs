@@ -111,6 +111,12 @@ impl ClientGame {
         &mut self.store
     }
 
+    /// Current phase, without `snapshot()`'s take-drain side effect on
+    /// `fresh_events` (the persistence guard needs a side-effect-free read).
+    pub fn phase(&self) -> Phase {
+        self.phase
+    }
+
     pub fn snapshot(&self) -> ViewSnapshot {
         let roster_count = self.store.list_champions().map(|v| v.len()).unwrap_or(0);
         let tail_start = self.log.len().saturating_sub(LOG_TAIL);

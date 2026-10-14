@@ -49,7 +49,49 @@ host bevy's window/render setup would otherwise panic.
 
 ## (b) Web (wasm32 + trunk)
 
-One-time setup:
+### Play in browser (PWA)
+
+Every push to `master` that touches `crusade-*/` rebuilds and deploys the
+game to this repo's GitHub Pages site (`.github/workflows/web-pages.yml`):
+
+```
+https://<owner>.github.io/kirk/
+```
+
+It is a fully offline-capable PWA: a service worker precaches the whole
+wasm/js bundle on first load, so once a visit has completed the game runs
+with no network at all. **Install it** for the app-like experience:
+Chrome/Edge show an install icon in the address bar ("Install Deus Vult"),
+Safari uses Share -> Add to Home Screen; it then launches standalone with
+the crusader-shield icon. Progress (roster/champions) persists in the
+browser's localStorage under the key `deusvult.roster.v1`; clearing site
+data wipes the save.
+
+What v1 includes, honestly:
+
+- Practice duels vs the deterministic AI team — offline.
+- The seven-sins campaign gauntlet, incl. rest/rewards flow — offline.
+- Roster persistence across reloads/devices-with-the-same-browser.
+- **PvP is NOT wired into the UI yet** (the net driver exists in
+  `crusade-app`'s library, but no screen drives it).
+- **Wagers/ecash are deferred** (no Cashu flows in this UI).
+- No audio (bevy `audio` feature is excluded everywhere; see below).
+
+Local PWA run:
+
+```console
+$ cd crusade-app/web
+$ trunk serve --release
+```
+
+then open the printed localhost URL (service workers need a secure context;
+`localhost` counts). The production file set — `index.html`, hashed
+`*_bg.wasm` + `*.js`, `manifest.webmanifest`, `sw.js`, `icon.svg` +
+`icon-192.png`/`icon-512.png` — lands in
+`crusade-app/web/dist/`; build it standalone with `trunk build --release`
+(add `--public-url /kirk/` when targeting Pages).
+
+One-time setup for building locally:
 
 ```console
 $ rustup target add wasm32-unknown-unknown

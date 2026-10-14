@@ -57,7 +57,7 @@ fn main() {
     }
 
     app.insert_resource(GameShell {
-        game: Mutex::new(ClientGame::new(seeded_demo_store())),
+        game: Mutex::new(ClientGame::new(initial_store())),
     })
     .init_resource::<InputQueue>()
     .init_resource::<SnapshotVersion>()
@@ -116,6 +116,28 @@ fn headless_environment() -> bool {
     {
         false
     }
+}
+
+/// Startup roster: a previously saved browser document wins; the starter
+/// band is seeded only when there is no usable save (first launch, corrupt
+/// blob, or a saved-but-empty roster). Off-wasm `web_load_document` is a
+/// `None` stub, so native keeps the always-seeded behavior.
+fn initial_store() -> RosterStore {
+    if let Some(bytes) = crusade_app::persist::web_load_document() {
+        match RosterStore::load_bytes(&bytes) {
+            Ok(store)
+                if store
+                    .list_champions()
+                    .map(|champs| !champs.is_empty())
+                    .unwrap_or(false) =>
+            {
+                return store;
+            }
+            Ok(_) => warn!("saved roster holds zero champions; reseeding starter band"),
+            Err(err) => warn!("ignoring unreadable saved roster ({err}); seeding starter band"),
+        }
+    }
+    seeded_demo_store()
 }
 
 /// Seed the demo roster exactly once at startup: the starter band of six

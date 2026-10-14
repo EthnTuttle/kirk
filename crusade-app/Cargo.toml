@@ -32,6 +32,10 @@ bevy = { version = "0.18", optional = true, default-features = false, features =
     "picking",
 ] }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Browser persistence shim (`persist`): roster doc in localStorage.
+web-sys = { version = "0.3", features = ["Storage", "Window"] }
+
 [[bin]]
 name = "crusade-desktop"
 path = "src/bevy_shell/main.rs"

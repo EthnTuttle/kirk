@@ -75,7 +75,10 @@ cargo run -p crusade-app --features bevy-ui --bin crusade-desktop  # play it (Be
 cargo test --workspace --exclude kirk-cli-card-game
 ```
 
-Web (wasm32) and mobile build instructions live in `docs/BUILDING.md`.
+**Playable in browser as an offline PWA** — auto-deployed to GitHub Pages on
+push to `master` (`.github/workflows/web-pages.yml`; enable Pages once in the
+repo settings). Shipping status, known v1 limits, and the roadmap to PvP +
+wagers live in `docs/SHIPPING.md`; build instructions in `docs/BUILDING.md`.
 
 *Soli Deo Gloria.*
 

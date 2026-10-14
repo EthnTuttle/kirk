@@ -1,18 +1,45 @@
 <!doctype html>
-<!-- Web shell for crusade-desktop (M5b). Trunk builds the wasm binary with
-     the `bevy-ui` feature enabled and injects the wasm-bindgen loader. Serve
-     from this directory: `trunk serve --release` (release is essential; a
-     debug bevy wasm bundle is unusably slow). -->
+<!-- Web shell / PWA entry for crusade-desktop. Trunk builds the wasm binary
+     with the `bevy-ui` feature enabled and injects the wasm-bindgen loader.
+     Serve from this directory: `trunk serve --release` (release is
+     essential; a debug bevy wasm bundle is unusably slow).
+     trunk 0.19 locates the cargo project via the rust link's `href`
+     (there is NO `data-cargo-manifest-path` attribute). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>Deus Vult — Champions of the Cross</title>
+    <title>Deus Vult</title>
+
+    <!-- PWA -->
+    <meta name="theme-color" content="#c9a227" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="DeusVult" />
+    <meta
+      name="description"
+      content="Turn-based champion duels: practice battles and the seven-sins campaign, fully offline."
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <!-- Copy the PWA side files into dist/ verbatim (stable, unhashed names
+         so sw.js and the manifest keep working). -->
+    <link data-trunk rel="copy-file" href="manifest.webmanifest" />
+    <link data-trunk rel="copy-file" href="sw.js" />
+    <link data-trunk rel="copy-file" href="icon.svg" />
+    <link data-trunk rel="copy-file" href="icon-192.png" />
+    <link data-trunk rel="copy-file" href="icon-512.png" />
+
     <link
       data-trunk
       rel="rust"
-      data-cargo-manifest-path="../Cargo.toml"
+      href="../"
       data-bin="crusade-desktop"
       data-cargo-features="bevy-ui"
       data-wasm-opt="z"
@@ -31,7 +58,53 @@
         width: 100%;
         height: 100%;
       }
+      /* Shown until the wasm bundle boots bevy and covers it with a canvas. */
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        color: #d8d3c0;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        text-align: center;
+        pointer-events: none;
+      }
+      #boot-splash h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        letter-spacing: 0.12em;
+        color: #c9a227; /* gold */
+        text-transform: uppercase;
+      }
+      #boot-splash p {
+        margin: 0;
+        opacity: 0.75;
+      }
     </style>
   </head>
-  <body></body>
+  <body>
+    <div id="boot-splash">
+      <h1>Deus Vult</h1>
+      <p>Mustering the host&hellip; (first load downloads the full game)</p>
+      <noscript>
+        <p>Deus Vult is a WebAssembly game and requires JavaScript.</p>
+      </noscript>
+    </div>
+    <script>
+      // Offline PWA: register the service worker. Best-effort only — the
+      // game plays fine without it (e.g. file:// or private browsing).
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function () {});
+        });
+      }
+    </script>
+  </body>
 </html>
