@@ -71,8 +71,11 @@ names/designs throughout. See `PLAN.md` for the master plan and roadmap.
 ```bash
 cargo run -p crusade-sim -- fuzz 100 25     # 100 seeded AI battles, balance report
 cargo run -p crusade-sim -- duel 1,2,3v6,8,10  # watch one verbose battle
+cargo run -p crusade-app --features bevy-ui --bin crusade-desktop  # play it (Bevy shell)
 cargo test --workspace --exclude kirk-cli-card-game
 ```
+
+Web (wasm32) and mobile build instructions live in `docs/BUILDING.md`.
 
 *Soli Deo Gloria.*
 

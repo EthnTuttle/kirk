@@ -100,17 +100,24 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
 - [x] M5a: crusade-app client core: frontend-agnostic ClientGame API,
       serde view snapshots, input handling, headless AI duels (wasm-ready,
       no native deps).
-- [ ] M5b: Bevy visual shell + wasm32/mobile targets (needs wasm32 target
-      installed and mobile SDKs; big standalone effort).
-- [ ] M6: campaign content (sin-spawn bosses, Chapter Houses), PvP ladder.
+- [x] M5b: Bevy 0.18 desktop shell (menu/roster/battle/campaign screens,
+      smoke harness), verified compiling to wasm32-unknown-unknown;
+      trunk web harness + mobile guidance in docs/BUILDING.md.
+- [x] M6: 7-boss campaign gauntlet (persistent damage, contrition shards),
+      PvP NetDuelDriver over any Transport with dual attestation + Elo
+      ladder, device roster sync, kirk Game-trait adapter for mint-visible
+      battle replay arbitration.
 
 Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 7 sin-bosses. Numbers live in data tables, not code.
 
 ## 7. Status notes
 
-- Review rounds converged: R1 (10 findings, fixed), R2 (SHIP), R3 holistic
-  (3 majors, fixed), R4 verification (SHIP).
+- ALL milestones M0..M6 complete. Review rounds converged: R1 (10 findings,
+  fixed), R2 (SHIP), R3 holistic (3 majors, fixed), R4 (SHIP), R5 final
+  audit (1 critical + 2 majors in bridge replay, fixed), R6 (SHIP).
+- wasm32-unknown-unknown verified for the full stack (core, data, net,
+  bridge, app incl. Bevy shell).
 - Known pre-existing debt (inherited kirk lib): 9 `cashu::services::*` tests
   panic on the `GameMint::new_test` stub — predates this session. Also
   `extract_c_value_from_token` is still a placeholder in card_game.
