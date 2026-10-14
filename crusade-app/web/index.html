@@ -58,7 +58,10 @@
         width: 100%;
         height: 100%;
       }
-      /* Shown until the wasm bundle boots bevy and covers it with a canvas. */
+      /* Shown until the wasm bundle boots bevy and the canvas appears.
+         NOTE: this div is position:fixed, which paints ABOVE the
+         non-positioned canvas regardless of DOM order — it must be
+         REMOVED, not merely covered (first-deploy z-fight bug). */
       #boot-splash {
         position: fixed;
         inset: 0;
@@ -105,6 +108,17 @@
           navigator.serviceWorker.register('sw.js').catch(function () {});
         });
       }
+      // Remove the boot splash once bevy has created its canvas. The splash
+      // is position:fixed, so it would otherwise paint over the game
+      // forever. If wasm fails to boot, the splash (and its message) simply
+      // stays up as the error state.
+      new MutationObserver(function (mutations, observer) {
+        if (document.querySelector('canvas')) {
+          var splash = document.getElementById('boot-splash');
+          if (splash) splash.remove();
+          observer.disconnect();
+        }
+      }).observe(document.body, { childList: true });
     </script>
   </body>
 </html>
