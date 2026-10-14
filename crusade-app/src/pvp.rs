@@ -36,8 +36,9 @@ use crusade_bridge::{sign_attestation, Attestation};
 use crusade_core::engine::{Action, Battle, BattleEvent};
 use crusade_core::types::ChampionInstance;
 use crusade_data::{RosterStore, StoreError};
+use crusade_net::zaps::ZapRequest;
 use crusade_net::{DuelSession, Transport};
-use nostr::{Event, Keys};
+use nostr::{Event, JsonUtil, Keys, PublicKey};
 
 use crate::client::{champion_view, render_events, rite_cards, species_name, LOG_CAP, LOG_TAIL};
 use crate::view::{ClientInput, Phase, ViewSnapshot};
@@ -468,5 +469,154 @@ impl NetDuelDriver {
             self.log.drain(..excess);
         }
         self.fresh_events.borrow_mut().extend(delta);
+    }
+}
+
+// ---------- Battle-over alms (card B3b; docs/ZAP-MONETIZATION.md surface #2) ----------
+//
+// INTEGRITY FIREWALL (docs/ZAP-MONETIZATION.md §2): these functions only
+// READ a settlement that is already final — the kind-9265 attestation is
+// fully signed inside `finalize` BEFORE any zap code can run, and nothing
+// here feeds back into the battle, its seed, matchmaking, or the ladder.
+// Soft money may touch what a player SEES; never what a player IS.
+
+/// The ONE construction site for the kind-9734 zap request through which a
+/// player may offer alms to the victor of a settled net duel: the
+/// `attestation` event id becomes the zap's `e` tag and `victor_pubkey`
+/// its `p` tag (plus the `amount` and the `relays` the receipt should land
+/// on). Deliberately tiny, with both ids visibly threaded, so review can
+/// confirm the two mandatory tags at a glance. Unsigned — the shell signs
+/// with the player's own seal at the call site.
+pub fn victor_alms_request(
+    attestation: &Event,
+    victor_pubkey: PublicKey,
+    amount_msat: u64,
+    relays: &[String],
+) -> ZapRequest {
+    ZapRequest::new(victor_pubkey, attestation.id, amount_msat)
+        .relays(relays.iter().map(String::as_str))
+        .message("Alms for the victor — well fought.")
+}
+
+/// The victor's lightning route out of a kind-0 profile's content JSON:
+/// the `lud16` lightning address preferred, else the `lud06` bech32 lnurl;
+/// trimmed, whitespace-only treated as absent. Pure parsing — validating
+/// and fetching the endpoint belongs to `crusade_net::zaps`.
+pub fn victor_lightning_address(kind0_content: &str) -> Option<String> {
+    let metadata = nostr::types::Metadata::from_json(kind0_content).ok()?;
+    [metadata.lud16, metadata.lud06]
+        .into_iter()
+        .flatten()
+        .map(|s| s.trim().to_string())
+        .find(|s| !s.is_empty())
+}
+
+#[cfg(test)]
+mod alms_tests {
+    //! The B3b acceptance line: the signed kind-9734 visibly carries the
+    //! attestation's event id as its `e` tag and the victor's pubkey as its
+    //! `p` tag, exactly as a NIP-57 wallet server reads them back.
+
+    use super::*;
+    use nostr::{Kind, TagStandard};
+
+    fn signed_attestation(keys: &Keys) -> Event {
+        sign_attestation(
+            keys,
+            &Attestation {
+                digest: hex::encode([0xD1; 32]),
+                battle: hex::encode([0xB1; 32]),
+                winner: 1,
+            },
+        )
+        .expect("attestation signs")
+    }
+
+    #[test]
+    fn alms_request_tags_the_attestation_id_and_victor_pubkey() {
+        let loser = Keys::generate();
+        let victor = Keys::generate();
+        // The attestation exists, fully signed, before any zap code runs.
+        let attestation = signed_attestation(&loser);
+        let relays: Vec<String> = ["wss://relay.one", "wss://relay.two"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+
+        let signed = victor_alms_request(&attestation, victor.public_key(), 21_000, &relays)
+            .sign(&loser)
+            .expect("the zap request signs with the player's seal");
+
+        assert_eq!(signed.kind, Kind::ZapRequest);
+        assert_eq!(signed.kind.as_u16(), 9734);
+        let e_tags: Vec<_> = signed
+            .tags
+            .iter()
+            .filter_map(|t| match t.as_standardized() {
+                Some(TagStandard::Event { event_id, .. }) => Some(*event_id),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            e_tags,
+            vec![attestation.id],
+            "the zap request's e tag is exactly the attestation event id"
+        );
+        let p_tags: Vec<_> = signed
+            .tags
+            .iter()
+            .filter_map(|t| match t.as_standardized() {
+                Some(TagStandard::PublicKey { public_key, .. }) => Some(*public_key),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            p_tags,
+            vec![victor.public_key()],
+            "the zap request's p tag is exactly the victor's pubkey"
+        );
+        let amounts: Vec<u64> = signed
+            .tags
+            .iter()
+            .filter_map(|t| match t.as_standardized() {
+                Some(TagStandard::Amount { millisats, .. }) => Some(*millisats),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(amounts, vec![21_000]);
+        let relay_tags: Vec<String> = signed
+            .tags
+            .iter()
+            .filter_map(|t| match t.as_standardized() {
+                Some(TagStandard::Relays(urls)) => Some(urls),
+                _ => None,
+            })
+            .flatten()
+            .map(|u| u.as_str().to_string())
+            .collect();
+        assert_eq!(relay_tags, relays, "receipt relays = the duel's relay set");
+        assert_eq!(signed.content, "Alms for the victor — well fought.");
+    }
+
+    #[test]
+    fn victor_address_prefers_lud16_then_lud06_and_skips_empty() {
+        assert_eq!(
+            victor_lightning_address(r#"{"name":"Victor","lud16":"victor@wallet.example"}"#)
+                .as_deref(),
+            Some("victor@wallet.example")
+        );
+        // lud16 wins when both fields are populated.
+        assert_eq!(
+            victor_lightning_address(r#"{"lud16":"a@b.example","lud06":"lnurl1abc"}"#).as_deref(),
+            Some("a@b.example")
+        );
+        // A whitespace-only lud16 falls through to lud06.
+        assert_eq!(
+            victor_lightning_address(r#"{"lud16":"  ","lud06":"lnurl1abc"}"#).as_deref(),
+            Some("lnurl1abc")
+        );
+        assert_eq!(victor_lightning_address(r#"{"name":"No purse"}"#), None);
+        assert_eq!(victor_lightning_address("not json at all"), None);
+        assert_eq!(victor_lightning_address(r#"{"lud16":""}"#), None);
     }
 }

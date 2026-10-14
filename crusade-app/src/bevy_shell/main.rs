@@ -28,7 +28,9 @@ mod style;
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
+use async_trait::async_trait;
 use bevy::app::{RunMode, ScheduleRunnerPlugin};
 use bevy::prelude::*;
 
@@ -39,13 +41,15 @@ use crusade_core::data;
 use crusade_core::types::{ChampionInstance, DevotionStats, GraceStats, RiteSlot};
 use crusade_data::RosterStore;
 use crusade_net::nostr_transport::NostrTransport;
+use crusade_net::zaps::{self, Http, PayParams, ZapError};
 use kirk::events::EventParser;
-use nostr::{Keys, ToBech32};
+use nostr::{Event, Filter, Keys, Kind, PublicKey, ToBech32};
+use nostr_sdk::EventSource;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use state::{
-    GameShell, InputQueue, NetBridge, NetCmd, NetDuelEnd, NetShared, RenderedVersion,
-    SnapshotVersion,
+    AlmsInvoice, AlmsPurse, AlmsState, AttestationPost, GameShell, InputQueue, NetBridge, NetCmd,
+    NetDuelEnd, NetShared, RenderedVersion, SnapshotVersion,
 };
 
 fn main() {
@@ -288,7 +292,13 @@ async fn net_task(
             return;
         }
     };
-    report(&shared, LobbyNet::Ready { relays, key_label });
+    report(
+        &shared,
+        LobbyNet::Ready {
+            relays: relays.clone(),
+            key_label,
+        },
+    );
 
     let mut buffered: VecDeque<NetCmd> = VecDeque::new();
     while let Some(cmd) = next_cmd(&mut rx, &mut buffered).await {
@@ -298,6 +308,11 @@ async fn net_task(
                 // Battle clicks before a duel exists can't happen through the
                 // UI (routing requires a live duel); drop strays, never die.
                 warn!("net task: turn input with no live duel — dropped");
+            }
+            NetCmd::AlmsInvoice { .. } => {
+                // Same stray policy: the alms chooser only renders under a
+                // settled duel; anything arriving here is stale.
+                warn!("net task: alms invoice with no settled duel — dropped");
             }
             NetCmd::Refresh => {
                 let Some(res) =
@@ -322,9 +337,17 @@ async fn net_task(
                 }
             }
             NetCmd::Post { party } => {
-                if post_challenge(&lobby, &keys, party, &mut rx, &mut buffered, &shared)
-                    .await
-                    .is_none()
+                if post_challenge(
+                    &lobby,
+                    &keys,
+                    party,
+                    &relays,
+                    &mut rx,
+                    &mut buffered,
+                    &shared,
+                )
+                .await
+                .is_none()
                 {
                     break;
                 }
@@ -335,6 +358,7 @@ async fn net_task(
                     &keys,
                     &event_id,
                     party,
+                    &relays,
                     &mut rx,
                     &mut buffered,
                     &shared,
@@ -357,6 +381,7 @@ async fn post_challenge(
     lobby: &Lobby,
     keys: &Keys,
     party: Vec<ChampionInstance>,
+    relays: &[String],
     rx: &mut UnboundedReceiver<NetCmd>,
     buffered: &mut VecDeque<NetCmd>,
     shared: &Arc<Mutex<NetShared>>,
@@ -424,7 +449,7 @@ async fn post_challenge(
     )
     .await;
     match outcome {
-        Some(Ok(outcome)) => run_duel(lobby, keys, outcome, rx, buffered, shared).await,
+        Some(Ok(outcome)) => run_duel(lobby, keys, outcome, relays, rx, buffered, shared).await,
         Some(Err(err)) => {
             report(shared, lobby_failed("the sealing", &err));
             Some(())
@@ -440,6 +465,7 @@ async fn accept_challenge(
     keys: &Keys,
     event_id: &str,
     party: Vec<ChampionInstance>,
+    relays: &[String],
     rx: &mut UnboundedReceiver<NetCmd>,
     buffered: &mut VecDeque<NetCmd>,
     shared: &Arc<Mutex<NetShared>>,
@@ -501,7 +527,7 @@ async fn accept_challenge(
     )
     .await;
     match outcome {
-        Some(Ok(outcome)) => run_duel(lobby, keys, outcome, rx, buffered, shared).await,
+        Some(Ok(outcome)) => run_duel(lobby, keys, outcome, relays, rx, buffered, shared).await,
         Some(Err(err)) => {
             report(shared, lobby_failed("the sealing", &err));
             Some(())
@@ -522,14 +548,18 @@ async fn run_duel(
     lobby: &Lobby,
     keys: &Keys,
     outcome: LobbyOutcome,
+    relays: &[String],
     rx: &mut UnboundedReceiver<NetCmd>,
     buffered: &mut VecDeque<NetCmd>,
     shared: &Arc<Mutex<NetShared>>,
 ) -> Option<()> {
+    // The peer's seal, kept for after the duel: when we lose, the victor's
+    // pubkey is what the alms zap request must `p`-tag (B3b).
+    let peer = outcome.peer;
     let transport = match NostrTransport::new(
         lobby.client().clone(),
         keys.clone(),
-        outcome.peer,
+        peer,
         outcome.battle_id,
     )
     .await
@@ -643,6 +673,10 @@ async fn run_duel(
                     if driver.attestation_event().is_none() {
                         warn!("net duel: finalized without an attestation event");
                     }
+                    // The kind-9265 attestation is already fully signed; the
+                    // alms zap code below only ever READS it (firewall: soft
+                    // money may never touch a hard outcome — ZAP §2).
+                    let attestation = driver.attestation_event();
                     shared
                         .lock()
                         .expect("net mailbox mutex poisoned")
@@ -650,7 +684,22 @@ async fn run_duel(
                             s.duel = Some(driver.snapshot());
                             s.out = Some(NetDuelEnd::Finished { won });
                             s.events.push(LobbyNet::DuelFinished { won });
+                            // B3b: seed the receipt/alms state in the same
+                            // frame, so the battle-over screen never waits on
+                            // the network — the task just fills this mailbox.
+                            s.alms = Some(AlmsState::settled(attestation.is_some(), won));
                         });
+                    // (a) publish the attestation to the duel's relay set and
+                    // (b) resolve the victor's alms purse. Cosmetic; aborting
+                    // mid-way unwinds exactly like any driven() op.
+                    let settle = settle_alms(lobby, won, peer, attestation, relays, &shared);
+                    let Some(alms) = driven(rx, buffered, settle).await else {
+                        return None;
+                    };
+                    // Serve alms-invoice choices until the player walks back
+                    // to the menu (Abort / channel close), then unwind.
+                    post_duel_alms_loop(keys, alms, rx, buffered, shared).await;
+                    return None;
                 }
                 Err(err) => {
                     warn!("finalize failed: {err}");
@@ -665,6 +714,340 @@ async fn run_duel(
             .expect("net mailbox mutex poisoned")
             .update(|s| s.duel = Some(driver.snapshot()));
     }
+}
+
+// -------------------------------------------------------------------------
+// Battle-over alms (v1.1 card B3b; docs/ZAP-MONETIZATION.md surface #2)
+//
+// INTEGRITY FIREWALL (ZAP-MONETIZATION §2): everything below runs only
+// AFTER the duel settled and the kind-9265 attestation was fully signed at
+// `finalize`. It reads the settlement; it can never write to a battle, a
+// seed, matchmaking, or the ladder. A zap buys gratitude and visibility —
+// soft money, hard outcomes; alms buy nothing.
+// -------------------------------------------------------------------------
+
+/// How long one kind-0 profile fetch may take before the purse resolution
+/// falls back to the house address. Cosmetic: the duel is already settled.
+const ALMS_PROFILE_FETCH_TIMEOUT: Duration = Duration::from_secs(4);
+
+/// Everything the post-duel alms loop needs to draw bolt11s from the
+/// victor's purse. Built once at settle time by [`settle_alms`].
+struct AlmsSession {
+    /// The fully-signed kind-9265 attestation — the `e` tag of every
+    /// kind-9734 this session builds.
+    attestation: Event,
+    /// The victor's pubkey (the peer once we've lost) — the `p` tag.
+    victor: PublicKey,
+    /// The duel's relay set — the 9734 `relays` tag (receipt destination).
+    relays: Vec<String>,
+    /// The victor purse's LNURL pay params, probed on wasm; `None` on the
+    /// desktop shell (no HTTPS stack there — invoices are a PWA feature,
+    /// the address-and-`lightning:` fallback stays mirrored from the menu).
+    pay_params: Option<PayParams>,
+}
+
+/// Mutate the mailbox's alms state when one exists (a write landing after
+/// teardown silently no-ops), flagging the bridge for a repaint.
+fn set_alms(shared: &Arc<Mutex<NetShared>>, f: impl FnOnce(&mut AlmsState)) {
+    shared
+        .lock()
+        .expect("net mailbox mutex poisoned")
+        .update(|s| {
+            if let Some(alms) = &mut s.alms {
+                f(alms);
+            }
+        });
+}
+
+/// The spec's fallback (ZAP-MONETIZATION §1/risk 3): an absent,
+/// unreachable, or failing victor purse sends the alms to the Crusade's
+/// works instead. Any in-flight invoice state clears with it.
+fn fall_back_to_house_purse(shared: &Arc<Mutex<NetShared>>) {
+    set_alms(shared, |a| {
+        a.purse = AlmsPurse::House;
+        a.invoice = AlmsInvoice::Idle;
+    });
+}
+
+/// (a) Publish the driver's signed kind-9265 attestation to the relays the
+/// duel lived on, stamping the mailbox receipt so re-rendering the
+/// battle-over screen can never re-publish. Once-only by construction: the
+/// settle arm runs exactly once per duel.
+async fn publish_attestation(
+    client: &nostr_sdk::Client,
+    attestation: &Event,
+    shared: &Arc<Mutex<NetShared>>,
+) {
+    let post = match client.send_event(attestation.clone()).await {
+        Ok(out) if !out.success.is_empty() => AttestationPost::Published,
+        Ok(_) => {
+            warn!("no relay accepted the duel attestation");
+            AttestationPost::Failed
+        }
+        Err(err) => {
+            warn!("attestation publish failed: {err}");
+            AttestationPost::Failed
+        }
+    };
+    set_alms(shared, |a| a.attestation = Some(post));
+}
+
+/// Fetch the victor's newest kind-0 profile from the duel's relays and read
+/// its lightning route (`lud16` preferred; see [`victor_lightning_address`]).
+/// Purely cosmetic: any failure resolves to the house purse by the caller.
+async fn fetch_victor_address(client: &nostr_sdk::Client, victor: PublicKey) -> Option<String> {
+    let filter = Filter::new().author(victor).kind(Kind::Metadata);
+    let events = client
+        .get_events_of(
+            vec![filter],
+            EventSource::relays(Some(ALMS_PROFILE_FETCH_TIMEOUT)),
+        )
+        .await
+        .map_err(|err| warn!("victor profile fetch failed: {err}"))
+        .ok()?;
+    events
+        .into_iter()
+        .filter(|e| e.verify().is_ok())
+        .max_by_key(|e| e.created_at)
+        .and_then(|e| crusade_app::pvp::victor_lightning_address(&e.content))
+}
+
+/// The cosmetic post-settlement work, in one abort-able step: publish OUR
+/// attestation to the duel's relay set, then (only when we lost) resolve
+/// the victor's alms purse. Returns the live alms session only while a
+/// zap-receiving victor purse stands; the house purse renders from the
+/// mailbox alone and needs no session.
+async fn settle_alms(
+    lobby: &Lobby,
+    we_won: bool,
+    peer: PublicKey,
+    attestation: Option<Event>,
+    relays: &[String],
+    shared: &Arc<Mutex<NetShared>>,
+) -> Option<AlmsSession> {
+    if let Some(att) = &attestation {
+        publish_attestation(lobby.client(), att, shared).await;
+    }
+    // A winner is offered no alms box: alms are given, never taken. A
+    // keyless duel signed nothing a zap request could tag — same result.
+    if we_won {
+        return None;
+    }
+    let attestation = attestation?;
+    let victor = peer; // we lost: the peer is the victor
+    let Some(address) = fetch_victor_address(lobby.client(), victor).await else {
+        warn!("the victor publishes no alms purse — house fallback");
+        fall_back_to_house_purse(shared);
+        return None;
+    };
+    // Shape-check before rendering (pure parse, no network).
+    if zaps::lud16_to_url(&address).is_err() {
+        warn!("the victor's purse address is malformed — house fallback");
+        fall_back_to_house_purse(shared);
+        return None;
+    }
+    build_alms_session(attestation, victor, relays.to_vec(), address, shared).await
+}
+
+/// Assemble the alms session for a purse whose address shape validated.
+/// The wasm PWA probes the endpoint up front: it MUST accept NIP-57 zaps
+/// (`allowsNostr`) or the 9734 tagging this flow exists for can never
+/// happen, so an endpoint without it falls back to the house immediately.
+#[cfg(target_arch = "wasm32")]
+async fn build_alms_session(
+    attestation: Event,
+    victor: PublicKey,
+    relays: Vec<String>,
+    address: String,
+    shared: &Arc<Mutex<NetShared>>,
+) -> Option<AlmsSession> {
+    match zaps::fetch_pay_params(&shell_http(), &address).await {
+        Ok(params) if params.allows_nostr => {
+            set_alms(shared, |a| a.purse = AlmsPurse::Victor(address));
+            Some(AlmsSession {
+                attestation,
+                victor,
+                relays,
+                pay_params: Some(params),
+            })
+        }
+        Ok(_) => {
+            warn!("the victor's purse takes no zaps — house fallback");
+            fall_back_to_house_purse(shared);
+            None
+        }
+        Err(err) => {
+            warn!("victor purse probe failed ({err}) — house fallback");
+            fall_back_to_house_purse(shared);
+            None
+        }
+    }
+}
+
+/// Desktop shell: no HTTPS stack ships in this dependency tree by design,
+/// so the purse stays display-only (address + `lightning:` affordance,
+/// mirroring the menu); the first chooser click fails into the house
+/// fallback, in-theme.
+#[cfg(not(target_arch = "wasm32"))]
+async fn build_alms_session(
+    attestation: Event,
+    victor: PublicKey,
+    relays: Vec<String>,
+    address: String,
+    shared: &Arc<Mutex<NetShared>>,
+) -> Option<AlmsSession> {
+    set_alms(shared, |a| a.purse = AlmsPurse::Victor(address));
+    Some(AlmsSession {
+        attestation,
+        victor,
+        relays,
+        pay_params: None,
+    })
+}
+
+/// After settlement the only live work left is the alms flow: invoice
+/// requests from the chooser (B3b) until the player walks back to the menu
+/// (Abort / channel close), which unwinds the lobby like any duel abort.
+async fn post_duel_alms_loop(
+    keys: &Keys,
+    mut session: Option<AlmsSession>,
+    rx: &mut UnboundedReceiver<NetCmd>,
+    buffered: &mut VecDeque<NetCmd>,
+    shared: &Arc<Mutex<NetShared>>,
+) {
+    loop {
+        let Some(cmd) = next_cmd(rx, buffered).await else {
+            return;
+        };
+        match cmd {
+            NetCmd::Abort => return,
+            NetCmd::AlmsInvoice { amount_msat } => {
+                let Some(sess) = &session else {
+                    warn!("net task: alms invoice with no victor purse — dropped");
+                    continue;
+                };
+                set_alms(shared, |a| {
+                    a.invoice = AlmsInvoice::Fetching { amount_msat }
+                });
+                let Some(result) =
+                    driven(rx, buffered, alms_invoice(sess, keys, amount_msat)).await
+                else {
+                    return;
+                };
+                match result {
+                    Ok(bolt11) => set_alms(shared, move |a| {
+                        a.invoice = AlmsInvoice::Ready {
+                            amount_msat,
+                            bolt11,
+                        };
+                    }),
+                    Err(err) => {
+                        // "invoice fetch fails" => house fallback (spec);
+                        // the chooser disappears with the victor purse.
+                        warn!("alms invoice failed ({err}) — house fallback");
+                        fall_back_to_house_purse(shared);
+                        session = None;
+                    }
+                }
+            }
+            other => warn!("net task: ignoring {other:?} after the duel settled"),
+        }
+    }
+}
+
+/// Draw one invoice from the victor's purse. The kind-9734 is built by the
+/// single reviewed constructor [`crusade_app::pvp::victor_alms_request`]
+/// (the attestation event id and the victor's pubkey visibly threaded in
+/// there), signed here with the player's own seal, and attached to the
+/// LNURL callback via B3a's [`zaps::request_invoice`].
+async fn alms_invoice(
+    session: &AlmsSession,
+    keys: &Keys,
+    amount_msat: u64,
+) -> Result<String, ZapError> {
+    let zap = crusade_app::pvp::victor_alms_request(
+        &session.attestation,
+        session.victor,
+        amount_msat,
+        &session.relays,
+    );
+    let signed = zap.sign(keys)?;
+    let Some(params) = &session.pay_params else {
+        return Err(ZapError::Http(
+            "the desktop shell carries no lightning heralds — give by hand".into(),
+        ));
+    };
+    let http = shell_http();
+    zaps::request_invoice(&http, params, amount_msat, &signed).await
+}
+
+/// The shell's HTTPS transport for the zaps module: the browser's `fetch`
+/// on wasm. Redirects are refused outright (the module's cross-origin
+/// invariants rest on never following one).
+#[cfg(target_arch = "wasm32")]
+struct BrowserHttp;
+
+#[cfg(target_arch = "wasm32")]
+#[async_trait(?Send)]
+impl Http for BrowserHttp {
+    async fn get_text(&self, url: &str, max_bytes: u64) -> Result<String, ZapError> {
+        let window = web_sys::window().ok_or_else(|| ZapError::Http("no browser window".into()))?;
+        let init = web_sys::RequestInit::new();
+        // SECURITY: refuse every redirect rather than follow anywhere.
+        init.set_redirect(web_sys::RequestRedirect::Error);
+        let request = web_sys::Request::new_with_str_and_init(url, &init)
+            .map_err(|e| ZapError::Http(format!("request build: {e:?}")))?;
+        let value = wasm_bindgen_futures::JsFuture::from(window.fetch_with_request(&request))
+            .await
+            .map_err(|e| ZapError::Http(format!("fetch failed or redirected: {e:?}")))?;
+        let response: web_sys::Response = wasm_bindgen::JsCast::dyn_into(value)
+            .map_err(|_| ZapError::Http("fetch resolved to a non-Response".into()))?;
+        if !response.ok() {
+            return Err(ZapError::Http(format!("http status {}", response.status())));
+        }
+        let text_promise = response
+            .text()
+            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?;
+        let text = wasm_bindgen_futures::JsFuture::from(text_promise)
+            .await
+            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?
+            .as_string()
+            .ok_or_else(|| ZapError::Http("body was not text".into()))?;
+        // A buffered browser fetch cannot stop mid-body; the module cap is
+        // still enforced before the response is handed to the parser.
+        if text.len() as u64 > max_bytes {
+            return Err(ZapError::TooLarge(max_bytes));
+        }
+        Ok(text)
+    }
+}
+
+/// The desktop shell ships no HTTPS stack (no TLS client in the dependency
+/// tree by design); the alms address renders display-only and invoice
+/// requests fail over to the house purse, in-theme.
+#[cfg(not(target_arch = "wasm32"))]
+struct NoHttp;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait]
+impl Http for NoHttp {
+    async fn get_text(&self, _url: &str, _max_bytes: u64) -> Result<String, ZapError> {
+        Err(ZapError::Http(
+            "the desktop shell carries no lightning heralds".into(),
+        ))
+    }
+}
+
+/// The one permitted HTTPS transport for this shell (wasm fetch / desktop
+/// stub), as a value so generic zaps calls stay monomorphic per target.
+#[cfg(target_arch = "wasm32")]
+fn shell_http() -> BrowserHttp {
+    BrowserHttp
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn shell_http() -> NoHttp {
+    NoHttp
 }
 
 /// A duel that died out of band: in-theme notice + terminal state; the

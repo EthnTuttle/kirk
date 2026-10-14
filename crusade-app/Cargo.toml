@@ -32,6 +32,10 @@ thiserror = "1.0"
 # tokio is already in the tree (crusade-net depends on these same
 # features); nothing new enters the dependency graph.
 tokio = { version = "1.0", features = ["sync", "macros", "rt"] }
+# async-trait backs the bevy shell's two `crusade_net::zaps::Http` impls
+# (browser fetch on wasm; the desktop's no-HTTPS stub) — the exact package
+# crusade-net already compiles; nothing new enters the graph.
+async-trait = "0.1"
 bevy = { version = "0.18", optional = true, default-features = false, features = [
     "default_app",
     "default_platform",
@@ -45,10 +49,23 @@ bevy = { version = "0.18", optional = true, default-features = false, features =
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Browser persistence shim (`persist`): roster doc in localStorage.
-web-sys = { version = "0.3", features = ["Storage", "Window"] }
+# The Request*/Response features serve the battle-over alms flow (B3b):
+# browser `fetch` is the shell's HTTPS transport for crusade-net's zaps
+# module — same web-sys package, feature flags only.
+web-sys = { version = "0.3", features = [
+    "Storage",
+    "Window",
+    "Request",
+    "RequestInit",
+    "RequestRedirect",
+    "Response",
+] }
 # Task spawn for the lobby/duel bridge — the same executor nostr-sdk's own
 # wasm glue uses (transitively present via async-utility on wasm already).
 wasm-bindgen-futures = "0.4"
+# JsCast for reading the fetch Response body — the very crate web-sys's own
+# glue is built on; nothing new enters the graph.
+wasm-bindgen = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # The shell's single net task runs on one shared multi-thread runtime

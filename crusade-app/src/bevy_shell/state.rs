@@ -70,6 +70,11 @@ pub enum NetCmd {
     },
     /// A net-duel turn input (`PickRite` / `PickSwitch` / `Concede`).
     Turn(ClientInput),
+    /// BattleOver alms box (B3b): ask the resolved purse for a bolt11 of
+    /// `amount_msat` with the signed kind-9734 zap request attached.
+    /// Meaningful only while a settled duel's alms session lives in the
+    /// task; strays are dropped there, never fatal.
+    AlmsInvoice { amount_msat: u64 },
     /// Terminal: withdraw (leaving the lobby / acknowledging a duel over).
     Abort,
 }
@@ -82,6 +87,86 @@ pub enum NetDuelEnd {
     Finished { won: bool },
     /// Peer fled, link timed out mid-turn, or the task died.
     Aborted { notice: String },
+}
+
+// -------------------------------------------------------------------------
+// Battle-over alms (v1.1 card B3b; docs/ZAP-MONETIZATION.md surface #2)
+//
+// Pure mailbox data, written ONLY by the net task and rendered by the net
+// battle-over screen. INTEGRITY FIREWALL (ZAP-MONETIZATION §2): nothing
+// here can reach the client, a battle, a seed, or the ladder — this state
+// exists so a player may SEE a voluntary-alms path after a settled duel.
+// -------------------------------------------------------------------------
+
+/// Receipt of the one-time attestation publish that follows a settled duel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttestationPost {
+    /// The task is carrying it to the duel's relay set.
+    Pending,
+    /// At least one relay accepted it.
+    Published,
+    /// No relay took it; the sealed transcript stands regardless.
+    Failed,
+}
+
+/// Where the battle-over alms would go. Alms are given freely after the
+/// duel — nothing rides on the outcome, and the wording must stay so.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AlmsPurse {
+    /// Kind-0 profile / LNURL resolution is in flight.
+    Resolving,
+    /// The victor's own lightning route (kind-0 `lud16`/`lud06`).
+    Victor(String),
+    /// The victor keeps no reachable purse: alms go to the Crusade's works
+    /// (the menu's "Support the Order" address).
+    House,
+    /// No alms are offered — we won (alms are given, never taken) or the
+    /// duel signed no attestation for a zap request to tag.
+    NotOffered,
+}
+
+/// The chooser's latest invoice fetch. There is no failure variant by
+/// design: a failing purse falls the state back to [`AlmsPurse::House`]
+/// (the spec's fallback rule), leaving this a clean idle/retry cycle.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AlmsInvoice {
+    /// No preset chosen yet.
+    Idle,
+    /// A bolt11 for `amount_msat` is being requested.
+    Fetching { amount_msat: u64 },
+    /// The purse answered with this bolt11 for `amount_msat`.
+    Ready { amount_msat: u64, bolt11: String },
+}
+
+/// Battle-over alms/attestation receipt state (B3b). Seeded in the same
+/// mailbox write as the terminal duel snapshot (rendering never waits on
+/// the network) and filled in by the task's cosmetic post-settle work.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlmsState {
+    /// Receipt of the one-time attestation publish; `None` when the driver
+    /// signed no attestation (keyless duel).
+    pub attestation: Option<AttestationPost>,
+    /// The victor-purse resolution for the alms CTA.
+    pub purse: AlmsPurse,
+    /// The chooser's latest invoice.
+    pub invoice: AlmsInvoice,
+}
+
+impl AlmsState {
+    /// Fresh post-settle state. Once-only by construction: the mailbox is
+    /// seeded exactly once per settled duel, so re-rendering the screen can
+    /// never re-publish the attestation or restart the purse resolution.
+    pub fn settled(signed_attestation: bool, we_won: bool) -> Self {
+        Self {
+            attestation: signed_attestation.then_some(AttestationPost::Pending),
+            purse: if we_won || !signed_attestation {
+                AlmsPurse::NotOffered
+            } else {
+                AlmsPurse::Resolving
+            },
+            invoice: AlmsInvoice::Idle,
+        }
+    }
 }
 
 /// Async-task -> shell mailbox. Written ONLY by the net task (short lived
@@ -99,6 +184,9 @@ pub struct NetShared {
     pub duel: Option<ViewSnapshot>,
     /// Terminal duel state once set.
     pub out: Option<NetDuelEnd>,
+    /// Battle-over alms/attestation receipt (B3b); `Some` only after a
+    /// duel has settled (seeded in the same write as `out`).
+    pub alms: Option<AlmsState>,
     /// Mutation counter: the bridge bumps `SnapshotVersion` whenever the
     /// task has touched anything since the last drain, so net progress
     /// repaints without a client input.
