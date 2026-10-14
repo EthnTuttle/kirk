@@ -9,7 +9,14 @@
 //! matching unseen event wins"); the duel layer enforces turn ordering.
 
 use std::collections::HashSet;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+// std Instant::now() panics on wasm32-unknown-unknown; `instant` fronts
+// the browser performance clock there with an identical API.
+#[cfg(target_arch = "wasm32")]
+use instant::Instant;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 use async_trait::async_trait;
 use nostr::nips::nip44::{self, Version};
@@ -198,9 +205,14 @@ impl Transport for NostrTransport {
                     }
                     Err(e) => {
                         last_err = Some(format!("nostr subscribe failed: {e}"));
-                        time::timeout(Some(Duration::from_millis(250)), async {
-                            tokio::task::yield_now().await;
-                        })
+                        // Backoff before the retry. A pending future wrapped
+                        // in nostr-sdk's timeout gives a wasm-safe sleep
+                        // (gloo-timers); tokio::task::yield_now() would panic
+                        // under wasm_bindgen_futures::spawn_local (no runtime).
+                        time::timeout(
+                            Some(Duration::from_millis(250)),
+                            std::future::pending::<()>(),
+                        )
                         .await;
                     }
                 }

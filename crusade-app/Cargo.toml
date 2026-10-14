@@ -28,6 +28,10 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 thiserror = "1.0"
+# The Bevy shell's ONE async boundary: lobby/duel task channels + select.
+# tokio is already in the tree (crusade-net depends on these same
+# features); nothing new enters the dependency graph.
+tokio = { version = "1.0", features = ["sync", "macros", "rt"] }
 bevy = { version = "0.18", optional = true, default-features = false, features = [
     "default_app",
     "default_platform",
@@ -42,6 +46,14 @@ bevy = { version = "0.18", optional = true, default-features = false, features =
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Browser persistence shim (`persist`): roster doc in localStorage.
 web-sys = { version = "0.3", features = ["Storage", "Window"] }
+# Task spawn for the lobby/duel bridge — the same executor nostr-sdk's own
+# wasm glue uses (transitively present via async-utility on wasm already).
+wasm-bindgen-futures = "0.4"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# The shell's single net task runs on one shared multi-thread runtime
+# (NostrTransport's retry path needs a tokio context); native-only.
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
 
 [[bin]]
 name = "crusade-desktop"

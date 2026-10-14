@@ -20,10 +20,13 @@ use crusade_core::types::{
     RiteType, Sin, Typing, Virtue, Volatile, MAX_LEVEL,
 };
 use crusade_data::RosterStore;
+use nostr::Keys;
 
 use crate::policy::greedy_action;
+use crate::pvp::record_ladder_result;
 use crate::view::{
-    BattleChampionView, CampaignView, ChampionCard, ClientInput, Phase, RiteCard, ViewSnapshot,
+    BattleChampionView, CampaignView, ChampionCard, ClientInput, LobbyNet, LobbyStage, LobbyView,
+    Phase, RiteCard, ViewSnapshot,
 };
 use crate::AppError;
 
@@ -53,6 +56,20 @@ const CAMPAIGN_SEED: [u8; 32] = [0xC9; 32];
 /// PvE rewards paid to the shared inventory (writes to the store, unlike
 /// anything else mid-battle).
 const SHARD_ITEM: &str = "contrition-shard";
+
+/// Settings key for the player's persisted nostr secret (hex) — the
+/// Tournament of Virtue identity ("seal"). Minted on first lobby entry.
+pub const NET_SECRET_KEY: &str = "net.nostr.secret";
+/// Settings key for a relay-list override: comma/whitespace-separated
+/// `wss://` URLs. Absent/empty/unusable values fall back to
+/// [`DEFAULT_LOBBY_RELAYS`].
+pub const NET_RELAYS_KEY: &str = "net.relays";
+/// Default public relays for the Tournament of Virtue lobby.
+pub const DEFAULT_LOBBY_RELAYS: [&str; 3] = [
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.nostr.band",
+];
 
 /// Boss level for a gauntlet node: 15 at node 0, +5 per node, capped at 40.
 fn boss_level(node: u8) -> u8 {
@@ -88,6 +105,15 @@ pub struct ClientGame {
     phase: Phase,
     /// Active gauntlet run, if any.
     campaign: Option<CampaignState>,
+    /// Lobby render state while in [`Phase::Lobby`]. The async nostr
+    /// session it mirrors lives in the UI's bridge task; everything here is
+    /// plain data arrived via [`ClientInput::LobbyNet`].
+    lobby: Option<LobbyView>,
+    /// Our nostr seal for the tournament, minted on first
+    /// [`ClientInput::EnterLobby`] and persisted into the store. Watched by
+    /// the bridge, which spawns the lobby session when it sees the phase
+    /// flip; the client itself never touches an async handle.
+    nostr_keys: Option<Keys>,
     /// Human-readable log lines, capped at `LOG_CAP`.
     log: Vec<String>,
     /// Raw events since the last snapshot. `RefCell` so `snapshot(&self)`
@@ -102,6 +128,8 @@ impl ClientGame {
             battle: None,
             phase: Phase::Menu,
             campaign: None,
+            lobby: None,
+            nostr_keys: None,
             log: Vec::new(),
             fresh_events: RefCell::new(Vec::new()),
         }
@@ -137,6 +165,7 @@ impl ClientGame {
                 defeated: c.defeated,
                 shards_earned: c.shards_earned,
             }),
+            lobby: self.lobby.clone(),
             fresh_events,
         };
         let Some(b) = self.battle.as_ref() else {
@@ -197,6 +226,48 @@ impl ClientGame {
             .collect()
     }
 
+    /// Our nostr seal, once the lobby has been entered (the bridge spawns
+    /// the lobby session from this + [`ClientGame::lobby_relays`]).
+    pub fn net_identity(&self) -> Option<Keys> {
+        self.nostr_keys.clone()
+    }
+
+    /// The relay list the bridge connects the lobby to: the store's
+    /// `net.relays` override (comma/whitespace-separated `wss://` URLs), or
+    /// [`DEFAULT_LOBBY_RELAYS`] when unset or unusable.
+    pub fn lobby_relays(&self) -> Vec<String> {
+        let custom = self
+            .store
+            .setting(NET_RELAYS_KEY)
+            .ok()
+            .flatten()
+            .map(|raw| parse_relay_list(&raw))
+            .unwrap_or_default();
+        if custom.is_empty() {
+            DEFAULT_LOBBY_RELAYS.iter().map(|s| s.to_string()).collect()
+        } else {
+            custom
+        }
+    }
+
+    /// The company our lobby commitments bind: first six roster champions,
+    /// field-reset at their stored levels (campaign rules — stored levels,
+    /// clamped legal). Empty roster is an error; the shell must not offer
+    /// challenge buttons then.
+    pub fn ladder_party(&self) -> Result<Vec<ChampionInstance>, AppError> {
+        let mut roster = self.store.list_champions()?;
+        if roster.is_empty() {
+            return Err(illegal("cannot enter the lists with an empty company"));
+        }
+        roster.sort_by(|a, b| a.0.cmp(&b.0));
+        let mut party = Vec::new();
+        for (_, c) in roster.into_iter().take(PARTY_CAP) {
+            let level = c.level.clamp(1, MAX_LEVEL);
+            party.push(field_reset(c, level)?);
+        }
+        Ok(party)
+    }
+
     pub fn handle(&mut self, input: ClientInput) -> Result<(), AppError> {
         match input {
             ClientInput::OpenRoster => match self.phase {
@@ -243,6 +314,212 @@ impl ClientGame {
                 }
                 p => Err(illegal(format!("no result to acknowledge from {p:?}"))),
             },
+            ClientInput::EnterLobby => match self.phase {
+                Phase::Menu | Phase::Roster => self.enter_lobby(),
+                p => Err(illegal(format!("cannot enter the tournament from {p:?}"))),
+            },
+            ClientInput::LeaveLobby => match self.phase {
+                Phase::Lobby => {
+                    self.lobby = None;
+                    self.phase = Phase::Menu;
+                    Ok(())
+                }
+                p => Err(illegal(format!("cannot leave the tournament from {p:?}"))),
+            },
+            ClientInput::RefreshChallenges => {
+                let stage = self.lobby_stage()?;
+                match stage {
+                    LobbyStage::Idle | LobbyStage::Listing => {
+                        let lobby = self.lobby.as_mut().expect("lobby checked above");
+                        lobby.stage = LobbyStage::Listing;
+                        lobby.notice = "Scanning the lists for open challenges...".to_string();
+                        Ok(())
+                    }
+                    _ => Err(illegal(format!(
+                        "the heralds are busy ({stage:?}); the lists wait"
+                    ))),
+                }
+            }
+            ClientInput::PostChallenge => {
+                let stage = self.lobby_stage()?;
+                if stage != LobbyStage::Idle {
+                    return Err(illegal(format!("cannot issue a challenge while {stage:?}")));
+                }
+                if self
+                    .store
+                    .list_champions()
+                    .map(|c| c.is_empty())
+                    .unwrap_or(true)
+                {
+                    return Err(illegal("cannot enter the lists with an empty company"));
+                }
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.stage = LobbyStage::Posting;
+                lobby.notice = "Issuing a challenge to all comers...".to_string();
+                Ok(())
+            }
+            ClientInput::AcceptChallenge { event_id } => {
+                let stage = self.lobby_stage()?;
+                if stage != LobbyStage::Idle {
+                    return Err(illegal(format!(
+                        "cannot answer a challenge while {stage:?}"
+                    )));
+                }
+                if self
+                    .store
+                    .list_champions()
+                    .map(|c| c.is_empty())
+                    .unwrap_or(true)
+                {
+                    return Err(illegal("cannot enter the lists with an empty company"));
+                }
+                let lobby = self.lobby.as_ref().expect("lobby checked above");
+                let Some(card) = lobby.challenges.iter().find(|c| c.event_id == event_id) else {
+                    return Err(illegal("that challenge is no longer listed"));
+                };
+                let label = card.host_label.clone();
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.stage = LobbyStage::Accepting;
+                lobby.notice = format!("Answering the challenge of {label}...");
+                Ok(())
+            }
+            ClientInput::LobbyNet(msg) => self.handle_lobby_net(msg),
+        }
+    }
+
+    /// The lobby stage, or an error when the phase has no lobby to show
+    /// (stale clicks and late bridge reports land here and are dropped by
+    /// the shell with a warning — never a panic).
+    fn lobby_stage(&self) -> Result<LobbyStage, AppError> {
+        if self.phase != Phase::Lobby {
+            return Err(illegal(format!(
+                "no tournament is open from {:?}",
+                self.phase
+            )));
+        }
+        self.lobby
+            .as_ref()
+            .map(|l| l.stage)
+            .ok_or_else(|| illegal("tournament state lost — re-enter the lobby"))
+    }
+
+    /// Menu/Roster -> Lobby: mint or load the nostr seal (persisted in the
+    /// store, so the tournament identity survives reloads) and open the
+    /// lobby view in the Connecting stage; the bridge takes it from there.
+    fn enter_lobby(&mut self) -> Result<(), AppError> {
+        if self.battle.is_some() || self.campaign.is_some() {
+            return Err(illegal("a battle or campaign is already active"));
+        }
+        if self.nostr_keys.is_none() {
+            self.nostr_keys = Some(self.load_or_mint_seal()?);
+        }
+        self.lobby = Some(LobbyView::connecting());
+        self.phase = Phase::Lobby;
+        Ok(())
+    }
+
+    /// Load the persisted nostr seal, minting (and persisting) one on first
+    /// entry. A corrupted stored secret is replaced by a fresh seal.
+    fn load_or_mint_seal(&mut self) -> Result<Keys, AppError> {
+        let stored = self.store.setting(NET_SECRET_KEY)?;
+        if let Some(secret_hex) = stored.as_deref() {
+            if let Ok(keys) = Keys::parse(secret_hex) {
+                return Ok(keys);
+            }
+        }
+        let keys = Keys::generate();
+        self.store.set_setting(
+            NET_SECRET_KEY,
+            &hex::encode(keys.secret_key().to_secret_bytes()),
+        )?;
+        Ok(keys)
+    }
+
+    /// Bridge reports. Every variant is phase-guarded: a report arriving
+    /// after the player withdrew, or after its window passed, is an illegal
+    /// transition (the shell logs and drops it) rather than a panic.
+    fn handle_lobby_net(&mut self, msg: LobbyNet) -> Result<(), AppError> {
+        match msg {
+            LobbyNet::Ready { relays, key_label } => {
+                self.lobby_stage()?;
+                let count = relays.len();
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.stage = LobbyStage::Idle;
+                lobby.relays = relays;
+                lobby.key_label = key_label;
+                lobby.notice =
+                    format!("The tournament grounds are open — {count} herald(s) carry the lists.");
+                Ok(())
+            }
+            LobbyNet::Notice { stage, text } => {
+                self.lobby_stage()?;
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.stage = stage;
+                lobby.notice = text;
+                Ok(())
+            }
+            LobbyNet::ChallengeList { challenges } => {
+                self.lobby_stage()?;
+                let count = challenges.len();
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.challenges = challenges;
+                if lobby.stage == LobbyStage::Listing {
+                    lobby.stage = LobbyStage::Idle;
+                }
+                lobby.notice = if count == 0 {
+                    "The lists are empty — no champion stands challenged. Issue yours.".to_string()
+                } else {
+                    format!("{count} open challenge(s) await an answer.")
+                };
+                Ok(())
+            }
+            LobbyNet::DuelReady => {
+                self.lobby_stage()?;
+                self.lobby = None;
+                self.fresh_events.borrow_mut().clear();
+                self.push_log(vec![
+                    "The covenant is sealed — the duel is joined.".to_string()
+                ]);
+                self.phase = Phase::BattleSetup;
+                Ok(())
+            }
+            LobbyNet::DuelFinished { won } => {
+                if self.phase != Phase::BattleSetup {
+                    return Err(illegal(format!(
+                        "no net duel to settle from {:?}",
+                        self.phase
+                    )));
+                }
+                let rating = record_ladder_result(&mut self.store, won, None)?;
+                self.push_log(vec![format!(
+                    "{} The honor ladder records a standing of {rating} (kept on good faith).",
+                    if won {
+                        "Victory — Deo Gratias!"
+                    } else {
+                        "Defeat — pray and regroup."
+                    }
+                )]);
+                self.phase = Phase::BattleOver;
+                Ok(())
+            }
+            LobbyNet::DuelAborted { text } => {
+                if self.phase != Phase::BattleSetup {
+                    return Err(illegal(format!(
+                        "no net duel to abandon from {:?}",
+                        self.phase
+                    )));
+                }
+                self.push_log(vec![text]);
+                self.phase = Phase::BattleOver;
+                Ok(())
+            }
+            LobbyNet::Failed { text } => {
+                self.lobby_stage()?;
+                let lobby = self.lobby.as_mut().expect("lobby checked above");
+                lobby.stage = LobbyStage::Idle;
+                lobby.notice = text;
+                Ok(())
+            }
         }
     }
 
@@ -554,6 +831,24 @@ impl ClientGame {
 
 fn illegal(msg: impl Into<String>) -> AppError {
     AppError::IllegalTransition(msg.into())
+}
+
+/// Parse a relay-list override: split on commas, semicolons and whitespace,
+/// strip URL-hostile punctuation from pasted entries, keep only
+/// `ws://`/`wss://` URLs, dedupe preserving order.
+fn parse_relay_list(raw: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for part in raw.split(|c: char| c == ',' || c == ';' || c.is_whitespace()) {
+        let url = part.trim_matches(|c: char| {
+            c.is_whitespace() || matches!(c, ',' | ';' | '"' | '\'' | '<' | '>' | '|')
+        });
+        if (url.starts_with("wss://") || url.starts_with("ws://"))
+            && !out.iter().any(|seen| seen == url)
+        {
+            out.push(url.to_string());
+        }
+    }
+    out
 }
 
 /// Resolve the foe's pending forced switch, if any, with the greedy
@@ -965,5 +1260,224 @@ fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2], local: u8
             }
         }
         unknown => format!("{unknown:?}"),
+    }
+}
+
+#[cfg(test)]
+mod lobby_tests {
+    //! Lobby/net phase-transition tests: the synchronous half of the
+    //! Tournament of Virtue. Everything here is pure `handle()`/`snapshot()`
+    //! driving — the relay-facing half lives in `tests/net_client_tests.rs`.
+
+    use super::*;
+
+    /// Single-champion roster fixture (learnset-legal — same shape as the
+    /// lobby.rs test fixtures).
+    fn fixture_store() -> RosterStore {
+        let mut store = RosterStore::new();
+        store
+            .add_champion(&practice_champion(1, 20).expect("fixture champion"))
+            .expect("fixture store accepts the champion");
+        store
+    }
+
+    fn card(id: u8) -> crate::view::ChallengeCard {
+        crate::view::ChallengeCard {
+            event_id: hex::encode([id; 32]),
+            host_label: format!("npub1{id:04x}…"),
+            party_size: 2,
+        }
+    }
+
+    fn ready(game: &mut ClientGame) {
+        game.handle(ClientInput::LobbyNet(LobbyNet::Ready {
+            relays: vec!["wss://relay.test".into()],
+            key_label: "npub1us…".into(),
+        }))
+        .expect("lobby accepts Ready");
+    }
+
+    #[test]
+    fn enter_mints_and_persists_seal_leave_clears() {
+        let mut game = ClientGame::new(fixture_store());
+        game.handle(ClientInput::EnterLobby).expect("enter lobby");
+        assert_eq!(game.phase(), Phase::Lobby);
+        let snap = game.snapshot();
+        let lobby = snap.lobby.as_ref().expect("lobby view present");
+        assert_eq!(lobby.stage, LobbyStage::Connecting);
+        assert!(lobby.challenges.is_empty());
+
+        let keys = game.net_identity().expect("seal minted");
+        let stored = game
+            .store()
+            .setting(NET_SECRET_KEY)
+            .expect("setting readable")
+            .expect("seal persisted");
+        assert_eq!(
+            Keys::parse(&stored)
+                .expect("stored seal parses")
+                .public_key(),
+            keys.public_key(),
+            "the persisted seal round-trips"
+        );
+
+        game.handle(ClientInput::LeaveLobby).expect("leave lobby");
+        assert_eq!(game.phase(), Phase::Menu);
+        assert!(game.snapshot().lobby.is_none());
+
+        // Re-entry loads the SAME seal (identity survives, no re-mint).
+        game.handle(ClientInput::EnterLobby).expect("re-enter");
+        assert_eq!(
+            game.net_identity().expect("seal reloaded").public_key(),
+            keys.public_key()
+        );
+    }
+
+    #[test]
+    fn relay_override_falls_back_and_filters() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_eq!(
+            game.lobby_relays(),
+            DEFAULT_LOBBY_RELAYS
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect::<Vec<_>>()
+        );
+        game.store()
+            .set_setting(
+                NET_RELAYS_KEY,
+                "wss://a.example,  wss://a.example; http://nope\nwss://b.example",
+            )
+            .expect("write override");
+        // The wss entries survive (dedup'd; the `;` tails strip away);
+        // non-websocket URLs are dropped.
+        let relays = game.lobby_relays();
+        assert!(relays.contains(&"wss://a.example".to_string()));
+        assert!(relays.contains(&"wss://b.example".to_string()));
+        assert_eq!(relays.len(), 2, "dedupe + scheme filter apply: {relays:?}");
+    }
+
+    #[test]
+    fn lobby_input_guards_hold() {
+        // Empty roster: PostChallenge/AcceptChallenge are rejected.
+        let mut game = ClientGame::new(RosterStore::new());
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        assert!(game.handle(ClientInput::PostChallenge).is_err());
+        assert!(game
+            .handle(ClientInput::AcceptChallenge {
+                event_id: hex::encode([9u8; 32]),
+            })
+            .is_err());
+
+        // With a roster, but wrong stage (Connecting) and wrong phase.
+        let mut game = ClientGame::new(fixture_store());
+        assert!(game.handle(ClientInput::RefreshChallenges).is_err());
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        assert!(game.handle(ClientInput::PostChallenge).is_err());
+        assert!(game.handle(ClientInput::AcknowledgeResult).is_err());
+        ready(&mut game);
+        // Listed check: unknown event ids cannot be answered.
+        assert!(game
+            .handle(ClientInput::AcceptChallenge {
+                event_id: hex::encode([9u8; 32]),
+            })
+            .is_err());
+    }
+
+    #[test]
+    fn post_flow_reaches_duel_and_rates_the_ladder() {
+        let mut game = ClientGame::new(fixture_store());
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        ready(&mut game);
+
+        game.handle(ClientInput::PostChallenge)
+            .expect("post from idle");
+        assert_eq!(game.snapshot().lobby.unwrap().stage, LobbyStage::Posting);
+
+        game.handle(ClientInput::LobbyNet(LobbyNet::Notice {
+            stage: LobbyStage::AwaitingAccept,
+            text: "Challenge issued — awaiting a worthy answer.".into(),
+        }))
+        .expect("notice");
+        assert_eq!(
+            game.snapshot().lobby.unwrap().stage,
+            LobbyStage::AwaitingAccept
+        );
+
+        game.handle(ClientInput::LobbyNet(LobbyNet::DuelReady))
+            .expect("duel ready");
+        assert_eq!(game.phase(), Phase::BattleSetup);
+        assert!(game.snapshot().lobby.is_none(), "lobby view is closed");
+
+        game.handle(ClientInput::LobbyNet(LobbyNet::DuelFinished { won: true }))
+            .expect("settle");
+        assert_eq!(game.phase(), Phase::BattleOver);
+        assert_eq!(
+            game.store().setting("ladder.rating").unwrap().as_deref(),
+            Some("1016"),
+            "win off the default rating is +16"
+        );
+
+        game.handle(ClientInput::AcknowledgeResult)
+            .expect("acknowledge");
+        assert_eq!(game.phase(), Phase::Menu);
+    }
+
+    #[test]
+    fn accept_flow_and_abort_paths_hold() {
+        let mut game = ClientGame::new(fixture_store());
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        ready(&mut game);
+
+        game.handle(ClientInput::LobbyNet(LobbyNet::ChallengeList {
+            challenges: vec![card(1), card(2)],
+        }))
+        .expect("listing");
+        assert_eq!(game.snapshot().lobby.unwrap().challenges.len(), 2);
+
+        game.handle(ClientInput::AcceptChallenge {
+            event_id: hex::encode([1u8; 32]),
+        })
+        .expect("accept listed challenge");
+        assert_eq!(game.snapshot().lobby.unwrap().stage, LobbyStage::Accepting);
+
+        game.handle(ClientInput::LobbyNet(LobbyNet::DuelReady))
+            .expect("duel ready");
+        assert_eq!(game.phase(), Phase::BattleSetup);
+
+        // The foe vanishes mid-duel: the ladder must not move.
+        game.handle(ClientInput::LobbyNet(LobbyNet::DuelAborted {
+            text: "The foe has fled the field.".into(),
+        }))
+        .expect("abort");
+        assert_eq!(game.phase(), Phase::BattleOver);
+        assert!(game
+            .store()
+            .setting("ladder.rating")
+            .expect("readable")
+            .is_none());
+        game.handle(ClientInput::AcknowledgeResult)
+            .expect("acknowledge");
+        assert_eq!(game.phase(), Phase::Menu);
+    }
+
+    #[test]
+    fn lobby_failure_recovers_to_idle_with_notice() {
+        let mut game = ClientGame::new(fixture_store());
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        ready(&mut game);
+        game.handle(ClientInput::PostChallenge).expect("post");
+        game.handle(ClientInput::LobbyNet(LobbyNet::Failed {
+            text: "None answered the challenge before the candles burned low.".into(),
+        }))
+        .expect("failure is recoverable");
+        let lobby = game.snapshot().lobby.expect("lobby still open");
+        assert_eq!(lobby.stage, LobbyStage::Idle);
+        assert!(lobby.notice.contains("None answered"));
+
+        // Bridge reports in wrong phases stay errors (the shell drops them).
+        assert!(game
+            .handle(ClientInput::LobbyNet(LobbyNet::DuelFinished { won: true }))
+            .is_err());
     }
 }

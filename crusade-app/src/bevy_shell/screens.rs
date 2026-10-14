@@ -3,11 +3,12 @@
 
 use bevy::prelude::*;
 
-use crusade_app::{ChampionCard, ClientInput, Phase, ViewSnapshot};
+use crusade_app::{ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot};
 
 use crate::battle;
 use crate::state::{
-    ActionButton, BaseBackground, GameShell, RenderedVersion, SnapshotVersion, UiRoot,
+    ActionButton, BaseBackground, GameShell, NetBridge, NetDuelEnd, RenderedVersion,
+    SnapshotVersion, UiRoot,
 };
 use crate::style;
 
@@ -23,6 +24,7 @@ pub(crate) const SUPPORT_LIGHTNING_ADDRESS: &str = "average@minibits.cash";
 pub fn rebuild_ui(
     mut commands: Commands,
     shell: Res<GameShell>,
+    bridge: Res<NetBridge>,
     version: Res<SnapshotVersion>,
     mut rendered: ResMut<RenderedVersion>,
     roots: Query<Entity, With<UiRoot>>,
@@ -38,22 +40,50 @@ pub fn rebuild_ui(
         let game = shell.game.lock().expect("game mutex poisoned");
         (game.snapshot(), game.roster_cards())
     };
-    let (kids, centered) = match snap.phase {
-        Phase::Menu => (menu_screen(&mut commands), true),
-        Phase::Roster => (roster_screen(&mut commands, &roster), false),
-        Phase::BattleSetup => (
-            vec![text_node(
-                &mut commands,
-                "Mustering the host...".into(),
-                style::head_font(),
-                style::BONE,
-            )],
-            true,
-        ),
-        Phase::InBattle => (battle::battle_screen(&mut commands, &snap), false),
-        Phase::ForcedSwitchSelect => (battle::forced_switch_screen(&mut commands, &snap), false),
-        Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
-        Phase::BattleOver => (over_screen(&mut commands, &snap), true),
+    // Net-duel mailbox state takes precedence over the client phase (the
+    // client sits in BattleSetup for the duel's duration). The driver's
+    // snapshots render through the EXISTING battle screens verbatim.
+    let net = bridge.shared.as_ref().map(|shared| {
+        let s = shared.lock().expect("net mailbox mutex poisoned");
+        (s.duel.clone(), s.out.clone())
+    });
+    let (kids, centered) = match net {
+        Some((_, Some(NetDuelEnd::Aborted { notice }))) => {
+            (duel_aborted_screen(&mut commands, &notice), true)
+        }
+        Some((Some(duel), out)) => match duel.phase {
+            Phase::BattleOver => {
+                let won = match out {
+                    Some(NetDuelEnd::Finished { won }) => Some(won),
+                    _ => None,
+                };
+                (net_over_screen(&mut commands, &duel, won), true)
+            }
+            Phase::ForcedSwitchSelect => {
+                (battle::forced_switch_screen(&mut commands, &duel), false)
+            }
+            _ => (battle::battle_screen(&mut commands, &duel), false),
+        },
+        _ => match snap.phase {
+            Phase::Menu => (menu_screen(&mut commands), true),
+            Phase::Roster => (roster_screen(&mut commands, &roster), false),
+            Phase::BattleSetup => (
+                vec![text_node(
+                    &mut commands,
+                    "Mustering the host...".into(),
+                    style::head_font(),
+                    style::BONE,
+                )],
+                true,
+            ),
+            Phase::InBattle => (battle::battle_screen(&mut commands, &snap), false),
+            Phase::ForcedSwitchSelect => {
+                (battle::forced_switch_screen(&mut commands, &snap), false)
+            }
+            Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
+            Phase::BattleOver => (over_screen(&mut commands, &snap), true),
+            Phase::Lobby => (lobby_screen(&mut commands, &snap), false),
+        },
     };
     commands
         .spawn((
@@ -151,6 +181,7 @@ fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
             ClientInput::StartPractice { level: 25 },
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
+        action_button(cmd, "Tournament of Virtue".into(), ClientInput::EnterLobby),
         support_button(cmd),
         text_node(
             cmd,
@@ -171,7 +202,12 @@ fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
 /// click is handled by an entity observer instead of the `ClientInput` queue,
 /// so the donation path can never touch battles, RNG, ladders, or saves.
 fn support_button(cmd: &mut Commands) -> Entity {
-    let text = text_node(cmd, "Support the Order".into(), style::body_font(), style::BONE);
+    let text = text_node(
+        cmd,
+        "Support the Order".into(),
+        style::body_font(),
+        style::BONE,
+    );
     cmd.spawn((
         Button,
         style::button_node(),
@@ -356,4 +392,194 @@ fn over_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
         ClientInput::AcknowledgeResult,
     ));
     kids
+}
+
+// ---------- Tournament of Virtue (lobby) ----------
+
+/// The lobby screen: identity + heralds, the notice line, the open
+/// challenges with per-challenge accept buttons, and the control row.
+fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+    let Some(lobby) = snap.lobby.as_ref() else {
+        // The phase guarantees a lobby view; stay defensive, never panic.
+        return vec![text_node(
+            cmd,
+            "Seeking the heralds...".into(),
+            style::head_font(),
+            style::BONE,
+        )];
+    };
+    let idle = lobby.stage == LobbyStage::Idle;
+    let mustered = snap.roster_count > 0;
+    let mut kids = vec![
+        text_node(
+            cmd,
+            "TOURNAMENT OF VIRTUE".into(),
+            style::head_font(),
+            style::GOLD,
+        ),
+        text_node(
+            cmd,
+            if lobby.key_label.is_empty() {
+                "Your seal is being struck.".to_string()
+            } else {
+                format!("Your seal: {}", lobby.key_label)
+            },
+            style::small_font(),
+            style::GOLD_DIM,
+        ),
+        text_node(
+            cmd,
+            if lobby.relays.is_empty() {
+                "Awaiting word from the heralds...".to_string()
+            } else {
+                format!("Heralds: {}", lobby.relays.join(", "))
+            },
+            style::small_font(),
+            style::DIM,
+        ),
+        text_node(
+            cmd,
+            if mustered {
+                format!("Your company stands {} strong.", snap.roster_count)
+            } else {
+                "Your company is empty — no champion may take the field.".to_string()
+            },
+            style::small_font(),
+            style::BONE,
+        ),
+    ];
+    if !lobby.notice.is_empty() {
+        kids.push(text_node(
+            cmd,
+            lobby.notice.clone(),
+            style::body_font(),
+            style::GOLD,
+        ));
+    }
+
+    // Open challenges: accept buttons are live only at rest and with a
+    // mustered company.
+    let mut rows = vec![text_node(
+        cmd,
+        "Open challenges".into(),
+        style::body_font(),
+        style::GOLD_DIM,
+    )];
+    if lobby.challenges.is_empty() {
+        rows.push(text_node(
+            cmd,
+            if idle {
+                "No challenges hang on the boards.".to_string()
+            } else {
+                "The boards are being read...".to_string()
+            },
+            style::small_font(),
+            style::DIM,
+        ));
+    }
+    for ch in &lobby.challenges {
+        let label = format!(
+            "Answer {} — {} champion(s) sworn",
+            ch.host_label, ch.party_size
+        );
+        if idle && mustered {
+            rows.push(action_button(
+                cmd,
+                label,
+                ClientInput::AcceptChallenge {
+                    event_id: ch.event_id.clone(),
+                },
+            ));
+        } else {
+            rows.push(disabled_button(cmd, label));
+        }
+    }
+    kids.push(panel(cmd, &rows));
+
+    // Controls: post / refresh collapse to inert slabs while the stage is
+    // busy (with the status text already shown in the notice line).
+    let post_label = match lobby.stage {
+        LobbyStage::Idle => "Issue a challenge".to_string(),
+        LobbyStage::Posting => "Issuing the challenge...".to_string(),
+        LobbyStage::AwaitingAccept => "Awaiting a champion's answer...".to_string(),
+        LobbyStage::Accepting => "Answering a challenge...".to_string(),
+        LobbyStage::Listing => "Scanning the lists...".to_string(),
+        LobbyStage::Connecting => "Reaching the heralds...".to_string(),
+    };
+    let mut buttons = Vec::new();
+    if idle && mustered {
+        buttons.push(action_button(cmd, post_label, ClientInput::PostChallenge));
+    } else {
+        buttons.push(disabled_button(cmd, post_label));
+    }
+    if idle {
+        buttons.push(action_button(
+            cmd,
+            "Scan the lists".to_string(),
+            ClientInput::RefreshChallenges,
+        ));
+    } else {
+        buttons.push(disabled_button(cmd, "Scan the lists".to_string()));
+    }
+    buttons.push(action_button(
+        cmd,
+        "Withdraw to the chapel yard".to_string(),
+        ClientInput::LeaveLobby,
+    ));
+    kids.extend(buttons);
+    kids
+}
+
+// ---------- Net duel settlement ----------
+
+/// Settled net duel: the driver snapshot supplies the chronicle; `won`
+/// came through the mailbox with the final frame.
+fn net_over_screen(cmd: &mut Commands, snap: &ViewSnapshot, won: Option<bool>) -> Vec<Entity> {
+    let (banner, color) = match won {
+        Some(true) => ("Victory — Deo Gratias", style::GOLD),
+        Some(false) => ("Defeat — Pray and Regroup", style::HP_RED),
+        None => ("The field falls quiet.", style::BONE),
+    };
+    let mut kids = vec![
+        text_node(cmd, banner.into(), style::title_font(), color),
+        text_node(
+            cmd,
+            if won.is_some() {
+                "The transcript is sealed and the honor ladder has recorded the standing."
+            } else {
+                "Sealing the result with the heralds..."
+            }
+            .to_string(),
+            style::small_font(),
+            style::DIM,
+        ),
+        log_panel(cmd, "Last rites of the duel", &snap.log_tail),
+    ];
+    kids.push(action_button(
+        cmd,
+        "Amen".into(),
+        ClientInput::AcknowledgeResult,
+    ));
+    kids
+}
+
+/// A duel that ended out of band (peer fled, link lost): in-theme abort,
+/// never a panic, never a recorded standing.
+fn duel_aborted_screen(cmd: &mut Commands, notice: &str) -> Vec<Entity> {
+    vec![
+        text_node(
+            cmd,
+            "The field is abandoned.".into(),
+            style::title_font(),
+            style::HP_RED,
+        ),
+        text_node(cmd, notice.to_string(), style::body_font(), style::BONE),
+        text_node(
+            cmd,
+            "No standing is recorded for an unfinished contest.".into(),
+            style::small_font(),
+            style::DIM,
+        ),
+        action_button(cmd, "Amen".into(), ClientInput::AcknowledgeResult),
+    ]
 }

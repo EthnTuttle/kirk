@@ -10,15 +10,19 @@
 //! Campaign (PvE gauntlet): Menu -> StartCampaign -> [InBattle x node,
 //!   CampaignRest between nodes] -> BattleOver (clear or wipe) -> Menu.
 //!   See [`view::CampaignView`].
+//! Tournament of Virtue (PvP): Menu -> Lobby (list / post / accept
+//!   challenges over nostr relays) -> BattleSetup (the net duel,
+//!   bridge-rendered) -> BattleOver -> Menu.
 //!
-//! Network PvP (M6 wire) deliberately lives OUTSIDE [`ClientGame`]: the
-//! client is a synchronous state machine while a `crusade_net::Transport`
-//! is async, so `ClientGame` itself holds no net state (no lobby phase, no
-//! net inputs). The UI's async task owns a [`pvp::NetDuelDriver`] instead
-//! and composes it with the `ClientGame` it drives for roster/menus. The
-//! driver renders via its own `snapshot()` into the same in-battle
-//! [`ViewSnapshot`] shapes, so one UI renderer serves practice, campaign,
-//! and net duels unchanged.
+//! Network PvP (M6 wire) deliberately keeps all async handles OUT of
+//! [`ClientGame`]: the client is a synchronous state machine while a
+//! `crusade_net::Transport` is async. The Tournament of Virtue therefore
+//! splits work: `ClientGame` owns the lobby's sync view-state (`Lobby`,
+//! `LobbyView`, `LobbyNet` reports in — everything renderable) and the
+//! shell owns ONE background async task (relay session +
+//! [`pvp::NetDuelDriver`]) which renders via the driver's own `snapshot()`
+//! into the same in-battle [`ViewSnapshot`] shapes. One renderer serves
+//! practice, campaign, and net duels unchanged.
 
 pub mod client;
 pub mod lobby;

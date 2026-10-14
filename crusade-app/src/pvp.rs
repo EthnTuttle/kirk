@@ -436,6 +436,9 @@ impl NetDuelDriver {
             log_tail: self.log[tail_start..].to_vec(),
             battle_result: b.winner,
             campaign: None,
+            // Seam required by view.rs: the driver renders ONLY the duel;
+            // lobby view-state belongs to ClientGame, never to a net duel.
+            lobby: None,
             fresh_events: self.fresh_events.take(),
         }
     }
