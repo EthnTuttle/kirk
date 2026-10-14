@@ -2,5 +2,13 @@
 name = "crusade-data"
 version = "0.1.0"
 edition = "2021"
-description = "Offline-first roster/inventory store (CRDT) for Deus Vult. Planned: automerge."
+description = "Offline-first CRDT store for Deus Vult: roster, inventory, settings. automerge-backed."
 license = "MIT"
+
+[dependencies]
+crusade-core = { path = "../crusade-core" }
+automerge = "0.12"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+uuid = { version = "1.0", features = ["v4"] }

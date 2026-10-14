@@ -88,7 +88,10 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
       deterministic engine; 53 tests; review pass 1 + adjudicated fixes.
 - [x] M1-tail: crusade-sim harness (fuzz + duel). Balance debt noted:
       Cantor Sabina underperforms across levels; revisit in M6 content pass.
-- [ ] M2: crusade-net transport + nostr fallback + iroh; transcripts.
+- [x] M2: crusade-net: Transport trait, turn commit-reveal DuelSession,
+      rolling transcript digests; iroh QUIC (M2b, feature-gated, localhost
+      test) + NIP-44 nostr relay fallback (embedded-relay test). Signing of
+      transcripts deferred to M4 (kirk binding).
 - [ ] M3: crusade-data CRDT store + sync.
 - [ ] M4: cashu/kirk binding: commit-reveal battle seeding, wagers.
 - [ ] M5: crusade-app: wasm shell + sim UI slices; mobile shells.
