@@ -11,6 +11,12 @@ use crate::state::{
 };
 use crate::style;
 
+/// "Support the Order" alms box (ZAP-MONETIZATION.md surface #1): a static,
+/// voluntary-donation lightning address. Purely cosmetic — the menu shows it
+/// and hands it to the player's own wallet on click; it is never an input to
+/// the game and no game system reads it back (integrity firewall, §2).
+pub(crate) const SUPPORT_LIGHTNING_ADDRESS: &str = "average@minibits.cash";
+
 /// Repaint the world when (and only when) a handled input bumped the
 /// snapshot version: the UI is a pure function of `ClientGame` state, so
 /// whole-tree despawn-and-rebuild is both correct and fast enough at 60 fps.
@@ -145,6 +151,13 @@ fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
             ClientInput::StartPractice { level: 25 },
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
+        support_button(cmd),
+        text_node(
+            cmd,
+            format!("alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}"),
+            style::small_font(),
+            style::DIM,
+        ),
         text_node(
             cmd,
             "Contrition and cold steel.".into(),
@@ -152,6 +165,46 @@ fn menu_screen(cmd: &mut Commands) -> Vec<Entity> {
             style::DIM,
         ),
     ]
+}
+
+/// The alms box at the chapel door. Looks like an [`action_button`], but its
+/// click is handled by an entity observer instead of the `ClientInput` queue,
+/// so the donation path can never touch battles, RNG, ladders, or saves.
+fn support_button(cmd: &mut Commands) -> Entity {
+    let text = text_node(cmd, "Support the Order".into(), style::body_font(), style::BONE);
+    cmd.spawn((
+        Button,
+        style::button_node(),
+        BackgroundColor(style::BUTTON),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&[text])
+    .observe(on_support_click)
+    .id()
+}
+
+/// Almsgiving, not a purchase: nothing unlocks, nothing is owed in return.
+/// The address is always visible below the button, so on any platform the
+/// player can type it into their own wallet by hand. Native logs; wasm also
+/// asks the browser to hand `lightning:{addr}` to a wallet in a new tab.
+fn on_support_click(_click: On<Pointer<Click>>) {
+    info!("Support the Order — voluntary alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}");
+    #[cfg(target_arch = "wasm32")]
+    open_lightning_uri();
+}
+
+/// Browser-only hop to the player's own wallet via the `lightning:` URI
+/// scheme, mirroring the `persist.rs` wasm/native split (no new deps; popup
+/// failures degrade to the always-visible address line in the menu).
+#[cfg(target_arch = "wasm32")]
+fn open_lightning_uri() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let uri = format!("lightning:{SUPPORT_LIGHTNING_ADDRESS}");
+    if let Err(err) = window.open_with_url_and_target(&uri, "_blank") {
+        warn!("could not open lightning URI ({err:?}); address is shown in the menu");
+    }
 }
 
 // ---------- Roster ----------
