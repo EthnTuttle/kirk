@@ -71,7 +71,10 @@ pub fn compute_stats(c: &ChampionInstance, sp: &SpeciesBase) -> ComputedStats {
         piety: apply_calling(core(sp.base.piety, g.piety, d.piety), BattleStat::Piety),
         guard: apply_calling(core(sp.base.guard, g.guard, d.guard), BattleStat::Guard),
         aegis: apply_calling(core(sp.base.aegis, g.aegis, d.aegis), BattleStat::Aegis),
-        alacrity: apply_calling(core(sp.base.alacrity, g.alacrity, d.alacrity), BattleStat::Alacrity),
+        alacrity: apply_calling(
+            core(sp.base.alacrity, g.alacrity, d.alacrity),
+            BattleStat::Alacrity,
+        ),
     }
 }
 

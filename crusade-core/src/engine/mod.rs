@@ -1,64 +1,123 @@
-//! Turn-based battle engine (Worker B: implements bodies + tests).
-//! Contract owned by orchestrator: do not change public signatures.
+//! Turn-based battle engine. Determinism: all randomness via
+//! [`BattleRng::for_turn`]; integer math only; floors at every division.
 //!
-//! Turn flow rules (classic, fixed order — determinism is mandatory):
-//! 1. Yield resolves immediately. Switches happen before rites.
-//! 2. Rite order: priority desc, then effective Alacrity desc, then RNG coin.
-//! 3. Pre-action checks: Slumber/Frost/Shackled/Confusion gates, then zeal,
-//!    then accuracy. Crit base rate 1/24 (+1 stage for HighCrit rites,
-//!    stage>=3 => always). Damage = ((2L/5+2)*P*A/D)/50 + 2, then
-//!    *STAB(150%) *effectiveness% *rand85..100% *crit150% *mods; all floored.
-//!    Minimum 1 damage when effectiveness > 0. Immune (0%) => Missed-like event.
-//! 4. Secondaries apply in rite's declared order, chance-gated, after damage.
-//! 5. End of turn: Brand/Venom chip, SeedLeech drain, Slumber/Frost timers.
-//! 6. Yielded (fainted) champions trigger ForcedSwitch; last one ends battle.
-//! Effective Alacrity: Shackled halves; stages apply via data::stage_pct.
+//! Turn flow:
+//! 1. BattleOver check. Unresolved forced switch -> BadSwitch.
+//! 2. TurnStart. Yield resolves immediately (side 0 processed first if both).
+//! 3. Switches (both sides) before rites.
+//! 4. Rite order: priority desc, effective Alacrity desc, rng coin on ties.
+//! 5. Per rite: gates (Slumber/Frost/Shackled/Confusion/Flinch) -> attempt
+//!    (RiteUsed + zeal) -> accuracy -> hits (MultiHit 2..=5) -> damage
+//!    (base -> STAB -> effectiveness -> roll 85..=100 -> crit; min 1 unless
+//!    immune) -> secondaries (chance-gated, declared order).
+//! 6. End of turn (side 0 then 1): Brand max/16, Venom max/8, SeedLeech
+//!    drain max/16 to opponent; volatile timers tick; Flinch removed.
+//! 7. Faints: ChampionYielded -> ForcedSwitchNeeded (pending flag) or
+//!    BattleEnded. turn += 1.
+//!
+//! Judgment calls (reviewer note):
+//! - Blocked attempts (para/sleep/frost/flinch/confusion self-hit) do NOT
+//!   spend zeal and do NOT emit RiteUsed.
+//! - If the target's active champion is already yielded, the rite misses.
+//! - Confusion self-hit: power 40, Typeless, Martial vs own Guard, staged,
+//!   no STAB, no variance, no crit.
+//! - Sleep counter (1..=3 turns) rolled at application time.
+//! - Ailment chip min 1.
 
 use serde::{Deserialize, Serialize};
 
+use crate::data;
 use crate::rng::BattleRng;
 use crate::types::*;
+
+mod attack;
+mod resolve;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Action {
     /// Use the rite in slot 0..4.
     Rite { slot: u8 },
-    /// Swap active champion to party index (must be alive, not active).
+    /// Swap active champion to party index (alive, not active).
     Switch { party_idx: u8 },
-    /// Concede the battle (honourable surrender).
+    /// Concede the battle.
     Yield,
 }
 
-/// Events form the signed, replayable transcript (crusade-net signs these).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BattleEvent {
-    TurnStart { turn: u32 },
-    RiteUsed { side: u8, rite_id: u16 },
-    Missed { side: u8 },
-    Immune { side: u8 },
-    Damage { side: u8, amount: u16, crit: bool, effectiveness_pct: u8 },
-    Healed { side: u8, amount: u16 },
-    AilmentApplied { side: u8, ailment: Ailment },
-    AilmentEnded { side: u8, ailment: Ailment },
-    VolatileApplied { side: u8, volatile_: Volatile },
-    StageChanged { side: u8, stat: BattleStat, new_stage: i8 },
-    AilmentChip { side: u8, amount: u16 },
-    Switched { side: u8, to_party_idx: u8 },
-    ChampionYielded { side: u8, party_idx: u8 },
-    ForcedSwitchNeeded { side: u8 },
-    BattleEnded { winner: u8 },
+    TurnStart {
+        turn: u32,
+    },
+    RiteUsed {
+        side: u8,
+        rite_id: u16,
+    },
+    Missed {
+        side: u8,
+    },
+    Immune {
+        side: u8,
+    },
+    Damage {
+        side: u8,
+        amount: u16,
+        crit: bool,
+        effectiveness_pct: u8,
+    },
+    Healed {
+        side: u8,
+        amount: u16,
+    },
+    AilmentApplied {
+        side: u8,
+        ailment: Ailment,
+    },
+    AilmentEnded {
+        side: u8,
+        ailment: Ailment,
+    },
+    VolatileApplied {
+        side: u8,
+        volatile_: Volatile,
+    },
+    StageChanged {
+        side: u8,
+        stat: BattleStat,
+        new_stage: i8,
+    },
+    AilmentChip {
+        side: u8,
+        amount: u16,
+    },
+    Switched {
+        side: u8,
+        to_party_idx: u8,
+    },
+    ChampionYielded {
+        side: u8,
+        party_idx: u8,
+    },
+    ForcedSwitchNeeded {
+        side: u8,
+    },
+    BattleEnded {
+        winner: u8,
+    },
 }
 
-/// Per-active-champion volatile battle state (stages, volatiles, timers).
+/// Per-active-champion volatile battle state.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ActiveState {
-    pub stages: [i8; 5], // indexed by BattleStat as usize
-    pub volatiles: Vec<(Volatile, u8)>, // (kind, turns_remaining)
+    /// Indexed by stat_idx(). Range -6..=6.
+    pub stages: [i8; 5],
+    /// (kind, turns_remaining). Flinch uses u8::MAX sentinel (removed at EOT).
+    pub volatiles: Vec<(Volatile, u8)>,
     pub slumber_turns: u8,
-    pub seeded_by: Option<u8>,
 }
 
-/// One player's squad. Max 6. First non-yielded champ starts active.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Side {
     pub party: Vec<ChampionInstance>,
@@ -73,6 +132,7 @@ pub struct Battle {
     pub winner: Option<u8>,
     seed: [u8; 32],
     log: Vec<BattleEvent>,
+    pending_switch: [bool; 2],
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -89,35 +149,86 @@ pub enum BattleError {
     NoZeal,
     #[error("switch target invalid")]
     BadSwitch,
-    #[error("both actions belong to the same side order violation")]
-    SideOrder,
+}
+
+pub(crate) fn stat_idx(s: BattleStat) -> usize {
+    match s {
+        BattleStat::Valour => 0,
+        BattleStat::Piety => 1,
+        BattleStat::Guard => 2,
+        BattleStat::Aegis => 3,
+        BattleStat::Alacrity => 4,
+    }
+}
+
+impl Side {
+    pub fn active(&self) -> &ChampionInstance {
+        &self.party[self.active_idx]
+    }
+    pub fn active_mut(&mut self) -> &mut ChampionInstance {
+        &mut self.party[self.active_idx]
+    }
+    pub fn alive(&self, idx: usize) -> bool {
+        self.party.get(idx).is_some_and(|c| c.current_resolve > 0)
+    }
+    pub fn any_alive(&self) -> bool {
+        self.party.iter().any(|c| c.current_resolve > 0)
+    }
+    pub fn computed(&self) -> ComputedStats {
+        let c = self.active();
+        let sp = data::species_by_id(c.species_id).expect("validated at construction");
+        data::compute_stats(c, sp)
+    }
+    fn has_volatile(&self, v: Volatile) -> bool {
+        self.active_state.volatiles.iter().any(|(k, _)| *k == v)
+    }
 }
 
 impl Battle {
-    /// Validate legality of both parties, set first champion active.
-    pub fn new(party_a: Vec<ChampionInstance>, party_b: Vec<ChampionInstance>, seed: [u8; 32]) -> Result<Self, BattleError> {
-        let _ = (party_a, party_b, seed);
-        unimplemented!("worker B")
+    pub fn new(
+        party_a: Vec<ChampionInstance>,
+        party_b: Vec<ChampionInstance>,
+        seed: [u8; 32],
+    ) -> Result<Self, BattleError> {
+        if party_a.is_empty() || party_a.len() > 6 {
+            return Err(BattleError::BadPartySize(party_a.len()));
+        }
+        if party_b.is_empty() || party_b.len() > 6 {
+            return Err(BattleError::BadPartySize(party_b.len()));
+        }
+        for (i, party) in [&party_a, &party_b].into_iter().enumerate() {
+            for (j, c) in party.iter().enumerate() {
+                let sp = data::species_by_id(c.species_id).ok_or(BattleError::IllegalChampion(
+                    (i * 6 + j) as u8,
+                    InstanceError::IllegalRite(0),
+                ))?;
+                validate_instance(c, sp)
+                    .map_err(|e| BattleError::IllegalChampion((i * 6 + j) as u8, e))?;
+            }
+        }
+        Ok(Self {
+            sides: [
+                Side {
+                    party: party_a,
+                    active_idx: 0,
+                    active_state: ActiveState::default(),
+                },
+                Side {
+                    party: party_b,
+                    active_idx: 0,
+                    active_state: ActiveState::default(),
+                },
+            ],
+            turn: 1,
+            winner: None,
+            seed,
+            log: vec![],
+            pending_switch: [false, false],
+        })
     }
 
     pub fn events(&self) -> &[BattleEvent] {
         &self.log
-    }
-
-    /// Apply both sides' actions for one turn; appends to the event log.
-    /// Returns the events produced this turn (a suffix clone).
-    pub fn apply_turn(&mut self, _a: Action, _b: Action) -> Result<Vec<BattleEvent>, BattleError> {
-        unimplemented!("worker B")
-    }
-
-    /// After a ForcedSwitchNeeded, the side must submit Switch via this.
-    pub fn apply_forced_switch(&mut self, _side: u8, _party_idx: u8) -> Result<(), BattleError> {
-        unimplemented!("worker B")
-    }
-
-    /// Legal actions for a side right now (UI + tests + AI).
-    pub fn legal_actions(&self, _side: u8) -> Vec<Action> {
-        unimplemented!("worker B")
     }
 
     pub(crate) fn turn_rng(&self) -> BattleRng {

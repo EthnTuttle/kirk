@@ -5,9 +5,9 @@
 //! seeded per battle from the kirk commit-reveal protocol. No wall-clock,
 //! no HashMap iteration affecting logic, no floats (percent u8 math).
 
-pub mod types;
-pub mod rng;
 pub mod data;
 pub mod engine;
+pub mod rng;
+pub mod types;
 
 pub use types::*;
