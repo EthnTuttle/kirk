@@ -9,13 +9,16 @@
 //!   final transcript digest with their nostr keys; either can present the
 //!   pair of signatures + digest to a kirk mint to claim the wager escrow.
 //!
-//! NOT (yet): making Battle implement kirk's Game trait for mint-side replay
-//! validation. That adapter is a future milestone; the unit here is enough
-//! for honest players + dispute by transcript publication.
+//! - [`BattleAdapter`]: kirk `Game` trait adapter so a mint/arbiter can
+//!   replay a whole battle from its nostr event chain: seed re-derivation,
+//!   token<->commitment binding re-check, per-turn engine replay,
+//!   winner/timeout verdicts in kirk's `ValidationResult` shape.
 
+pub mod adapter;
 pub mod attest;
 pub mod seed;
 
+pub use adapter::*;
 pub use attest::*;
 pub use seed::*;
 
