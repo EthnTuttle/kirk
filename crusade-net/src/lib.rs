@@ -19,6 +19,8 @@ pub mod transport;
 #[cfg(all(feature = "iroh-quic", not(target_arch = "wasm32")))]
 pub mod iroh_transport;
 
+pub mod nostr_transport;
+
 pub use duel::*;
 pub use msg::*;
 pub use transport::*;
