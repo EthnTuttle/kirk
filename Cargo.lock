@@ -963,6 +963,16 @@ version = "0.1.0"
 [[package]]
 name = "crusade-net"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "crusade-core",
+ "nostr 0.35.0",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
+]
 
 [[package]]
 name = "crusade-sim"

@@ -2,5 +2,23 @@
 name = "crusade-net"
 version = "0.1.0"
 edition = "2021"
-description = "P2P transport for Deus Vult: iroh QUIC native, nostr-relay fallback (wasm-safe)."
+description = "P2P transport + turn commit-reveal duel session for Deus Vult. iroh QUIC (native), nostr-relay fallback (wasm-safe)."
 license = "MIT"
+
+[dependencies]
+crusade-core = { path = "../crusade-core" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+sha2 = "0.10"
+tokio = { version = "1.0", features = ["sync", "macros", "rt"] }
+async-trait = "0.1"
+
+# nostr fallback transport (works in browser wasm over websockets)
+nostr = { version = "0.35" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1.0", features = ["sync", "macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
