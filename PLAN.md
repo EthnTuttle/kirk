@@ -107,7 +107,22 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
 Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 7 sin-bosses. Numbers live in data tables, not code.
 
-## 7. Orchestration protocol
+## 7. Status notes
+
+- Review rounds converged: R1 (10 findings, fixed), R2 (SHIP), R3 holistic
+  (3 majors, fixed), R4 verification (SHIP).
+- Known pre-existing debt (inherited kirk lib): 9 `cashu::services::*` tests
+  panic on the `GameMint::new_test` stub — predates this session. Also
+  `extract_c_value_from_token` is still a placeholder in card_game.
+- Kind map: kirk 9259..=9263, duel transport 9264, attestation 9265.
+- Delegation reality: glm/deepseek flash models failed silently as coding
+  subagents in this environment; all workers ran as tff/kimi-k3 with
+  contract-first skeletons + compact prompts; reviewer tff/kimi-k3#high.
+- Remaining roadmap: M5b (Bevy visual shell, wasm32/mobile targets — needs
+  rustup wasm32 target + mobile SDKs), M6 (campaign content, Chapter Houses,
+  PvP ladder, wager escrow wiring, Game-trait mint replay adapter).
+
+## 7bis. Orchestration protocol
 
 - Grunt workers: `tff/glm-5.3-flash`, `tff/deepseek-v4.1-flash`,
   `tff/nemotron-3-super`. Reviewer: `tff/kimi-k3#high`.

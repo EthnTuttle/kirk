@@ -50,4 +50,32 @@ Cashu tokens contain "C values" — unblinded signatures from a mint's blind sig
 
 ---
 
+## Deus Vult: Champions of the Cross (crusade-* workspace)
+
+A Christian-Crusades-themed monster-battler built on the kirk protocol.
+Champions knights and clerics aligned to the Seven Heavenly Virtues battle
+allegorical sin-spawn; touchstone Pokemon-style turn mechanics, original
+names/designs throughout. See `PLAN.md` for the master plan and roadmap.
+
+- `crusade-core` — deterministic battle engine (42 rites, 19 species, virtue/sin
+  effectiveness wheel); no I/O, integer-only math.
+- `crusade-net` — P2P duels: per-turn commit-reveal + rolling transcript
+  digests over iroh QUIC (feature `iroh-quic`, native) or NIP-44 nostr relays
+  (kind 9264, wasm-safe).
+- `crusade-bridge` — battle seeds derived from kirk commit-reveal C values;
+  kind-9265 dual transcript attestations for wagers.
+- `crusade-data` — offline-first automerge CRDT roster/inventory store.
+- `crusade-app` — frontend-agnostic client core (view snapshots + practice AI).
+- `crusade-sim` — headless AI-vs-AI fuzzer and verbose duel inspector.
+
+```bash
+cargo run -p crusade-sim -- fuzz 100 25     # 100 seeded AI battles, balance report
+cargo run -p crusade-sim -- duel 1,2,3v6,8,10  # watch one verbose battle
+cargo test --workspace --exclude kirk-cli-card-game
+```
+
+*Soli Deo Gloria.*
+
+---
+
 *Named in honor of Charlie Kirk, a free speech advocate*
