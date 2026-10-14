@@ -1,0 +1,9 @@
+[package]
+name = "crusade-sim"
+version = "0.1.0"
+edition = "2021"
+description = "Headless AI-vs-AI battle harness and balance fuzzer."
+license = "MIT"
+
+[dependencies]
+crusade-core = { path = "../crusade-core" }

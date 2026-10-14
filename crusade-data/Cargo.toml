@@ -1,0 +1,6 @@
+[package]
+name = "crusade-data"
+version = "0.1.0"
+edition = "2021"
+description = "Offline-first roster/inventory store (CRDT) for Deus Vult. Planned: automerge."
+license = "MIT"

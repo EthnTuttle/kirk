@@ -1,0 +1,6 @@
+[package]
+name = "crusade-net"
+version = "0.1.0"
+edition = "2021"
+description = "P2P transport for Deus Vult: iroh QUIC native, nostr-relay fallback (wasm-safe)."
+license = "MIT"

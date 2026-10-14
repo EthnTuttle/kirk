@@ -1,0 +1,6 @@
+[package]
+name = "crusade-app"
+version = "0.1.0"
+edition = "2021"
+description = "Bevy client: android, ios, wasm32 web. Added at M5."
+license = "MIT"
