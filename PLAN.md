@@ -92,7 +92,8 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
       rolling transcript digests; iroh QUIC (M2b, feature-gated, localhost
       test) + NIP-44 nostr relay fallback (embedded-relay test). Signing of
       transcripts deferred to M4 (kirk binding).
-- [ ] M3: crusade-data CRDT store + sync.
+- [x] M3: crusade-data automerge roster store (merge/save/load tested).
+      Wire-sync of doc bytes over crusade-net deferred to app milestone.
 - [ ] M4: cashu/kirk binding: commit-reveal battle seeding, wagers.
 - [ ] M5: crusade-app: wasm shell + sim UI slices; mobile shells.
 - [ ] M6: campaign content (sin-spawn bosses, Chapter Houses), PvP ladder.
