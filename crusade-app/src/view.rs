@@ -12,6 +12,24 @@ pub enum Phase {
     InBattle,
     BattleOver,
     ForcedSwitchSelect, // modal: we owe a switch
+    /// Campaign: between gauntlet nodes. The party has just rested (the log
+    /// tail carries the heal preview); ContinueCampaign advances to the next
+    /// boss, AbandonCampaign walks away keeping earned shards.
+    CampaignRest,
+}
+
+/// Campaign (PvE gauntlet) progress view: `Some` from StartCampaign until the
+/// run is acknowledged or abandoned. A full clear reads `defeated == 7`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CampaignView {
+    /// 0-based index of the node being fought / next to fight; 7 after a
+    /// full gauntlet clear.
+    pub node: u8,
+    /// Boss nodes defeated so far (0..=7).
+    pub defeated: u8,
+    /// Contrition shards earned this run (bounty per node is its 1-based
+    /// index, so a full clear pays 1+2+..+7 = 28).
+    pub shards_earned: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +87,9 @@ pub struct ViewSnapshot {
     pub can_switch_to: Vec<String>, // roster-party indices we may switch to
     pub log_tail: Vec<String>,      // human-readable renderings of recent events
     pub battle_result: Option<u8>,  // Some(winner) when over
+    /// Campaign progress; `Some` while a gauntlet run is live (including its
+    /// final BattleOver frame, where `defeated == 7` marks the full clear).
+    pub campaign: Option<CampaignView>,
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }
@@ -91,4 +112,12 @@ pub enum ClientInput {
     Concede,
     /// After BattleOver: clear back to menu.
     AcknowledgeResult,
+    /// Begin the seven-node sin-spawn gauntlet with the (first six) roster
+    /// champions at their stored levels (capped at MAX_LEVEL).
+    StartCampaign,
+    /// CampaignRest: advance to the next boss node.
+    ContinueCampaign,
+    /// Walk away from a running campaign; contrition shards already earned
+    /// are kept and the roster store was never touched mid-run.
+    AbandonCampaign,
 }

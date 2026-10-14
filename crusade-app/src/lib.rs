@@ -1,4 +1,4 @@
-//! crusade-app: frontend-agnostic client core (M5a).
+//! crusade-app: frontend-agnostic client core (M5a + M6 campaign & sync).
 //!
 //! A UI (Bevy, egui, web bindings...) drives ONE `ClientGame`. It reads
 //! [`ViewSnapshot`]s for rendering and feeds [`ClientInput`]s. No async
@@ -7,9 +7,13 @@
 //!
 //! Phases: Menu -> Roster -> BattleSetup (vs AI practice, vs net peer)
 //!   -> InBattle -> BattleOver -> Menu.
+//! Campaign (PvE gauntlet): Menu -> StartCampaign -> [InBattle x node,
+//!   CampaignRest between nodes] -> BattleOver (clear or wipe) -> Menu.
+//!   See [`view::CampaignView`].
 
 pub mod client;
 pub mod policy;
+pub mod sync;
 pub mod view;
 
 pub use client::ClientGame;

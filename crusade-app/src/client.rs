@@ -22,7 +22,9 @@ use crusade_core::types::{
 use crusade_data::RosterStore;
 
 use crate::policy::greedy_action;
-use crate::view::{BattleChampionView, ChampionCard, ClientInput, Phase, RiteCard, ViewSnapshot};
+use crate::view::{
+    BattleChampionView, CampaignView, ChampionCard, ClientInput, Phase, RiteCard, ViewSnapshot,
+};
 use crate::AppError;
 
 /// Side 0 is always the local player in M5a practice battles.
@@ -39,11 +41,51 @@ const PRACTICE_FOE_SPECIES: [u16; 3] = [3, 8, 10];
 /// A battle party fields at most 6 champions.
 const PARTY_CAP: usize = 6;
 
+/// Campaign (PvE gauntlet): seven sin-spawn boss nodes ordered by drama —
+/// Lust, Gluttony, Greed, Sloth, Envy, Wrath, and Pride last. Species ids
+/// follow each spawn's `Typing::Sin` in `crusade_core::data::species`.
+const CAMPAIGN_NODE_SPECIES: [u16; 7] = [103, 106, 107, 104, 102, 105, 101];
+/// Base seed for campaign node battles; the node index is folded in so each
+/// node's rng stream is fixed but distinct (same recipe as PRACTICE_SEED).
+const CAMPAIGN_SEED: [u8; 32] = [0xC9; 32];
+/// PvE rewards paid to the shared inventory (writes to the store, unlike
+/// anything else mid-battle).
+const SHARD_ITEM: &str = "contrition-shard";
+
+/// Boss level for a gauntlet node: 15 at node 0, +5 per node, capped at 40.
+fn boss_level(node: u8) -> u8 {
+    (node * 5 + 15).min(40)
+}
+
+/// Each boss fields two same-sin minions five levels under it (floored at 5).
+fn minion_level(node: u8) -> u8 {
+    boss_level(node).saturating_sub(5).max(5)
+}
+
+/// Live gauntlet run. `party` holds the campaign clones of the player's
+/// roster: `current_resolve` persists between nodes (battle legality demands
+/// full zeal at entry, so zeal is restored at each rest while resolve is
+/// not). The roster store itself is never mutated by campaign battles.
+#[derive(Debug, Clone)]
+struct CampaignState {
+    /// 0-based index of the node being fought / next to fight; 7 once the
+    /// gauntlet is cleared.
+    node: u8,
+    /// Living party clones (fallen champions leave the gauntlet for good).
+    party: Vec<ChampionInstance>,
+    /// Boss nodes defeated.
+    defeated: u8,
+    /// Contrition shards paid out so far this run.
+    shards_earned: u64,
+}
+
 #[derive(Debug)]
 pub struct ClientGame {
     store: RosterStore,
     battle: Option<Battle>,
     phase: Phase,
+    /// Active gauntlet run, if any.
+    campaign: Option<CampaignState>,
     /// Human-readable log lines, capped at `LOG_CAP`.
     log: Vec<String>,
     /// Raw events since the last snapshot. `RefCell` so `snapshot(&self)`
@@ -57,6 +99,7 @@ impl ClientGame {
             store,
             battle: None,
             phase: Phase::Menu,
+            campaign: None,
             log: Vec::new(),
             fresh_events: RefCell::new(Vec::new()),
         }
@@ -81,6 +124,11 @@ impl ClientGame {
             can_switch_to: Vec::new(),
             log_tail,
             battle_result: None,
+            campaign: self.campaign.as_ref().map(|c| CampaignView {
+                node: c.node,
+                defeated: c.defeated,
+                shards_earned: c.shards_earned,
+            }),
             fresh_events,
         };
         let Some(b) = self.battle.as_ref() else {
@@ -158,6 +206,12 @@ impl ClientGame {
                 p => Err(illegal(format!("cannot close to menu from {p:?}"))),
             },
             ClientInput::StartPractice { level } => self.start_practice(level),
+            ClientInput::StartCampaign => self.start_campaign(),
+            ClientInput::ContinueCampaign => match self.phase {
+                Phase::CampaignRest => self.continue_campaign(),
+                p => Err(illegal(format!("no campaign rest to continue from {p:?}"))),
+            },
+            ClientInput::AbandonCampaign => self.abandon_campaign(),
             ClientInput::PickRite { slot } => match self.phase {
                 Phase::InBattle => self.play_turn(Action::Rite { slot }),
                 p => Err(illegal(format!("cannot pick a rite from {p:?}"))),
@@ -174,6 +228,7 @@ impl ClientGame {
             ClientInput::AcknowledgeResult => match self.phase {
                 Phase::BattleOver => {
                     self.battle = None;
+                    self.campaign = None;
                     self.fresh_events.borrow_mut().clear();
                     self.phase = Phase::Menu;
                     Ok(())
@@ -186,8 +241,11 @@ impl ClientGame {
     /// StartPractice: clone the (first 6) roster champions, field-reset to
     /// the requested level, and face the deterministic theme team.
     fn start_practice(&mut self, level: u8) -> Result<(), AppError> {
-        if !matches!(self.phase, Phase::Menu | Phase::Roster) || self.battle.is_some() {
-            return Err(illegal("a battle is already active"));
+        if !matches!(self.phase, Phase::Menu | Phase::Roster)
+            || self.battle.is_some()
+            || self.campaign.is_some()
+        {
+            return Err(illegal("a battle or campaign is already active"));
         }
         if level == 0 || level > MAX_LEVEL {
             return Err(illegal(format!(
@@ -223,6 +281,103 @@ impl ClientGame {
         Ok(())
     }
 
+    /// StartCampaign: clone the (first 6) roster champions, field-reset at
+    /// their stored levels (capped at MAX_LEVEL), and open the gauntlet at
+    /// node 0. The roster store itself is not touched by campaign battles.
+    fn start_campaign(&mut self) -> Result<(), AppError> {
+        if !matches!(self.phase, Phase::Menu | Phase::Roster)
+            || self.battle.is_some()
+            || self.campaign.is_some()
+        {
+            return Err(illegal("a battle or campaign is already active"));
+        }
+        let mut roster = self.store.list_champions()?;
+        if roster.is_empty() {
+            return Err(illegal("cannot start a campaign with an empty roster"));
+        }
+        // Stable party order: roster ids sort deterministically.
+        roster.sort_by(|a, b| a.0.cmp(&b.0));
+        let mut party = Vec::new();
+        for (_, c) in roster.into_iter().take(PARTY_CAP) {
+            let level = c.level.clamp(1, MAX_LEVEL);
+            party.push(field_reset(c, level)?);
+        }
+        self.campaign = Some(CampaignState {
+            node: 0,
+            party,
+            defeated: 0,
+            shards_earned: 0,
+        });
+        self.push_log(vec![
+            "The crusade begins: seven sins bar the road.".to_string()
+        ]);
+        self.start_campaign_node(0)
+    }
+
+    /// Field the next gauntlet node: the (living, rested) campaign party vs
+    /// two minions with the boss of this node's sin waiting behind them.
+    fn start_campaign_node(&mut self, node: u8) -> Result<(), AppError> {
+        let Some(c) = self.campaign.as_ref() else {
+            return Err(illegal("no active campaign"));
+        };
+        if c.party.is_empty() {
+            return Err(illegal("the campaign party has nobody left standing"));
+        }
+        let party_a = c.party.clone();
+        let boss_id = CAMPAIGN_NODE_SPECIES[usize::from(node)];
+        let boss_lv = boss_level(node);
+        let minion_lv = minion_level(node);
+        // Boss last: the spawn screen the party before the sin itself steps
+        // out for the finale.
+        let party_b = vec![
+            practice_champion(boss_id, minion_lv)?,
+            practice_champion(boss_id, minion_lv)?,
+            practice_champion(boss_id, boss_lv)?,
+        ];
+        let boss_name = data::species_by_id(boss_id)
+            .map(|sp| sp.name)
+            .expect("static species table covers all campaign nodes");
+        let mut seed = CAMPAIGN_SEED;
+        seed[0] = node;
+        let battle = Battle::new(party_a, party_b, seed)?;
+        self.battle = Some(battle);
+        self.phase = Phase::InBattle;
+        self.fresh_events.borrow_mut().clear();
+        self.push_log(vec![format!(
+            "Node {}/7 — {boss_name} (level {boss_lv}) waits behind its spawn (level {minion_lv}).",
+            node + 1
+        )]);
+        Ok(())
+    }
+
+    /// CampaignRest -> next node battle.
+    fn continue_campaign(&mut self) -> Result<(), AppError> {
+        let Some(c) = self.campaign.as_ref() else {
+            return Err(illegal("no active campaign"));
+        };
+        if usize::from(c.node) >= CAMPAIGN_NODE_SPECIES.len() {
+            return Err(illegal("the gauntlet is already cleared"));
+        }
+        let node = c.node;
+        self.start_campaign_node(node)
+    }
+
+    /// Walk away mid-run: keep earned shards (already in the store), drop
+    /// the campaign clones, back to Menu.
+    fn abandon_campaign(&mut self) -> Result<(), AppError> {
+        if self.campaign.is_none() {
+            return Err(illegal("no active campaign to abandon"));
+        }
+        self.battle = None;
+        self.campaign = None;
+        self.fresh_events.borrow_mut().clear();
+        self.phase = Phase::Menu;
+        self.push_log(vec![
+            "The campaign is abandoned; earned contrition shards remain.".to_string(),
+        ]);
+        Ok(())
+    }
+
     /// One full turn: my chosen action vs the greedy foe, then any forced
     /// switch the foe owes is resolved immediately (greedy first-alive).
     fn play_turn(&mut self, mine: Action) -> Result<(), AppError> {
@@ -251,13 +406,94 @@ impl ClientGame {
         };
         self.push_log(lines);
         self.fresh_events.borrow_mut().extend(events);
-        self.phase = if result.is_some() {
-            Phase::BattleOver
+        if let Some(w) = result {
+            self.on_battle_end(w)?;
         } else if my_forced {
-            Phase::ForcedSwitchSelect
+            self.phase = Phase::ForcedSwitchSelect;
         } else {
-            Phase::InBattle
+            self.phase = Phase::InBattle;
+        }
+        Ok(())
+    }
+
+    /// Route a finished battle: practice duels go straight to BattleOver;
+    /// campaign nodes pay out shards, rest the survivors, and either open a
+    /// CampaignRest (next node pending) or end the run (clear / wipe).
+    fn on_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
+        let Some((node, defeated, shards)) = self
+            .campaign
+            .as_ref()
+            .map(|c| (c.node, c.defeated, c.shards_earned))
+        else {
+            self.phase = Phase::BattleOver;
+            return Ok(());
         };
+        let boss = data::species_by_id(CAMPAIGN_NODE_SPECIES[usize::from(node.min(6))])
+            .map(|sp| sp.name)
+            .expect("static species table covers all campaign nodes");
+        if winner != MY_SIDE {
+            self.push_log(vec![format!(
+                "The company breaks before {boss}. The campaign is over — {defeated} node(s) cleared, {shards} contrition shard(s) kept."
+            )]);
+            self.phase = Phase::BattleOver;
+            return Ok(());
+        }
+        // Node cleared: the bounty is the node's 1-based index, paid into
+        // the shared inventory (the one store write a campaign performs).
+        let bounty = i64::from(node) + 1;
+        let carried = self.store.add_item(SHARD_ITEM, bounty)?;
+        let mut lines = vec![format!(
+            "{boss} yields! The node grants {bounty} contrition shard(s) (carried: {carried})."
+        )];
+        // Survivors rest: resolve persists across the gauntlet, the living
+        // recover half their maximum, ailments pass with sleep. Zeal is
+        // restored because battle entry requires full-zeal rites.
+        let b = self
+            .battle
+            .as_ref()
+            .expect("on_battle_end called with a live battle");
+        let mut survivors = Vec::new();
+        for ch in &b.sides[usize::from(MY_SIDE)].party {
+            if ch.current_resolve == 0 {
+                continue;
+            }
+            let mut ch = ch.clone();
+            let sp = data::species_by_id(ch.species_id)
+                .ok_or_else(|| illegal(format!("unknown species {}", ch.species_id)))?;
+            let max = data::compute_stats(&ch, sp).max_resolve;
+            let before = ch.current_resolve;
+            ch.current_resolve = before.saturating_add(max / 2).min(max);
+            if ch.current_resolve > before {
+                lines.push(format!(
+                    "{} rests (resolve {before} -> {}/{}).",
+                    sp.name, ch.current_resolve, max
+                ));
+            }
+            for slot in ch.rites.iter_mut().flatten() {
+                if let Some(r) = data::rite_by_id(slot.rite_id) {
+                    slot.zeal_left = r.zeal;
+                }
+            }
+            ch.ailment = None;
+            survivors.push(ch);
+        }
+        let done = {
+            let c = self.campaign.as_mut().expect("campaign checked above");
+            c.party = survivors;
+            c.node += 1;
+            c.defeated += 1;
+            c.shards_earned += bounty as u64;
+            usize::from(c.node) >= CAMPAIGN_NODE_SPECIES.len()
+        };
+        if done {
+            lines.push("Pride itself is broken — the gauntlet is cleared!".to_string());
+            self.push_log(lines);
+            self.phase = Phase::BattleOver;
+        } else {
+            self.battle = None;
+            self.push_log(lines);
+            self.phase = Phase::CampaignRest;
+        }
         Ok(())
     }
 
