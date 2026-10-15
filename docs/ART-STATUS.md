@@ -104,17 +104,17 @@ Rule: **combat characters are men; support/other characters may be women.**
   tests green; prompt/slug/staging/ledger updated; **review: SHIP** (three
   doc nits fixed same-day). Raimbaud cell regenerates in 4.1 at `-v2` id.
 
-### 4.3 Holistic animation generation (exploratory card)
-Single-call sprite **sheets**, not per-frame images: prompt the winner model
-for an N-cell turnaround/animation sheet on a strict uniform grid (e.g.
-3×2 cells of 128px: idle / step / strike / hit / defend / pray), slice by grid
-with a `slice.py`, quantize each cell `--size 128`, assemble a bevy texture
-atlas. Rationale: models hold style internally consistent within one image far
-better than across separate calls; grid slicing turns $0.02 into 6 frames.
-Acceptance: for ONE subject (audric-battle), a 6-frame sheet where silhouette
-registration survives slicing; q128 cells read in `cargo run -p crusade-app`
-battle screen or a bevy ui sandbox; honest writeup of consistency limits
-(diffusion sheet registration is the known weakness — pilot before scaling).
+### 4.3 Holistic animation generation (PILOT DONE 2026-10-14, $0.00)
+Audric 6-frame sheet (3×2, one banana call): **registration survived
+slicing** — standing spread ~5px at q128 (~4% canvas, ≈ mild hand-authored
+bob), 12–13 colors/cell all on-palette, identity consistent across poses.
+Fouls measured: model drew caption labels (slice.py strips them
+deterministically by background-gap detection; +`--labels`, add "no
+captions" wording next time) and idle faced left vs the rest right.
+**Recommendation: hybrid** — sheets for idle/pose families (one free call =
+6 same-costume frames), per-frame generation for the combat arc. Slicer +
+registration analyzer: `tools/artbake/slice.py` (reports bbox/centroid/IoU
+per pair). Pilot artifacts: `/tmp/opencode/sprite-bakeoff/anim-audric/`.
 
 ### 4.4 Integration (after 4.1+4.2 land where relevant)
 Wire winning q128s into `crusade-app` per `docs/ART-PIPELINE.md` WS-D cards
