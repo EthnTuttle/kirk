@@ -173,7 +173,7 @@ fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
         text_node(cmd, "DEUS VULT".into(), style::title_font(), style::GOLD),
         text_node(
             cmd,
-            "— Champions of the Cross —".into(),
+            "- Champions of the Cross -".into(),
             style::head_font(),
             style::GOLD_DIM,
         ),
@@ -278,7 +278,7 @@ fn champion_card(cmd: &mut Commands, card: &ChampionCard) -> Entity {
     let mut kids = vec![
         text_node(
             cmd,
-            format!("{} — Lv {}", card.species_name, card.level),
+            format!("{} - Lv {}", card.species_name, card.level),
             style::body_font(),
             style::BONE,
         ),
@@ -340,7 +340,7 @@ fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
         kids.push(text_node(
             cmd,
             format!(
-                "Bosses defeated: {}/7 — contrition shards earned: {}",
+                "Bosses defeated: {}/7 - contrition shards earned: {}",
                 c.defeated, c.shards_earned
             ),
             style::body_font(),
@@ -373,8 +373,8 @@ fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
 
 fn over_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
     let (banner, color) = match snap.battle_result {
-        Some(0) => ("Victory — Deo Gratias", style::GOLD),
-        Some(_) => ("Defeat — Pray and Regroup", style::HP_RED),
+        Some(0) => ("Victory - Deo Gratias", style::GOLD),
+        Some(_) => ("Defeat - Pray and Regroup", style::HP_RED),
         None => ("The field falls quiet.", style::BONE),
     };
     let mut kids = vec![text_node(cmd, banner.into(), style::title_font(), color)];
@@ -382,7 +382,7 @@ fn over_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
         kids.push(text_node(
             cmd,
             format!(
-                "Nodes cleared: {}/7 — contrition shards earned: {}",
+                "Nodes cleared: {}/7 - contrition shards earned: {}",
                 c.defeated, c.shards_earned
             ),
             style::body_font(),
@@ -447,7 +447,7 @@ fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot, ladder: Option<u64>) ->
             if mustered {
                 format!("Your company stands {} strong.", snap.roster_count)
             } else {
-                "Your company is empty — no champion may take the field.".to_string()
+                "Your company is empty - no champion may take the field.".to_string()
             },
             style::small_font(),
             style::BONE,
@@ -484,7 +484,7 @@ fn lobby_screen(cmd: &mut Commands, snap: &ViewSnapshot, ladder: Option<u64>) ->
     }
     for ch in &lobby.challenges {
         let label = format!(
-            "Answer {} — {} champion(s) sworn",
+            "Answer {} - {} champion(s) sworn",
             ch.host_label, ch.party_size
         );
         if idle && mustered {
@@ -549,8 +549,8 @@ fn net_over_screen(
     alms: Option<&AlmsState>,
 ) -> Vec<Entity> {
     let (banner, color) = match won {
-        Some(true) => ("Victory — Deo Gratias", style::GOLD),
-        Some(false) => ("Defeat — Pray and Regroup", style::HP_RED),
+        Some(true) => ("Victory - Deo Gratias", style::GOLD),
+        Some(false) => ("Defeat - Pray and Regroup", style::HP_RED),
         None => ("The field falls quiet.", style::BONE),
     };
     let mut kids = vec![
@@ -650,7 +650,7 @@ fn alms_panel(cmd: &mut Commands, alms: &AlmsState) -> Option<Entity> {
         AlmsPurse::House => {
             kids.push(text_node(
                 cmd,
-                "The victor keeps no alms purse — your alms go to the Crusade's works.".into(),
+                "The victor keeps no alms purse - your alms go to the Crusade's works.".into(),
                 style::small_font(),
                 style::BONE,
             ));
@@ -675,7 +675,7 @@ fn alms_panel(cmd: &mut Commands, alms: &AlmsState) -> Option<Entity> {
             ));
             kids.push(text_node(
                 cmd,
-                "Give what you will — nothing is owed:".into(),
+                "Give what you will - nothing is owed:".into(),
                 style::small_font(),
                 style::GOLD_DIM,
             ));
@@ -709,7 +709,7 @@ fn alms_panel(cmd: &mut Commands, alms: &AlmsState) -> Option<Entity> {
                     kids.push(text_node(
                         cmd,
                         format!(
-                            "{} sats — pay this invoice with any lightning wallet:",
+                            "{} sats - pay this invoice with any lightning wallet:",
                             amount_msat / 1000
                         ),
                         style::small_font(),

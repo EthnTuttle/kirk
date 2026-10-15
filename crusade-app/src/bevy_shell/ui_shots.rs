@@ -660,7 +660,7 @@ fn seed_net_over(
 fn lobby_ready_fixture() -> ClientInput {
     ClientInput::LobbyNet(LobbyNet::Ready {
         relays: vec!["wss://relay.damus.io".into(), "wss://nos.lol".into()],
-        key_label: "npub1crusade…".into(),
+        key_label: "npub1crusade...".into(),
     })
 }
 
@@ -673,9 +673,9 @@ fn lobby_list_fixture() -> ClientInput {
     };
     ClientInput::LobbyNet(LobbyNet::ChallengeList {
         challenges: vec![
-            card(0xA1, "npub1valiant…", 2),
-            card(0xB2, "npub1pilgrim…", 3),
-            card(0xC3, "npub1hermit…", 1),
+            card(0xA1, "npub1valiant...", 2),
+            card(0xB2, "npub1pilgrim...", 3),
+            card(0xC3, "npub1hermit...", 1),
         ],
     })
 }

@@ -122,7 +122,7 @@ fn forward_lobby_command(
     let Some(cmd) = cmd else { return };
     if bridge.send(cmd).is_err() {
         match game.handle(ClientInput::LobbyNet(LobbyNet::Failed {
-            text: "The heralds fell silent — withdraw and seek the tournament again.".into(),
+            text: "The heralds fell silent - withdraw and seek the tournament again.".into(),
         })) {
             Ok(()) => *version = version.wrapping_add(1),
             Err(err) => warn!("failed-notice was itself rejected: {err}"),
@@ -133,7 +133,7 @@ fn forward_lobby_command(
 /// The task is gone mid-duel: tell the client the duel erred terminally.
 fn net_task_died_during_duel(game: &mut ClientGame, version: &mut u64) {
     match game.handle(ClientInput::LobbyNet(LobbyNet::DuelAborted {
-        text: "The heralds fell silent mid-duel — the field is abandoned.".into(),
+        text: "The heralds fell silent mid-duel - the field is abandoned.".into(),
     })) {
         Ok(()) => *version = version.wrapping_add(1),
         Err(err) => warn!("abort report was rejected: {err}"),

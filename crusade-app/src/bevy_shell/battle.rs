@@ -64,7 +64,7 @@ fn champion_panel(cmd: &mut Commands, view: &BattleChampionView) -> Entity {
     let mut kids = vec![
         text_node(
             cmd,
-            format!("{} — Lv {}", view.species_name, view.level),
+            format!("{} - Lv {}", view.species_name, view.level),
             style::head_font(),
             style::BONE,
         ),
@@ -206,7 +206,7 @@ fn rite_row(cmd: &mut Commands, rites: &[RiteCard]) -> Entity {
 fn rite_label(rite: &RiteCard) -> String {
     if rite.power > 0 {
         format!(
-            "{}\n{} {} · Pow {} · Acc {} · Zeal {}/{}",
+            "{}\n{} {} | Pow {} | Acc {} | Zeal {}/{}",
             rite.name,
             rite.type_display,
             rite.category_display,
@@ -217,7 +217,7 @@ fn rite_label(rite: &RiteCard) -> String {
         )
     } else {
         format!(
-            "{}\n{} {} · Acc {} · Zeal {}/{}",
+            "{}\n{} {} | Acc {} | Zeal {}/{}",
             rite.name,
             rite.type_display,
             rite.category_display,
