@@ -4,6 +4,7 @@
 use bevy::prelude::*;
 
 use crusade_app::{ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot};
+use crusade_core::data;
 
 use crate::battle;
 use crate::state::{
@@ -28,6 +29,9 @@ pub fn rebuild_ui(
     version: Res<SnapshotVersion>,
     mut rendered: ResMut<RenderedVersion>,
     roots: Query<Entity, With<UiRoot>>,
+    // `None` under MinimalPlugins (the headless smoke run): every sprite
+    // slot then collapses to the plain text rows it supplements.
+    assets: Option<Res<AssetServer>>,
 ) {
     if rendered.0 == Some(version.0) {
         return;
@@ -36,6 +40,7 @@ pub fn rebuild_ui(
     for root in &roots {
         commands.entity(root).despawn(); // children go with it
     }
+    let assets = assets.as_deref();
     let (snap, roster, ladder) = {
         let game = shell.game.lock().expect("game mutex poisoned");
         (game.snapshot(), game.roster_cards(), game.ladder_rating())
@@ -63,13 +68,13 @@ pub fn rebuild_ui(
                 )
             }
             Phase::ForcedSwitchSelect => {
-                (battle::forced_switch_screen(&mut commands, &duel), false)
+                (battle::forced_switch_screen(&mut commands, &duel, assets), false)
             }
-            _ => (battle::battle_screen(&mut commands, &duel), false),
+            _ => (battle::battle_screen(&mut commands, &duel, assets), false),
         },
         _ => match snap.phase {
             Phase::Menu => (menu_screen(&mut commands, ladder), true),
-            Phase::Roster => (roster_screen(&mut commands, &roster), false),
+            Phase::Roster => (roster_screen(&mut commands, &roster, assets), false),
             Phase::BattleSetup => (
                 vec![text_node(
                     &mut commands,
@@ -79,9 +84,9 @@ pub fn rebuild_ui(
                 )],
                 true,
             ),
-            Phase::InBattle => (battle::battle_screen(&mut commands, &snap), false),
+            Phase::InBattle => (battle::battle_screen(&mut commands, &snap, assets), false),
             Phase::ForcedSwitchSelect => {
-                (battle::forced_switch_screen(&mut commands, &snap), false)
+                (battle::forced_switch_screen(&mut commands, &snap, assets), false)
             }
             Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap), true),
@@ -249,7 +254,11 @@ fn open_lightning_uri() {
 
 // ---------- Roster ----------
 
-fn roster_screen(cmd: &mut Commands, cards: &[ChampionCard]) -> Vec<Entity> {
+fn roster_screen(
+    cmd: &mut Commands,
+    cards: &[ChampionCard],
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
     let title = text_node(cmd, "The Company".into(), style::head_font(), style::GOLD);
     let back = action_button(cmd, "Back".into(), ClientInput::CloseToMenu);
     let head = cmd
@@ -261,7 +270,10 @@ fn roster_screen(cmd: &mut Commands, cards: &[ChampionCard]) -> Vec<Entity> {
         })
         .add_children(&[title, back])
         .id();
-    let card_entities: Vec<Entity> = cards.iter().map(|c| champion_card(cmd, c)).collect();
+    let card_entities: Vec<Entity> = cards
+        .iter()
+        .map(|c| champion_card(cmd, c, assets))
+        .collect();
     let grid = cmd
         .spawn(Node {
             column_gap: Val::Px(12.0),
@@ -274,21 +286,23 @@ fn roster_screen(cmd: &mut Commands, cards: &[ChampionCard]) -> Vec<Entity> {
     vec![head, grid]
 }
 
-fn champion_card(cmd: &mut Commands, card: &ChampionCard) -> Entity {
-    let mut kids = vec![
-        text_node(
-            cmd,
-            format!("{} - Lv {}", card.species_name, card.level),
-            style::body_font(),
-            style::BONE,
-        ),
-        text_node(
-            cmd,
-            format!("resolve {}/{}", card.current_resolve, card.max_resolve),
-            style::small_font(),
-            style::GOLD,
-        ),
-    ];
+fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetServer>) -> Entity {
+    let mut kids = Vec::new();
+    if let Some(icon) = champion_icon(cmd, card.species_id, assets) {
+        kids.push(icon);
+    }
+    kids.push(text_node(
+        cmd,
+        format!("{} - Lv {}", card.species_name, card.level),
+        style::body_font(),
+        style::BONE,
+    ));
+    kids.push(text_node(
+        cmd,
+        format!("resolve {}/{}", card.current_resolve, card.max_resolve),
+        style::small_font(),
+        style::GOLD,
+    ));
     if let Some(ailment) = card.ailment {
         kids.push(text_node(
             cmd,
@@ -325,6 +339,29 @@ fn champion_card(cmd: &mut Commands, card: &ChampionCard) -> Entity {
         BorderColor::all(style::PANEL_EDGE),
     ));
     panel_entity.add_children(&kids).id()
+}
+
+/// The 32x32 roster icon at the top of a champion card — the section 2
+/// seam-2 `ImageNode`, keyed by the card's own `species_id`
+/// (`sprites/icons/{id:03}.png`, auto-derived from the battle sprite by
+/// `tools/artbake/stage_sprites.py`). Spawned only when an asset server
+/// exists AND the id is a static-table species (whose icon the art lane
+/// always ships); a 404ing icon (partial wasm deploy) draws nothing over
+/// the card's unconditional text rows.
+fn champion_icon(cmd: &mut Commands, species_id: u16, assets: Option<&AssetServer>) -> Option<Entity> {
+    data::species_by_id(species_id)?;
+    let assets = assets?;
+    Some(
+        cmd.spawn((
+            ImageNode::new(assets.load(format!("sprites/icons/{species_id:03}.png"))),
+            Node {
+                width: Val::Px(32.0),
+                height: Val::Px(32.0),
+                ..default()
+            },
+        ))
+        .id(),
+    )
 }
 
 // ---------- Campaign rest ----------

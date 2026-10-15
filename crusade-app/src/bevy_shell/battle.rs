@@ -6,6 +6,7 @@
 use bevy::prelude::*;
 
 use crusade_app::{BattleChampionView, ClientInput, RiteCard, ViewSnapshot};
+use crusade_core::data;
 use crusade_core::types::Ailment;
 
 use crate::screens::{action_button, log_panel, panel, text_node};
@@ -13,9 +14,13 @@ use crate::state::{switch_target_idx, switch_target_name};
 use crate::style;
 
 /// Full in-battle layout for [`Phase::InBattle`].
-pub(crate) fn battle_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+pub(crate) fn battle_screen(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
     let mut kids = vec![
-        battle_row(cmd, snap),
+        battle_row(cmd, snap, assets),
         log_panel(cmd, "Chronicle", &snap.log_tail),
     ];
     if !snap.my_rites.is_empty() {
@@ -26,23 +31,27 @@ pub(crate) fn battle_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Enti
 }
 
 /// [`Phase::ForcedSwitchSelect`]: the normal field, greyed under a modal.
-pub(crate) fn forced_switch_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
-    let mut kids = battle_screen(cmd, snap);
+pub(crate) fn forced_switch_screen(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
+    let mut kids = battle_screen(cmd, snap, assets);
     kids.push(forced_switch_overlay(cmd, snap));
     kids
 }
 
 /// Me (left) vs foe (right), stretched across the window.
-fn battle_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
+fn battle_row(cmd: &mut Commands, snap: &ViewSnapshot, assets: Option<&AssetServer>) -> Entity {
     let me = snap
         .me
         .as_ref()
-        .map(|v| champion_panel(cmd, v))
+        .map(|v| champion_panel(cmd, v, assets))
         .unwrap_or_else(|| text_node(cmd, "...".into(), style::body_font(), style::DIM));
     let foe = snap
         .foe
         .as_ref()
-        .map(|v| champion_panel(cmd, v))
+        .map(|v| champion_panel(cmd, v, assets))
         .unwrap_or_else(|| text_node(cmd, "...".into(), style::body_font(), style::DIM));
     cmd.spawn(Node {
         width: Val::Percent(100.0),
@@ -54,22 +63,29 @@ fn battle_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
     .id()
 }
 
-/// One side's champion card: gold edge for ours, ember for the foe.
-fn champion_panel(cmd: &mut Commands, view: &BattleChampionView) -> Entity {
+/// One side's champion card: portrait sprite (when the art lane has the
+/// species), then gold edge for ours, ember for the foe.
+fn champion_panel(
+    cmd: &mut Commands,
+    view: &BattleChampionView,
+    assets: Option<&AssetServer>,
+) -> Entity {
     let border = if view.ours {
         style::GOLD_DIM
     } else {
         style::HP_RED
     };
-    let mut kids = vec![
-        text_node(
-            cmd,
-            format!("{} - Lv {}", view.species_name, view.level),
-            style::head_font(),
-            style::BONE,
-        ),
-        resolve_row(cmd, view.current_resolve, view.max_resolve),
-    ];
+    let mut kids = Vec::new();
+    if let Some(portrait) = champion_sprite(cmd, &view.species_name, assets) {
+        kids.push(portrait);
+    }
+    kids.push(text_node(
+        cmd,
+        format!("{} - Lv {}", view.species_name, view.level),
+        style::head_font(),
+        style::BONE,
+    ));
+    kids.push(resolve_row(cmd, view.current_resolve, view.max_resolve));
     if !view.types_display.is_empty() {
         kids.push(text_node(
             cmd,
@@ -101,6 +117,70 @@ fn champion_panel(cmd: &mut Commands, view: &BattleChampionView) -> Entity {
         BorderColor::all(border),
     ));
     card.add_children(&kids).id()
+}
+
+/// The 128x128 battle sprite above the name row — the section 2 seam-1
+/// `ImageNode` keyed by species id (`sprites/champions/{id:03}-{slug}.png`,
+/// staged by `tools/artbake/stage_sprites.py`). Spawned only when the app
+/// HAS an asset server (MinimalPlugins smoke runs do not) AND the species
+/// is one of the 19 art-lane species; the name/resolve/type text rows below
+/// are unconditional, so a sprite whose fetch 404s (wasm during a partial
+/// deploy) simply draws nothing over an intact text panel.
+fn champion_sprite(
+    cmd: &mut Commands,
+    species_name: &str,
+    assets: Option<&AssetServer>,
+) -> Option<Entity> {
+    let sprites = champion_sprite_path(species_name)?;
+    let assets = assets?;
+    Some(
+        cmd.spawn((
+            ImageNode::new(assets.load(sprites)),
+            Node {
+                width: Val::Px(128.0),
+                height: Val::Px(128.0),
+                ..default()
+            },
+        ))
+        .id(),
+    )
+}
+
+/// Asset path for a battle view's species name. `BattleChampionView`
+/// carries no species id, but its `species_name` is copied verbatim from
+/// the static SPECIES table (crusade-app/src/client.rs::champion_view), so
+/// a reverse name scan recovers exactly the id the client rendered. The
+/// client's defensive "Champion #N" fallback name matches nothing and
+/// yields `None` on purpose: unknown species keep the text-only render.
+fn champion_sprite_path(species_name: &str) -> Option<String> {
+    let sp = data::species::SPECIES
+        .iter()
+        .find(|sp| sp.name == species_name)?;
+    Some(format!(
+        "sprites/champions/{:03}-{}.png",
+        sp.id,
+        slugify(sp.name)
+    ))
+}
+
+/// Asset-slug form of a species name: lowercase ASCII, with every run of
+/// non-alphanumerics collapsed to one dash. "Vigil-Knight Wymar" and
+/// "Squire Audric" both land on their staged file slugs.
+fn slugify(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut pending_dash = false;
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() {
+            if pending_dash && !out.is_empty() {
+                out.push('-');
+            }
+            pending_dash = false;
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            pending_dash = true;
+        }
+    }
+    out
 }
 
 /// Green-over-red resolve bar, sized current/max, with the numbers beside.
@@ -294,5 +374,62 @@ fn ailment_label(ailment: Ailment) -> &'static str {
         Ailment::Venom => "envenomed",
         Ailment::Slumber => "slumbering",
         Ailment::Frost => "frost-bound",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every static-table species name resolves to the exact staged sprite
+    /// filename (the ui-shots pass then proves the files decode on screen).
+    #[test]
+    fn every_species_resolves_to_its_staged_sprite_path() {
+        let expected: &[(u16, &str)] = &[
+            (1, "squire-audric"),
+            (2, "cleric-mabel"),
+            (3, "serjeant-bastien"),
+            (4, "hospitaller-ysolt"),
+            (5, "wayfarer-aelis"),
+            (6, "canoness-hrothwyn"),
+            (7, "vexillor-anchetil"),
+            (8, "brother-aldwyn"),
+            (9, "cantor-sabina"),
+            (10, "chevalier-raimbaud"),
+            (11, "vigil-knight-wymar"),
+            (12, "friar-osbert"),
+            (101, "prince-of-pride"),
+            (102, "wretch-of-envy"),
+            (103, "fiend-of-lust"),
+            (104, "sleeper-of-sloth"),
+            (105, "brute-of-wrath"),
+            (106, "glutton-maw"),
+            (107, "grasper-of-greed"),
+        ];
+        assert_eq!(data::species::SPECIES.len(), expected.len());
+        for (sp, (id, slug)) in data::species::SPECIES.iter().zip(expected) {
+            assert_eq!(sp.id, *id);
+            assert_eq!(
+                champion_sprite_path(sp.name).as_deref(),
+                Some(format!("sprites/champions/{id:03}-{slug}.png").as_str()),
+                "{}",
+                sp.name
+            );
+        }
+    }
+
+    /// The client's defensive fallback name (unknown species in a corrupt
+    /// store/save) must NOT guess a sprite: text-only render is the contract.
+    #[test]
+    fn unknown_species_name_gets_no_sprite() {
+        assert_eq!(champion_sprite_path("Champion #55"), None);
+        assert_eq!(champion_sprite_path("Vigo the Carpathian"), None);
+    }
+
+    #[test]
+    fn slugify_matches_staged_slugs() {
+        assert_eq!(slugify("Squire Audric"), "squire-audric");
+        assert_eq!(slugify("Vigil-Knight Wymar"), "vigil-knight-wymar");
+        assert_eq!(slugify("Glutton Maw"), "glutton-maw");
     }
 }

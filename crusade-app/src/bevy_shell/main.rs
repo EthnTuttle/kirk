@@ -68,13 +68,22 @@ fn main() {
             run_mode: RunMode::Loop { wait: None },
         }));
     } else {
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Deus Vult".to_string(),
-                ..default()
-            }),
-            ..default()
-        }));
+        // Nearest-neighbour default sampler: pixel-art sprites stay crisp
+        // (docs/ART-PIPELINE.md section 2, seam 4). On native, bevy's asset
+        // root resolves via BEVY_ASSET_ROOT / CARGO_MANIFEST_DIR (cargo run
+        // sets the latter to crusade-app/), so ../assets just works; on wasm
+        // the root is the page URL and trunk's copy-dir ships the files.
+        app.add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Deus Vult".to_string(),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        );
     }
 
     app.insert_resource(GameShell {

@@ -120,6 +120,26 @@ per pair). Pilot artifacts: `/tmp/opencode/sprite-bakeoff/anim-audric/`.
 Wire winning q128s into `crusade-app` per `docs/ART-PIPELINE.md` WS-D cards
 (D1 hero/battle sprites, D2 boss art, D3 menu/campaign polish — D3 serialized
 after any in-flight shell work touching `bevy_shell/`).
+- OUTCOME (2026-10-14, cards D1 battle sprites + D2 roster icons): the locked
+  **nano-banana-2-1** lane staged into `crusade-app/assets/sprites/` —
+  `champions/NNN-slug.png` (128², 19 files) + derived `icons/NNN.png` (32²,
+  nearest downscale) — by `tools/artbake/stage_sprites.py` (new single source
+  of truth for the art→assets step; 19-row id↔slug↔cell table from
+  `species.rs`; rerunnable/idempotent; default edge-connected ink keying —
+  halo-free: 0 semi-transparent px in all 38 outputs; `--no-key-bg` keeps the
+  opaque tile). `audric-battle` wired for id 1; `audric-prayer` NOT wired;
+  gpt-image-1.5 lane untouched on disk as alternates. Shell: `ImageNode` in
+  `battle.rs::champion_panel` (128² portrait, name→table reverse lookup;
+  unknown names keep text-only) and `screens.rs::champion_card` (32² icon via
+  `species_id`, which `ChampionCard` already exposed; `BattleChampionView`
+  surface untouched); name/resolve/type text rows remain the fallback (headless
+  smoke has no AssetServer → text; wasm 404 → blank over intact text);
+  `ImagePlugin::default_nearest()` in `main.rs`; `copy-dir ../assets` in
+  `web/index.html`. `cargo test -p crusade-app` 40/40 green (±bevy-ui, incl. 3
+  new slug/path bin tests), ui-shots: battle.png shows keyed Audric vs Bastien
+  crisp + correct, roster.png 6/6 icon slots populated, `--smoke` exit 0. No
+  atlas, no view/crate-surface changes; wasm32 check skipped (target not
+  installed here; CI covers).
 
 ## 5. Non-art host state at pause time
 
