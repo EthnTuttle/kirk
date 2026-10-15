@@ -189,7 +189,7 @@ spend **$0.00** (cumulative project spend unchanged at $0.664).
 
 | subject | final sheet id | tries | drift excl. kneel @q128 (dcx/dcy max) | eyeball | verdict |
 |---|---|---|---|---|---|
-| audric-battle | kirk-anim-pilot-audric-battle-v1 | 0 (reuse) | 8.5/4.7 (4.3 pilot) | OK (idle faces left — known pilot foul, see 4.3) | OK (pilot) |
+| audric-battle | kirk-anim-pilot-audric-battle-v1 | 0 (reuse) | 8.5/4.7 (4.3 pilot) | OK | OK (pilot; left-facing idle foul FIXED by exact pixel-mirror at D5 wiring, 2026-10-14) |
 | cleric-mabel | kirk-anim-sheet-cleric-mabel-v1 | 1 | 5.1/2.8 | OK | OK |
 | serjeant-bastien | kirk-anim-sheet-serjeant-bastien-v1 | 1 | 4.4/6.2 | OK | OK |
 | hospitaller-ysolt | kirk-anim-sheet-hospitaller-ysolt-v1 | 1 | 8.3/4.3 | OK | OK |
@@ -214,6 +214,28 @@ spend **$0.00** (cumulative project spend unchanged at $0.664).
   slice.py caption-strip stayed a no-op backstop.
 - Ledger: +12 entries in `tools/artbake/MANIFEST.json` (`*-sheet` subjects,
   src_dims, cost 0.0; retry notes on the 5 re-prompted cells).
+- **D5 outcome (2026-10-14): battle idle-loop animation shipped.**
+  `stage_sprites.py` gained an ANIM table staging `01_idle` (+ `04_idle2`
+  where the batch grid has one — every champion except Audric, whose 4.3
+  pilot grid has no idle2 and loops on the single idle frame) into
+  `crusade-app/assets/sprites/anim/{id:03}-{slug}/NN_pose.png`, same
+  edge-flood keying (23 files, reruns idempotent, 0 semi-transparent px);
+  bosses 101–107 keep static sprites by design — no special-case beyond
+  "no frames → static". Shell: `ChampionAnim` component + preloaded handles
+  swapped by `battle::advance_champion_anim` on 90-frame plateaus
+  (≈1.5 s/pose at vsync; idle→idle2→idle only — pray/step/look/bow never
+  auto-play; strike/hit await the combat-arc card), driven by
+  `state::AnimTick`, a frame counter advanced once per rendered frame from
+  `input::process_inputs` — the one per-frame system all three binaries
+  already register — and self-installed via deferred commands, so main.rs /
+  screens.rs / ui_shots.rs / smoke.rs needed zero edits. Frame index is a
+  pure function of tick (`(tick/90)%2`), never wall time: ui-shots FULL pass
+  twice produced all 8 PNGs byte-identical (`cmp` clean), battle.png shows
+  both panels' idle cells crisp on-panel. Fallback ladder intact: no
+  AssetServer → text-only; unknown/boss names → static champions sprite.
+  `cargo test -p crusade-app` green without and with bevy-ui (incl. 2 new
+  battle.rs bin tests: anim resolver incl. boss/unknown None, phase-plateau
+  boundaries); `--smoke` exit 0.
 
 ## 5. Non-art host state at pause time
 

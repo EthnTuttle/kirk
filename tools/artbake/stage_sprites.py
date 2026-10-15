@@ -6,6 +6,7 @@ crusade-app/assets/ in the species_id-keyed layout the Bevy shell loads
     assets/sprites/champions/{id:03}-{slug}.png   128x128 battle sprite
     assets/sprites/icons/{id:03}.png              32x32 roster icon
     assets/sprites/scenes/<name>.png              128x128 scene/hero art
+    assets/sprites/anim/{id:03}-{slug}/NN_<pose>.png  128x128 idle-loop frames
 
 This script is the single source of truth for the art -> assets step
 (cards D1 battle sprites + D2 roster icons). Stdlib + Pillow only.
@@ -80,6 +81,21 @@ SCENES = [
     ("audric-prayer",),
 ]
 
+# Battle idle-loop animation frames (card D5): copied from the 4.5 staging
+# area art/anim-staging/<cell>/ to sprites/anim/{id:03}-{slug}/NN_<pose>.png
+# (stem minus the `_q128` tag), keyed by the same edge-flood pass as the
+# battle sprites. Only the poses the shell actually animates ship: `01_idle`
+# for every champion plus `04_idle2` where the sheet is the 4.5 batch grid.
+# `audric-battle` is the 4.3 PILOT grid (idle/step/strike/hit/defend/pray —
+# no idle2), so its loop is the single idle frame. Bosses (ids 101+) have
+# no anim sheets at all and stay on the static battle sprite. step/pray/
+# look/bow and the pilot's combat family stay in art/anim-staging only,
+# awaiting the later combat-arc card; pray never auto-plays.
+ANIM_IDLE_POSES = ["01_idle", "04_idle2"]
+ANIM_POSES_BY_CELL = {
+    "audric-battle": ["01_idle"],
+}
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -91,6 +107,8 @@ def parse_args(argv):
                    help="override the staging root (default: <repo>/art/roster-staging/<lane>)")
     p.add_argument("--assets", default=None,
                    help="override the assets root (default: <repo>/crusade-app/assets)")
+    p.add_argument("--anim-staging", default=None,
+                   help="override the anim staging root (default: <repo>/art/anim-staging)")
     p.add_argument("--key-bg", dest="key_bg", action="store_true", default=True,
                    help="key the edge-connected ink-navy background to transparency (default)")
     p.add_argument("--no-key-bg", dest="key_bg", action="store_false",
@@ -100,6 +118,8 @@ def parse_args(argv):
         args.staging = os.path.join(REPO_ROOT, "art", "roster-staging", args.lane)
     if args.assets is None:
         args.assets = os.path.join(REPO_ROOT, "crusade-app", "assets")
+    if args.anim_staging is None:
+        args.anim_staging = os.path.join(REPO_ROOT, "art", "anim-staging")
     return args
 
 
@@ -214,9 +234,41 @@ def main(argv):
         print(f"  {'':>4} {'scene':22} {cell:22} {keyed:>8}  "
               f"{os.path.relpath(scene, args.assets)}")
 
+    # Card D5: idle-loop frame sets under sprites/anim/. Missing poses on a
+    # listed cell are an error like any missing cell (exit 1 via load_canvas)
+    # EXCEPT the boss rows, which are skipped outright below.
+    anim_frames = 0
+    if not os.path.isdir(args.anim_staging):
+        print(f"stage_sprites: anim staging not found: {args.anim_staging} "
+              f"(skipping idle-frame staging)", file=sys.stderr)
+    for species_id, slug, cell in SUBJECTS:
+        if species_id >= 100:
+            continue  # bosses: no anim sheets (4.5), static sprite only
+        poses = ANIM_POSES_BY_CELL.get(cell, ANIM_IDLE_POSES)
+        if not os.path.isdir(args.anim_staging):
+            break
+        outs = []
+        for pose in poses:
+            src = os.path.join(args.anim_staging, cell, f"{pose}_q128.png")
+            img = load_canvas(src)
+            if args.key_bg:
+                img, _keyed = key_edge_connected_ink(img)
+            out = os.path.join(
+                args.assets, "sprites", "anim", f"{species_id:03d}-{slug}", f"{pose}.png"
+            )
+            if write_png_if_changed(img, out):
+                written += 1
+            else:
+                kept += 1
+            anim_frames += 1
+            outs.append(f"{pose}.png")
+        print(f"  {species_id:>4} {slug:22} {cell:22} {'':>8}  "
+              f"anim/{species_id:03d}-{slug}/{{{', '.join(outs)}}}")
+
     n = len(SUBJECTS)
-    total = 2 * n + len(SCENES)
-    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s), {written} files written, "
+    total = 2 * n + len(SCENES) + anim_frames
+    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s) + {anim_frames} anim frames, "
+          f"{written} files written, "
           f"{kept} unchanged, {total} files expected under "
           f"{os.path.relpath(args.assets, REPO_ROOT)}/sprites/")
     if os.path.basename(args.staging.rstrip(os.sep)) != "nano-banana-2-1":

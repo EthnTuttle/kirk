@@ -119,6 +119,86 @@ fn champion_panel(
     card.add_children(&kids).id()
 }
 
+/// One idle-loop frame plateau, in app frames: 90 frames ≈ 1.5 s at the
+/// windowed shell's vsync (a full idle→idle2→idle cycle every ≈3 s — slow
+/// and readable, not twitchy; "~1 fps or slower" per card D5). Under the
+/// ui-shots unthrottled runner the same plateau logic runs with NO
+/// wall-time input, so captures scripted at fixed frame counts always land
+/// on the same frame of the cycle.
+pub(crate) const IDLE_FRAME_TICKS: u64 = 90;
+
+/// The cycle position a global tick shows: alternating 0/1 plateaus
+/// (idle/idle2). Single-frame sets (the 4.3 pilot grid has no `idle2` cell)
+/// hold frame 0 forever via [`ChampionAnim::frame_at`].
+pub(crate) fn anim_phase(tick: u64) -> u64 {
+    (tick / IDLE_FRAME_TICKS) % 2
+}
+
+/// A battle portrait with staged idle-loop frames (card D5), resolved by
+/// [`champion_anim_paths`] from `sprites/anim/{id:03}-{slug}/`. Both
+/// handles are loaded at spawn, so the first swap never draws a blank panel
+/// while a fetch is in flight. Species without an anim set (bosses — 4.5
+/// generated no sheets for them, by design — and any name outside the
+/// static table) spawn no marker and keep the pre-D5 static sprite.
+#[derive(Component)]
+pub(crate) struct ChampionAnim {
+    idle: Handle<Image>,
+    idle2: Option<Handle<Image>>,
+}
+
+impl ChampionAnim {
+    /// The handle the given cycle phase shows; phase 1 falls back to the
+    /// base idle when the sheet had no second idle variant.
+    fn frame_at(&self, phase: u64) -> Handle<Image> {
+        match (phase, &self.idle2) {
+            (1, Some(idle2)) => idle2.clone(),
+            _ => self.idle.clone(),
+        }
+    }
+}
+
+/// Advance the slow idle loop exactly one app frame and swap any portrait
+/// whose cycle phase flipped. Called from `input::process_inputs` — the one
+/// per-frame system every shell binary (windowed, `--smoke`, ui-shots)
+/// already registers — which is what lets this run with zero changes to
+/// `main.rs`, `screens.rs`, or the harness. Mutation is guarded, so
+/// plateaus cost no change-detection work.
+pub(crate) fn advance_champion_anim(
+    tick: &mut crate::state::AnimTick,
+    anims: &mut Query<(&ChampionAnim, &mut ImageNode)>,
+) {
+    tick.0 = tick.0.wrapping_add(1);
+    let phase = anim_phase(tick.0);
+    for (anim, mut image) in anims.iter_mut() {
+        let want = anim.frame_at(phase);
+        if image.image != want {
+            image.image = want;
+        }
+    }
+}
+
+/// Idle-loop frame paths for a species with a 4.5 anim set, mirroring the
+/// ANIM table in `tools/artbake/stage_sprites.py`. Champions (ids 1..=12)
+/// all staged `01_idle.png`; every batch-grid champion also staged
+/// `04_idle2.png`, while Squire Audric's 4.3 pilot sheet is the
+/// combat-family grid (idle/step/strike/hit/defend/pray) with no idle2, so
+/// his loop holds the single idle frame. Bosses and unknown names get
+/// `None` → the static [`champion_sprite_path`] render. Only idle/idle2 are
+/// wired: pray/step/look/bow never auto-play in battle, and attack/hit
+/// reactions stay out of scope until the combat-arc card.
+fn champion_anim_paths(species_name: &str) -> Option<(String, Option<String>)> {
+    let sp = data::species::SPECIES
+        .iter()
+        .find(|sp| sp.name == species_name)?;
+    if !matches!(sp.id, 1..=12) {
+        return None;
+    }
+    let dir = format!("sprites/anim/{:03}-{}", sp.id, slugify(sp.name));
+    let idle = format!("{dir}/01_idle.png");
+    let idle2 = (sp.id != 1).then(|| format!("{dir}/04_idle2.png"));
+    Some((idle, idle2))
+}
+
 /// The 128x128 battle sprite above the name row — the section 2 seam-1
 /// `ImageNode` keyed by species id (`sprites/champions/{id:03}-{slug}.png`,
 /// staged by `tools/artbake/stage_sprites.py`). Spawned only when the app
@@ -126,24 +206,31 @@ fn champion_panel(
 /// is one of the 19 art-lane species; the name/resolve/type text rows below
 /// are unconditional, so a sprite whose fetch 404s (wasm during a partial
 /// deploy) simply draws nothing over an intact text panel.
+///
+/// Card D5: champions with a staged anim set (`champion_anim_paths`) spawn
+/// the animated idle portrait instead — same node size, handles preloaded —
+/// while bosses and unknowns keep this static path unchanged.
 fn champion_sprite(
     cmd: &mut Commands,
     species_name: &str,
     assets: Option<&AssetServer>,
 ) -> Option<Entity> {
-    let sprites = champion_sprite_path(species_name)?;
     let assets = assets?;
-    Some(
-        cmd.spawn((
-            ImageNode::new(assets.load(sprites)),
-            Node {
-                width: Val::Px(128.0),
-                height: Val::Px(128.0),
-                ..default()
-            },
-        ))
-        .id(),
-    )
+    let node = Node {
+        width: Val::Px(128.0),
+        height: Val::Px(128.0),
+        ..default()
+    };
+    if let Some((idle, idle2)) = champion_anim_paths(species_name) {
+        let idle = assets.load(idle);
+        let anim = ChampionAnim {
+            idle: idle.clone(),
+            idle2: idle2.map(|pose| assets.load(pose)),
+        };
+        return Some(cmd.spawn((ImageNode::new(idle), node, anim)).id());
+    }
+    let sprites = champion_sprite_path(species_name)?;
+    Some(cmd.spawn((ImageNode::new(assets.load(sprites)), node)).id())
 }
 
 /// Asset path for a battle view's species name. `BattleChampionView`
@@ -424,6 +511,62 @@ mod tests {
     fn unknown_species_name_gets_no_sprite() {
         assert_eq!(champion_sprite_path("Champion #55"), None);
         assert_eq!(champion_sprite_path("Vigo the Carpathian"), None);
+    }
+
+    /// The idle-loop resolver (card D5): every champion resolves to its
+    /// staged `01_idle.png`; the 11 batch-grid champions get `04_idle2.png`
+    /// too, while Squire Audric's 4.3 pilot grid has no idle2 cell. Bosses
+    /// and unknown names get `None` — "no frames -> static" — and the static
+    /// path still answers for every boss, which is exactly the fallback the
+    /// spawner relies on.
+    #[test]
+    fn anim_paths_resolve_for_staged_sets_only() {
+        assert_eq!(
+            champion_anim_paths("Squire Audric"),
+            Some(("sprites/anim/001-squire-audric/01_idle.png".to_string(), None))
+        );
+        assert_eq!(
+            champion_anim_paths("Serjeant Bastien"),
+            Some((
+                "sprites/anim/003-serjeant-bastien/01_idle.png".to_string(),
+                Some("sprites/anim/003-serjeant-bastien/04_idle2.png".to_string()),
+            ))
+        );
+        for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
+            assert!(
+                champion_anim_paths(sp.name).is_some(),
+                "champion {} has a staged idle frame",
+                sp.name
+            );
+        }
+        for sp in data::species::SPECIES.iter().filter(|sp| sp.id >= 100) {
+            assert_eq!(
+                champion_anim_paths(sp.name),
+                None,
+                "boss {} keeps the static sprite",
+                sp.name
+            );
+            assert!(
+                champion_sprite_path(sp.name).is_some(),
+                "static fallback still resolves for {}",
+                sp.name
+            );
+        }
+        assert_eq!(champion_anim_paths("Champion #55"), None);
+        assert_eq!(champion_anim_paths("Vigo the Carpathian"), None);
+    }
+
+    /// The idle cycle is a pure function of the frame counter: 90-tick
+    /// plateaus alternating frames 0/1, no wall time anywhere, so ui-shots
+    /// captures land on a fixed cycle position run after run.
+    #[test]
+    fn idle_phase_alternates_on_frame_plateaus() {
+        assert_eq!(anim_phase(0), 0);
+        assert_eq!(anim_phase(IDLE_FRAME_TICKS - 1), 0);
+        assert_eq!(anim_phase(IDLE_FRAME_TICKS), 1);
+        assert_eq!(anim_phase(2 * IDLE_FRAME_TICKS - 1), 1);
+        assert_eq!(anim_phase(2 * IDLE_FRAME_TICKS), 0);
+        assert_eq!(anim_phase(7 * IDLE_FRAME_TICKS + 3), 1);
     }
 
     #[test]

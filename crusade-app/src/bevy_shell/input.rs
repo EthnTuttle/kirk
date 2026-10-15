@@ -6,7 +6,8 @@ use bevy::prelude::*;
 use crusade_app::{ClientGame, ClientInput, LobbyNet, Phase};
 
 use crate::state::{
-    ActionButton, BaseBackground, GameShell, InputQueue, NetBridge, NetCmd, SnapshotVersion,
+    ActionButton, AnimTick, BaseBackground, GameShell, InputQueue, NetBridge, NetCmd,
+    SnapshotVersion,
 };
 use crate::style;
 
@@ -55,12 +56,27 @@ fn net_duel_live(bridge: &NetBridge) -> bool {
 /// [`SnapshotVersion`] — the sole rebuild trigger. Rejected inputs (e.g. a
 /// click that a rebuild made stale) are logged and dropped; the client
 /// stays the source of truth.
+///
+/// Card D5 piggyback: this system is the one per-frame seam every shell
+/// binary (windowed, `--smoke`, ui-shots) already registers, so it also
+/// advances the battle-sprite idle clock first thing each frame. That kept
+/// the animation wiring out of `main.rs`/`screens.rs` entirely: the tick is
+/// frame-count-derived (never wall time), and the first frame self-installs
+/// the resource via deferred commands when nothing registered it — the only
+/// pause case, invisible below one 90-tick plateau.
 pub fn process_inputs(
+    mut commands: Commands,
     shell: Res<GameShell>,
     mut bridge: ResMut<NetBridge>,
     mut queue: ResMut<InputQueue>,
     mut version: ResMut<SnapshotVersion>,
+    anim_tick: Option<ResMut<AnimTick>>,
+    mut anims: Query<(&crate::battle::ChampionAnim, &mut ImageNode)>,
 ) {
+    match anim_tick {
+        Some(mut tick) => crate::battle::advance_champion_anim(&mut tick, &mut anims),
+        None => commands.insert_resource(AnimTick::default()),
+    }
     if queue.0.is_empty() {
         return;
     }

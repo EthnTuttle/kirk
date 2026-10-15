@@ -35,6 +35,16 @@ pub struct SnapshotVersion(pub u64);
 #[derive(Resource, Default)]
 pub struct RenderedVersion(pub Option<u64>);
 
+/// Idle-animation clock for battle sprites (card D5): advanced exactly once
+/// per rendered frame by `battle::advance_champion_anim`, so an animation
+/// frame is a pure function of frames elapsed since boot — never wall time
+/// — and ui-shots captures after fixed frame counts stay byte-deterministic.
+/// Self-installing: `input::process_inputs` (the one per-frame system every
+/// shell binary registers) inserts the default via deferred commands when
+/// the resource is absent, so no app's system wiring had to change.
+#[derive(Resource, Default)]
+pub struct AnimTick(pub u64);
+
 /// Marks the single root UI node, rebuilt wholesale on version change.
 #[derive(Component)]
 pub struct UiRoot;
