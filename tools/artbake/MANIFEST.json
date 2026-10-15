@@ -19,6 +19,56 @@
   "src_dims": "1254x1254",
   "cost_usd": 0.023
  },
+ "gpt-image-1.5/brother-aldwyn": {
+  "raw_bytes": 1428984,
+  "q64_bytes": 980,
+  "q128_bytes": 2743,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-brother-aldwyn-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "brother-aldwyn",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/brute-of-wrath": {
+  "raw_bytes": 1712725,
+  "q64_bytes": 1254,
+  "q128_bytes": 3939,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-brute-of-wrath-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "brute-of-wrath",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/canoness-hrothwyn": {
+  "raw_bytes": 1423097,
+  "q64_bytes": 1021,
+  "q128_bytes": 2845,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-canoness-hrothwyn-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "canoness-hrothwyn",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/cantor-sabina": {
+  "raw_bytes": 1312672,
+  "q64_bytes": 1034,
+  "q128_bytes": 2713,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-cantor-sabina-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "cantor-sabina",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/chevalier-raimbaud": {
+  "raw_bytes": 1448023,
+  "q64_bytes": 1120,
+  "q128_bytes": 3175,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-chevalier-raimbaud-v2",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "chevalier-raimbaud",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
  "gpt-image-1.5/cleric-mabel": {
   "raw_bytes": 1338534,
   "q64_bytes": 1058,
@@ -26,6 +76,56 @@
   "client_request_id": "kirk-portfolio-gpt-image-1.5-cleric-mabel-v1",
   "model": "ppq:gpt-image-1.5",
   "subject": "cleric-mabel",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/fiend-of-lust": {
+  "raw_bytes": 1631545,
+  "q64_bytes": 1302,
+  "q128_bytes": 4002,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-fiend-of-lust-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "fiend-of-lust",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/friar-osbert": {
+  "raw_bytes": 1361354,
+  "q64_bytes": 912,
+  "q128_bytes": 2661,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-friar-osbert-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "friar-osbert",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/glutton-maw": {
+  "raw_bytes": 1634166,
+  "q64_bytes": 1290,
+  "q128_bytes": 3865,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-glutton-maw-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "glutton-maw",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/grasper-of-greed": {
+  "raw_bytes": 1612356,
+  "q64_bytes": 1149,
+  "q128_bytes": 3654,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-grasper-of-greed-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "grasper-of-greed",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/hospitaller-ysolt": {
+  "raw_bytes": 1346062,
+  "q64_bytes": 860,
+  "q128_bytes": 2392,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-hospitaller-ysolt-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "hospitaller-ysolt",
   "src_dims": "1254x1254",
   "cost_usd": 0.023
  },
@@ -46,6 +146,56 @@
   "client_request_id": "kirk-portfolio-gpt-image-1.5-serjeant-bastien-v1",
   "model": "ppq:gpt-image-1.5",
   "subject": "serjeant-bastien",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/sleeper-of-sloth": {
+  "raw_bytes": 1980511,
+  "q64_bytes": 1255,
+  "q128_bytes": 4218,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-sleeper-of-sloth-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "sleeper-of-sloth",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/vexillor-anchetil": {
+  "raw_bytes": 1358591,
+  "q64_bytes": 739,
+  "q128_bytes": 2017,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-vexillor-anchetil-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "vexillor-anchetil",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/vigil-knight-wymar": {
+  "raw_bytes": 1448546,
+  "q64_bytes": 908,
+  "q128_bytes": 2708,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-vigil-knight-wymar-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "vigil-knight-wymar",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/wayfarer-aelis": {
+  "raw_bytes": 1433051,
+  "q64_bytes": 945,
+  "q128_bytes": 2731,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-wayfarer-aelis-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "wayfarer-aelis",
+  "src_dims": "1254x1254",
+  "cost_usd": 0.023
+ },
+ "gpt-image-1.5/wretch-of-envy": {
+  "raw_bytes": 1520128,
+  "q64_bytes": 1304,
+  "q128_bytes": 3972,
+  "client_request_id": "kirk-portfolio-gpt-image-1.5-wretch-of-envy-v1",
+  "model": "ppq:gpt-image-1.5",
+  "subject": "wretch-of-envy",
   "src_dims": "1254x1254",
   "cost_usd": 0.023
  },
@@ -106,6 +256,16 @@
   "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
   "model": "ppq:nano-banana-2-1",
   "subject": "cantor-sabina",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/chevalier-raimbaud": {
+  "raw_bytes": 901454,
+  "q64_bytes": 852,
+  "q128_bytes": 2321,
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud",
   "src_dims": "1024x1024",
   "cost_usd": 0.0
  },
@@ -242,9 +402,13 @@
   "cost_usd": 0.0
  },
  "nano-banana-2-1/sleeper-of-sloth": {
+  "raw_bytes": 969580,
+  "q64_bytes": 1061,
+  "q128_bytes": 3144,
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
   "model": "ppq:nano-banana-2-1",
   "subject": "sleeper-of-sloth",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
-  "status": "PENDING - reworded prompt v2, re-run ppq_roster.py"
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
  }
 }

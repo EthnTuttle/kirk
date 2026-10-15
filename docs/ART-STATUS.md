@@ -24,19 +24,25 @@ WS-D cards); this file is the live state. Everything art-bake-off now lives in
 
 ## 2. Current artifact state
 
-23 of 40 planned subject×model cells are complete (raw + q64 + q128 each);
-was 24 before the §4.2 rename retired the banana romilda cell. Staged
-quantized at `art/roster-staging/<model>/<subject>/{q64,q128}.png`
-(79 KiB total). `tools/artbake/MANIFEST.json` = per-cell ledger: bytes,
+**40 of 40** planned subject×model cells are complete (raw + q64 + q128
+each; filled 2026-10-14 per card 4.1). Staged quantized at
+`art/roster-staging/<model>/<subject>/{q64,q128}.png` (148 KiB, 80 files).
+`tools/artbake/MANIFEST.json` = per-cell ledger: bytes,
 client_request_id (idempotency), cost, dims, status.
 
-- nano-banana-2-1: **18/20** done ($0 total). Missing: `sleeper-of-sloth`
-  (upstream moderation 400 on v1 prompt — reworded already in
-  `tools/artbake/ppq_roster.py`; rerun is free) and `chevalier-raimbaud`
-  (romilda cell retired in the 4.2 rename; regenerates free at `-v2` id).
-- gpt-image-1.5: **5/20** done ($0.115). Missing 15, incl. the renamed
-  `chevalier-raimbaud` (job was paused with `pkill`; zero half-written files).
-- Spend to date: bake-off $0.204 + portfolio $0.115 ≈ **$0.32** (all PayPerQ).
+- nano-banana-2-1: **20/20** done ($0 total). 4.1 added `sleeper-of-sloth`
+  (v2-worded prompt) + `chevalier-raimbaud` (at `-v2` id), both clean.
+- gpt-image-1.5: **20/20** done ($0.46 = 20 × $0.023 low-quality). 4.1 added
+  the 15 missing cells incl. `chevalier-raimbaud` (at `-v2` id).
+- Spend to date: bake-off $0.204 + portfolio $0.115 + roster expansion
+  **$0.345** = **$0.664** (all PayPerQ).
+- 4.1 run notes: no fouls, no re-prompts — all 17 new cells passed eyeball
+  (no text/border, on-prompt, raimbaud reads male in both models per the 4.2
+  canon rule). One transient upstream 400 on gpt `brother-aldwyn` (spurious
+  size-validation while 15 identical requests passed) cleared on plain retry.
+  Scratch `/tmp` had been wiped since the pause: the 23 prior cells' raw.png
+  were re-attached idempotently via their original client_request_ids (dims
+  match the ledger exactly; staged q64/q128 copied back verbatim).
 
 ### Resume procedure (any machine)
 
