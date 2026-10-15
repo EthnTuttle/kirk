@@ -440,6 +440,9 @@ impl NetDuelDriver {
             // Seam required by view.rs: the driver renders ONLY the duel;
             // lobby view-state belongs to ClientGame, never to a net duel.
             lobby: None,
+            // Seam required by view.rs: the witness roll is ClientGame's
+            // read-only memorial screen; a duel never carries it.
+            witnesses: Vec::new(),
             fresh_events: self.fresh_events.take(),
         }
     }

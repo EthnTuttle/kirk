@@ -22,6 +22,11 @@ pub enum Phase {
     /// [`ClientInput::LobbyNet`] while [`ViewSnapshot::lobby`] carries the
     /// renderable state.
     Lobby,
+    /// The Hagiography: the witness roll of the revered non-combatant dead
+    /// (pure lore). A read-only memorial off the menu, like the roster
+    /// minus every mechanic; [`ViewSnapshot::witnesses`] carries the roll
+    /// only while this phase is up.
+    Hagiography,
 }
 
 /// Campaign (PvE gauntlet) progress view: `Some` from StartCampaign until the
@@ -169,6 +174,18 @@ pub enum LobbyNet {
     Failed { text: String },
 }
 
+/// One entry of the Hagiography's witness roll, rendered (the core's
+/// `Witness` is pure lore and never serde; this card is its serde-safe
+/// shadow). A witness has no id here: the roll is read, never targeted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WitnessCard {
+    pub name: String,
+    /// The style by which pilgrims remember the witness.
+    pub epithet: String,
+    /// The short memorial reading.
+    pub vignette: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewSnapshot {
     pub phase: Phase,
@@ -189,6 +206,11 @@ pub struct ViewSnapshot {
     /// instead, so this stays `None` outside the lobby.
     #[serde(default)]
     pub lobby: Option<LobbyView>,
+    /// The Hagiography's witness roll; populated only while in
+    /// [`Phase::Hagiography`] (one tiny lore table — battle snapshots stay
+    /// lean). Read-only: the roll is rendered, never targeted.
+    #[serde(default)]
+    pub witnesses: Vec<WitnessCard>,
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }
@@ -207,6 +229,7 @@ pub fn ladder_line(rating: Option<u64>) -> String {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ClientInput {
     OpenRoster,
+    /// Roster/Hagiography -> Menu: the back-path for the read-only screens.
     CloseToMenu,
     /// Start practice duel vs built-in policy AI with the first `party`
     /// roster champions at a given level.
@@ -243,6 +266,10 @@ pub enum ClientInput {
     },
     /// Lobby -> Menu (any in-flight lobby work withdraws).
     LeaveLobby,
+    /// Menu -> Hagiography: open the witness roll of the revered dead.
+    /// Read-only; [`ClientInput::CloseToMenu`] is the way back, mirroring
+    /// the roster.
+    ViewHagiography,
     /// Async bridge report (lobby session / duel lifecycle). Drives the
     /// synchronous lobby view-state; net handles never enter the client.
     LobbyNet(LobbyNet),

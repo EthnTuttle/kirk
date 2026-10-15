@@ -26,7 +26,7 @@ use crate::policy::greedy_action;
 use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
     BattleChampionView, CampaignView, ChampionCard, ClientInput, LobbyNet, LobbyStage, LobbyView,
-    Phase, RiteCard, ViewSnapshot,
+    Phase, RiteCard, ViewSnapshot, WitnessCard,
 };
 use crate::AppError;
 
@@ -166,6 +166,13 @@ impl ClientGame {
                 shards_earned: c.shards_earned,
             }),
             lobby: self.lobby.clone(),
+            // The witness roll rides along only while its screen is up
+            // (one tiny lore table; every other snapshot stays lean).
+            witnesses: if self.phase == Phase::Hagiography {
+                witness_cards()
+            } else {
+                Vec::new()
+            },
             fresh_events,
         };
         let Some(b) = self.battle.as_ref() else {
@@ -293,11 +300,18 @@ impl ClientGame {
                 p => Err(illegal(format!("cannot open the roster from {p:?}"))),
             },
             ClientInput::CloseToMenu => match self.phase {
-                Phase::Roster => {
+                Phase::Roster | Phase::Hagiography => {
                     self.phase = Phase::Menu;
                     Ok(())
                 }
                 p => Err(illegal(format!("cannot close to menu from {p:?}"))),
+            },
+            ClientInput::ViewHagiography => match self.phase {
+                Phase::Menu => {
+                    self.phase = Phase::Hagiography;
+                    Ok(())
+                }
+                p => Err(illegal(format!("cannot open the hagiography from {p:?}"))),
             },
             ClientInput::StartPractice { level } => self.start_practice(level),
             ClientInput::StartCampaign => self.start_campaign(),
@@ -964,6 +978,20 @@ fn practice_champion(species_id: u16, level: u8) -> Result<ChampionInstance, App
 
 // ---------- View helpers (pure rendering over battle/store state) ----------
 
+/// The Hagiography's witness roll as renderable cards, straight off the
+/// static core table. Pure lore: a witness is read, never targeted (ids
+/// stay in crusade-core), so this never touches the store or a battle.
+fn witness_cards() -> Vec<WitnessCard> {
+    data::all_witnesses()
+        .iter()
+        .map(|w| WitnessCard {
+            name: w.name.to_string(),
+            epithet: w.epithet.to_string(),
+            vignette: w.vignette.to_string(),
+        })
+        .collect()
+}
+
 pub(crate) fn species_name(c: &ChampionInstance) -> String {
     data::species_by_id(c.species_id).map_or_else(
         || format!("Champion #{}", c.species_id),
@@ -1518,5 +1546,43 @@ mod lobby_tests {
         assert!(game
             .handle(ClientInput::LobbyNet(LobbyNet::DuelFinished { won: true }))
             .is_err());
+    }
+}
+
+#[cfg(test)]
+mod hagiography_tests {
+    //! The witness roll: a read-only memorial screen off the menu (pure
+    //! lore — no may-enter requirements, no store reads, no battle state).
+
+    use super::*;
+
+    #[test]
+    fn hagiography_carries_the_roll_in_phase_and_returns_to_menu() {
+        let mut game = ClientGame::new(RosterStore::new());
+        // The roll never rides along in any other phase's snapshot.
+        assert!(game.snapshot().witnesses.is_empty());
+        assert!(game.handle(ClientInput::CloseToMenu).is_err());
+
+        game.handle(ClientInput::ViewHagiography)
+            .expect("the menu opens the hagiography");
+        assert_eq!(game.phase(), Phase::Hagiography);
+        let snap = game.snapshot();
+        assert_eq!(snap.witnesses.len(), 1, "the roll holds its one witness");
+        let kirk = &snap.witnesses[0];
+        assert_eq!(kirk.name, "Kirk");
+        assert_eq!(kirk.epithet, "the Witness of the Open Square");
+        for image in ["kirk", "bench", "widow", "forgav"] {
+            assert!(
+                kirk.vignette.contains(image),
+                "vignette arrived incomplete (lost '{image}')"
+            );
+        }
+        // Re-entry is a stale click, not a panic.
+        assert!(game.handle(ClientInput::ViewHagiography).is_err());
+
+        game.handle(ClientInput::CloseToMenu)
+            .expect("the back-path returns to the menu");
+        assert_eq!(game.phase(), Phase::Menu);
+        assert!(game.snapshot().witnesses.is_empty());
     }
 }

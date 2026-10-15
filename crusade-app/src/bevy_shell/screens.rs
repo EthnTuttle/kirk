@@ -3,7 +3,9 @@
 
 use bevy::prelude::*;
 
-use crusade_app::{ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot};
+use crusade_app::{
+    ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot, WitnessCard,
+};
 use crusade_core::data;
 
 use crate::battle;
@@ -91,6 +93,7 @@ pub fn rebuild_ui(
             Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap), true),
             Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
+            Phase::Hagiography => (hagiography_screen(&mut commands, &snap), false),
         },
     };
     commands
@@ -206,6 +209,8 @@ fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
             style::small_font(),
             style::DIM,
         ),
+        // The memorial roll of the revered dead (Hagiography seam).
+        hagiography_menu_button(cmd),
         action_button(cmd, "Tournament of Virtue".into(), ClientInput::EnterLobby),
         text_node(cmd, ladder_line(ladder), style::small_font(), style::DIM),
         text_node(
@@ -909,4 +914,90 @@ fn duel_aborted_screen(cmd: &mut Commands, notice: &str) -> Vec<Entity> {
         ),
         action_button(cmd, "Amen".into(), ClientInput::AcknowledgeResult),
     ]
+}
+
+// ---------- Hagiography (witness roll) ----------
+//
+// The memorial roll of the revered non-combatant dead: pure lore, drawn
+// from `crusade_core::data::all_witnesses()` through
+// `ViewSnapshot::witnesses`. The only button is the way back — nothing on
+// this screen is an input to any game system.
+
+/// The Hagiography screen: a single-column memorial scroll. One panel per
+/// witness — "name, epithet" as the heading over the vignette reading —
+/// with generous room around each, flowing from the top like the roster so
+/// the roll may lengthen without crowding.
+fn hagiography_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+    let mut kids = vec![
+        text_node(cmd, "Hagiography".into(), style::head_font(), style::GOLD),
+        text_node(
+            cmd,
+            "- The Witness Roll -".into(),
+            style::small_font(),
+            style::GOLD_DIM,
+        ),
+    ];
+    if snap.witnesses.is_empty() {
+        // The phase guarantees the roll; stay defensive, never panic.
+        kids.push(text_node(
+            cmd,
+            "The roll is being read...".into(),
+            style::small_font(),
+            style::DIM,
+        ));
+    }
+    for card in &snap.witnesses {
+        kids.push(witness_panel(cmd, card));
+    }
+    kids.push(text_node(
+        cmd,
+        "They kept the faith without sword or rite; the Order remembers.".into(),
+        style::small_font(),
+        style::DIM,
+    ));
+    kids.push(action_button(cmd, "Back".into(), ClientInput::CloseToMenu));
+    kids
+}
+
+/// One witness entry: a gold-bordered panel with the name and epithet in
+/// gold over the vignette in bone, wrapped to a measured line so the long
+/// memorial reading stays legible.
+fn witness_panel(cmd: &mut Commands, card: &WitnessCard) -> Entity {
+    let heading = text_node(
+        cmd,
+        format!("{}, {}", card.name, card.epithet),
+        style::body_font(),
+        style::GOLD,
+    );
+    // Text entities take a Node too: bounding the width is what makes the
+    // vignette wrap (the default linebreak mode is word-boundary).
+    let body = cmd
+        .spawn((
+            Text::new(card.vignette.clone()),
+            style::small_font(),
+            TextColor(style::BONE),
+            Node {
+                max_width: Val::Px(720.0),
+                ..default()
+            },
+        ))
+        .id();
+    cmd.spawn((
+        Node {
+            max_width: Val::Px(760.0),
+            row_gap: Val::Px(10.0),
+            ..style::panel_node()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&[heading, body])
+    .id()
+}
+
+/// The menu's Hagiography button, same look as every [`action_button`].
+/// Wired into `menu_screen` between the alms address line and the
+/// "Tournament of Virtue" button.
+pub fn hagiography_menu_button(cmd: &mut Commands) -> Entity {
+    action_button(cmd, "Hagiography".into(), ClientInput::ViewHagiography)
 }

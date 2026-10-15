@@ -13,6 +13,8 @@
 //! Tournament of Virtue (PvP): Menu -> Lobby (list / post / accept
 //!   challenges over nostr relays) -> BattleSetup (the net duel,
 //!   bridge-rendered) -> BattleOver -> Menu.
+//! Lore: Menu -> Hagiography (the witness roll of the revered dead,
+//!   read-only) -> Menu.
 //!
 //! Network PvP (M6 wire) deliberately keeps all async handles OUT of
 //! [`ClientGame`]: the client is a synchronous state machine while a

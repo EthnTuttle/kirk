@@ -12,7 +12,8 @@
 //! All game-state changes ride the same `InputQueue -> process_inputs ->
 //! rebuild_ui` path as the windowed shell and the smoke driver; screen
 //! layouts are never reimplemented here. Screens: `menu`, `roster`,
-//! `battle`, `battle-over`, `battle-over-net` (post-duel alms CTA via an
+//! `hagiography` (the witness roll), `battle`, `battle-over`,
+//! `battle-over-net` (post-duel alms CTA via an
 //! offline-seeded mailbox), `campaign`, `lobby` (offline fixture cards).
 //! Exits 0 only when every requested capture landed on disk.
 
@@ -57,9 +58,10 @@ use state::{
 /// Default capture size (CSS px = px; scale factor is 1.0 headless).
 const DEFAULT_SIZE: (u32, u32) = (1280, 720);
 /// Every screen name `--screens` may select (also the full pass order).
-const ALL_SCREENS: [&str; 7] = [
+const ALL_SCREENS: [&str; 8] = [
     "menu",
     "roster",
+    "hagiography",
     "battle",
     "battle-over",
     "battle-over-net",
@@ -230,6 +232,15 @@ impl ShotDriver {
             Step::Settle(10),
         ]);
         steps.extend(capture("roster"));
+        steps.extend([
+            Step::Push(vec![ClientInput::CloseToMenu]),
+            Step::WaitPhase(Phase::Menu, WAIT_PHASE_CAP),
+            // The witness roll: a memorial detour off the menu, then back.
+            Step::Push(vec![ClientInput::ViewHagiography]),
+            Step::WaitPhase(Phase::Hagiography, WAIT_PHASE_CAP),
+            Step::Settle(8),
+        ]);
+        steps.extend(capture("hagiography"));
         steps.extend([
             Step::Push(vec![ClientInput::CloseToMenu]),
             Step::WaitPhase(Phase::Menu, WAIT_PHASE_CAP),
