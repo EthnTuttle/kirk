@@ -320,21 +320,21 @@ mod tests {
     use crate::cashu::GameMint;
     use std::sync::Arc;
 
-    fn create_test_context() -> ServiceContext {
+    async fn create_test_context() -> ServiceContext {
         let keys = Keys::generate();
-        let mint = Arc::new(GameMint::new_test(keys));
+        let mint = Arc::new(GameMint::new_test(keys).await);
         let nostr_client = nostr_sdk::Client::default();
         ServiceContext::new(mint, nostr_client)
     }
 
     #[tokio::test]
     async fn test_parse_valid_event() {
-        let processor = EventProcessor::new(create_test_context());
+        let processor = EventProcessor::new(create_test_context().await);
 
         let keys = Keys::generate();
         let event = EventBuilder::new(
             Kind::from(crate::events::CHALLENGE_KIND),
-            r#"{"game_type": "test", "stakes": []}"#,
+            r#"{"game_type": "test", "commitment_hashes": ["test"], "game_parameters": {}}"#,
             []
         ).to_event(&keys).unwrap();
 
@@ -348,7 +348,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_unknown_event() {
-        let processor = EventProcessor::new(create_test_context());
+        let processor = EventProcessor::new(create_test_context().await);
 
         let keys = Keys::generate();
         let event = EventBuilder::new(
@@ -367,7 +367,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_timestamp_limits() {
-        let processor = EventProcessor::new(create_test_context());
+        let processor = EventProcessor::new(create_test_context().await);
 
         let keys = Keys::generate();
 

@@ -5160,6 +5160,7 @@ dependencies = [
  "anyhow",
  "cashu",
  "cdk",
+ "cdk-signatory",
  "cdk-sqlite",
  "chrono",
  "hex",

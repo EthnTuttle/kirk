@@ -68,6 +68,8 @@ tokio-test = "0.4"
 tempfile = "3.0"
 # CDK SQLite for testing
 cdk-sqlite = { path = "deps/cdk/crates/cdk-sqlite", features = ["wallet"] }
+# CDK signatory (embedded DbSignatory) for in-memory test mints
+cdk-signatory = { path = "deps/cdk/crates/cdk-signatory", default-features = false }
 # Property-based testing
 proptest = "1.0"
 # UUID generation for mocks

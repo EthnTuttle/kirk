@@ -118,9 +118,11 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
   audit (1 critical + 2 majors in bridge replay, fixed), R6 (SHIP).
 - wasm32-unknown-unknown verified for the full stack (core, data, net,
   bridge, app incl. Bevy shell).
-- Known pre-existing debt (inherited kirk lib): 9 `cashu::services::*` tests
-  panic on the `GameMint::new_test` stub — predates this session. Also
-  `extract_c_value_from_token` is still a placeholder in card_game.
+- Pre-existing debt (inherited kirk lib) CLEARED 2026-10-15: the 9
+  `cashu::services::*` tests now run against a real in-memory CDK test mint
+  (`GameMint::new_test` mirrors cdk's own `create_mint`), and
+  `extract_c_value_from_token` parses the first proof's C x-coordinate
+  (same convention crusade-bridge uses). Workspace fully green.
 - Kind map: kirk 9259..=9263, duel transport 9264, attestation 9265.
 - Delegation reality: glm/deepseek flash models failed silently as coding
   subagents in this environment; all workers ran as tff/kimi-k3 with

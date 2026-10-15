@@ -34,8 +34,10 @@ a Bevy front-end shell:
    the kirk nostr challenge flow into a `NetDuelDriver` session. Sims/tests
    prove the machinery end-to-end over localhost QUIC and an embedded relay.
 2. **No wagers in v1.** Attestations are produced; escrow claim flow against a
-   live Cashu mint is not wired (needs a mint + GameMint services; kirk's
-   `GameMint::new_test` stub failures are pre-existing tech debt).
+   live Cashu mint is not wired (needs a deployed mint + GameMint production
+   config). The old `GameMint::new_test` stub debt is closed (2026-10-15):
+   the test mint is a real in-memory CDK mint and
+   `extract_c_value_from_token` parses for real — workspace is fully green.
 3. **Browser runtime was verified headless** (build + asset presence + smokes).
    First real-browser run should sanity-check font rendering, wgpu
    (WebGL2/WebGPU fallback) and audio.

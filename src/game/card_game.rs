@@ -268,28 +268,58 @@ impl CardGame {
         &self,
         token: &CashuToken,
     ) -> Result<Vec<PlayingCard>, GameProtocolError> {
-        // Extract C value from token
-        // Note: This is a simplified implementation - in practice, you'd need to
-        // access the token's proof and extract the C value from it
-        // For now, we'll use a placeholder approach
-
-        // TODO: Implement proper C value extraction from CashuToken
-        // This would require accessing the token's proof structure
         let c_value = self.extract_c_value_from_token(token)?;
         self.decode_c_value(&c_value)
     }
 
-    /// Extract C value from Cashu token (placeholder implementation)
+    /// Extract the committed C value from a Cashu token's first proof.
+    ///
+    /// A proof's C value is the mint's unblinded signature: a compressed
+    /// secp256k1 point (33 bytes, `[parity | x]`). Direct field access on
+    /// `Proof{,V3,V4}.c` handles both token encodings and needs no per-mint
+    /// keyset map — the same shape crusade-bridge consumes when deriving
+    /// battle seeds, and what `Token::extract_c_values` yields once keyset
+    /// resolution succeeds.
+    ///
+    /// FORMAT ASSUMPTION: the card game's 32-byte C value is the point's
+    /// x-coordinate — bytes 1..33 of the SEC compressed encoding, i.e. the
+    /// standard x-only key representation. The parity byte is dropped; the
+    /// full 33-byte form remains the canonical commitment value elsewhere
+    /// (commitment hashing, bridge seed derivation). A card-game commitment
+    /// token is expected to carry exactly one proof; extra proofs are not
+    /// used for piece generation (they are still commitment-verified).
     fn extract_c_value_from_token(
         &self,
-        _token: &CashuToken,
+        token: &CashuToken,
     ) -> Result<[u8; 32], GameProtocolError> {
-        // TODO: Implement proper C value extraction
-        // This is a placeholder that would need to be replaced with actual
-        // CDK token proof parsing
-        Err(GameProtocolError::InvalidMove(
-            "C value extraction not yet implemented".to_string(),
-        ))
+        // First proof in stored order (keyset group, then proof), matching
+        // the flatten order crusade-bridge uses for seed derivation.
+        let first_proof_c = match token {
+            CashuToken::TokenV3(v3) => v3
+                .token
+                .iter()
+                .flat_map(|t| t.proofs.iter())
+                .next()
+                .map(|p| &p.c),
+            CashuToken::TokenV4(v4) => v4
+                .token
+                .iter()
+                .flat_map(|t| t.proofs.iter())
+                .next()
+                .map(|p| &p.c),
+        };
+
+        let c = first_proof_c.ok_or_else(|| {
+            GameProtocolError::InvalidMove(
+                "token carries no proofs; cannot extract C value".to_string(),
+            )
+        })?;
+
+        // Drop the parity byte: c_value = x-coordinate of the C point.
+        let compressed = c.to_bytes();
+        Ok(compressed[1..33]
+            .try_into()
+            .expect("compressed SEC point is 33 bytes"))
     }
 
     /// Validate event structure for card game
@@ -818,6 +848,109 @@ mod tests {
             "expected an InvalidCommitment error, got {:?}",
             result.errors.iter().map(|e| &e.message).collect::<Vec<_>>()
         );
+    }
+
+    // ---------- C value extraction ----------
+
+    /// Test proof C: the secp256k1 generator point G, a well-known valid
+    /// compressed SEC encoding (even parity 02 + the canonical x-coordinate).
+    const TEST_PROOF_C: &str =
+        "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+    /// Expected 32-byte game C value: the point's x-coordinate (parity byte
+    /// dropped).
+    const TEST_PROOF_C_X: &str =
+        "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+    fn hex_32(s: &str) -> [u8; 32] {
+        let bytes = hex::decode(s).expect("test hex decodes");
+        bytes.try_into().expect("test hex is 32 bytes")
+    }
+
+    fn test_proof() -> cdk::nuts::Proof {
+        use std::str::FromStr;
+        let keyset_id = cdk::nuts::Id::from_str("009a1f293253e41e").unwrap();
+        let c = cdk::nuts::PublicKey::from_str(TEST_PROOF_C).unwrap();
+        cdk::nuts::Proof::new(
+            cdk::Amount::from(2),
+            keyset_id,
+            cashu::secret::Secret::generate(),
+            c,
+        )
+    }
+
+    /// V3 token carrying the test proof, forced through its cashuA wire
+    /// string so serde (including C pubkey validation) is exercised.
+    fn v3_token_with_test_c() -> CashuToken {
+        let v3 = cdk::nuts::TokenV3::new(
+            "https://8333.space:3338".parse().unwrap(),
+            vec![test_proof()],
+            None,
+            Some(cdk::nuts::CurrencyUnit::Sat),
+        )
+        .expect("v3 token builds");
+        let wire = CashuToken::TokenV3(v3).to_string(); // cashuA...
+        let token: CashuToken = wire.parse().expect("cashuA wire token round-trips");
+        assert!(matches!(token, CashuToken::TokenV3(_)));
+        token
+    }
+
+    /// Same proof C, packed as a V4 token.
+    fn v4_token_with_test_c() -> CashuToken {
+        let token = CashuToken::new(
+            "https://8333.space:3338".parse().unwrap(),
+            vec![test_proof()],
+            None,
+            cdk::nuts::CurrencyUnit::Sat,
+        );
+        assert!(matches!(token, CashuToken::TokenV4(_)));
+        token
+    }
+
+    /// Extracting from a wire-round-tripped V3 token must yield the
+    /// x-coordinate of the proof's C point.
+    #[test]
+    fn extract_c_value_reads_v3_proof_c() {
+        let game = CardGame::new();
+        let token = v3_token_with_test_c();
+        // Sanity: serde preserved the exact compressed C encoding.
+        let CashuToken::TokenV3(v3) = &token else { unreachable!() };
+        assert_eq!(hex::encode(v3.token[0].proofs[0].c.to_bytes()), TEST_PROOF_C);
+
+        let c_value = game.extract_c_value_from_token(&token).unwrap();
+        assert_eq!(c_value, hex_32(TEST_PROOF_C_X));
+    }
+
+    /// The same proof C in V4 encoding must extract identically — both
+    /// token formats carry C in the same compressed-point shape.
+    #[test]
+    fn extract_c_value_reads_v4_proof_c() {
+        let game = CardGame::new();
+        let token = v4_token_with_test_c();
+        let c_value = game.extract_c_value_from_token(&token).unwrap();
+        assert_eq!(c_value, hex_32(TEST_PROOF_C_X));
+    }
+
+    /// A token without proofs carries no committed C value.
+    #[test]
+    fn extract_c_value_rejects_token_without_proofs() {
+        let game = CardGame::new();
+        let result = game.extract_c_value_from_token(&mock_token(1));
+        assert!(matches!(
+            result,
+            Err(GameProtocolError::InvalidMove(ref m)) if m.contains("no proofs")
+        ));
+    }
+
+    /// End-to-end: the extracted value feeds decode_c_value and produces
+    /// exactly the card that PlayingCard::from_c_value assigns to the
+    /// proof's x-coordinate.
+    #[test]
+    fn extracted_c_value_decodes_to_card() {
+        let game = CardGame::new();
+        let token = v3_token_with_test_c();
+        let cards = game.extract_cards_from_token(&token).unwrap();
+        let expected = PlayingCard::from_c_value(&hex_32(TEST_PROOF_C_X)).unwrap();
+        assert_eq!(cards, vec![expected]);
     }
 
     /// Swapping the two honest tokens between the players' reveal moves must

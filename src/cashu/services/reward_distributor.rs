@@ -58,16 +58,16 @@ mod tests {
     use crate::cashu::GameMint;
     use std::sync::Arc;
 
-    fn create_test_context() -> ServiceContext {
+    async fn create_test_context() -> ServiceContext {
         let keys = Keys::generate();
-        let mint = Arc::new(GameMint::new_test(keys));
+        let mint = Arc::new(GameMint::new_test(keys).await);
         let nostr_client = nostr_sdk::Client::default();
         ServiceContext::new(mint, nostr_client)
     }
 
     #[tokio::test]
     async fn test_reward_distribution() {
-        let distributor = RewardDistributor::new(create_test_context());
+        let distributor = RewardDistributor::new(create_test_context().await);
         let keys = Keys::generate();
         let challenge_event = nostr::EventBuilder::new(
             nostr::Kind::from(crate::events::CHALLENGE_KIND),

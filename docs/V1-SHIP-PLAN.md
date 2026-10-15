@@ -159,10 +159,10 @@ review pass.
   `cargo run -p crusade-sim` per its README/help); Sabina's win rate must
   land within the band the fuzz report treats as competitive across
   levels; `cargo test -p crusade-core` green.
-- **C3 — the 9 kirk test panics: OUT of scope.** Pre-existing
-  `GameMint::new_test` stub failures, tracked as v1.2 mint work
-  (SHIPPING limitation 2). Fixing them here buys the PWA nothing and
-  disputes the SHIPPING "231 green + 9 known" claim for zero user value.
+- **C3 — the 9 kirk test panics: RESOLVED 2026-10-15** (post-plan,
+  dedicated worker + `#high` review): real in-memory CDK test mint, real
+  `extract_c_value_from_token` parse, workspace fully green. Was declared
+  OUT of scope for this plan; landed anyway right after ship.
 - **C4 — audio: leave excluded** (bevy `audio` already minus-`bevy_audio`
   for CI alsa reasons; documented in BUILDING.md §a). Revisit at v1.3
   mobile shells, which need signing/SDK work anyway.

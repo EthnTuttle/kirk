@@ -38,13 +38,48 @@ impl GameMint {
         }
     }
 
-    /// Create a test GameMint with mock dependencies (for testing only)
+    /// Create a test GameMint backed by a real in-memory CDK mint.
+    ///
+    /// The mint runs on an in-memory SQLite store with an embedded
+    /// `DbSignatory` holding a single active Sat keyset (input fee 0,
+    /// max_order 32, deterministic seed) and no Lightning payment
+    /// processors. It can issue and verify proofs locally; any operation
+    /// that requires a payment backend returns the underlying CDK error.
+    /// This is the same construction CDK's own mint tests use.
     #[cfg(test)]
-    pub fn new_test(_keys: Keys) -> Self {
-        // For now, we'll create a test stub that panics when used
-        // This allows compilation but tests that actually use the mint will fail
-        // TODO: Implement proper test mint creation
-        panic!("GameMint::new_test not properly implemented yet - tests need to be updated")
+    pub async fn new_test(keys: Keys) -> Self {
+        let localstore = Arc::new(
+            cdk_sqlite::mint::memory::empty()
+                .await
+                .expect("in-memory mint database must initialize"),
+        );
+
+        // One supported unit is required so the mint has an active,
+        // non-auth keyset at startup.
+        let mut supported_units = HashMap::new();
+        supported_units.insert(CurrencyUnit::Sat, (0, 32));
+
+        let signatory = Arc::new(
+            cdk_signatory::db_signatory::DbSignatory::new(
+                localstore.clone(),
+                &[0x42u8; 32], // fixed test seed: deterministic keysets per test
+                supported_units,
+                HashMap::new(),
+            )
+            .await
+            .expect("test signatory must initialize"),
+        );
+
+        let mint = Mint::new(
+            cdk::nuts::MintInfo::default(),
+            signatory,
+            localstore,
+            HashMap::new(), // no payment processors for a test mint
+        )
+        .await
+        .expect("in-memory test mint must initialize");
+
+        Self::new(Arc::new(mint), NostrClient::default(), keys, CurrencyUnit::Sat)
     }
     
     /// Get reference to underlying CDK mint

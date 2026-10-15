@@ -399,16 +399,16 @@ mod tests {
     use crate::cashu::GameMint;
     use std::sync::Arc;
 
-    fn create_test_context() -> ServiceContext {
+    async fn create_test_context() -> ServiceContext {
         let keys = Keys::generate();
-        let mint = Arc::new(GameMint::new_test(keys));
+        let mint = Arc::new(GameMint::new_test(keys).await);
         let nostr_client = nostr_sdk::Client::default();
         ServiceContext::new(mint, nostr_client)
     }
 
     #[tokio::test]
     async fn test_sequence_lifecycle() {
-        let mut manager = SequenceManager::new(create_test_context());
+        let mut manager = SequenceManager::new(create_test_context().await);
 
         let challenger_keys = Keys::generate();
         let accepter_keys = Keys::generate();
@@ -416,7 +416,7 @@ mod tests {
         // Create challenge event
         let challenge_event = EventBuilder::new(
             Kind::from(crate::events::CHALLENGE_KIND),
-            r#"{"game_type": "test", "stakes": []}"#,
+            r#"{"game_type": "test", "commitment_hashes": ["test"], "game_parameters": {}}"#,
             []
         ).to_event(&challenger_keys).unwrap();
 
@@ -447,7 +447,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_concurrent_sequence_limit() {
-        let mut manager = SequenceManager::new(create_test_context());
+        let mut manager = SequenceManager::new(create_test_context().await);
 
         let challenger_keys = Keys::generate();
 
@@ -455,7 +455,7 @@ mod tests {
         for i in 0..manager.context.constants.max_concurrent_sequences {
             let challenge_event = EventBuilder::new(
                 Kind::from(crate::events::CHALLENGE_KIND),
-                format!(r#"{{"game_type": "test_{}", "stakes": []}}"#, i),
+                format!(r#"{{"game_type": "test_{}", "commitment_hashes": ["test"], "game_parameters": {{}}}}"#, i),
                 []
             ).to_event(&challenger_keys).unwrap();
 
@@ -477,7 +477,7 @@ mod tests {
         // Try to create one more - should fail
         let extra_challenge = EventBuilder::new(
             Kind::from(crate::events::CHALLENGE_KIND),
-            r#"{"game_type": "extra", "stakes": []}"#,
+            r#"{"game_type": "extra", "commitment_hashes": ["test"], "game_parameters": {}}"#,
             []
         ).to_event(&challenger_keys).unwrap();
 
@@ -498,14 +498,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_cleanup_old_sequences() {
-        let mut manager = SequenceManager::new(create_test_context());
+        let mut manager = SequenceManager::new(create_test_context().await);
 
         // Add a completed sequence (simulate by directly inserting)
-        let sequence_id = EventId::from_hex("1234567890abcdef1234567890abcdef12345678").unwrap();
+        let sequence_id = EventId::from_hex(
+            "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        )
+        .unwrap();
         let keys = Keys::generate();
         let challenge_event = EventBuilder::new(
             Kind::from(crate::events::CHALLENGE_KIND),
-            r#"{"game_type": "test", "commitment_hashes": ["test"], "stakes": []}"#,
+            r#"{"game_type": "test", "commitment_hashes": ["test"], "game_parameters": {}}"#,
             []
         ).to_event(&keys).unwrap();
         let sequence = crate::game::GameSequence::new(challenge_event, keys.public_key()).unwrap();
