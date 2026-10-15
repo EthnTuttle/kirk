@@ -7,6 +7,7 @@ pub mod callings;
 pub mod chart;
 pub mod rites;
 pub mod species;
+pub mod witnesses;
 
 /// All champion species, sorted by id.
 pub fn all_species() -> &'static [SpeciesBase] {
@@ -23,6 +24,16 @@ pub fn rite_by_id(id: u16) -> Option<&'static Rite> {
 
 pub fn calling_by_id(id: u8) -> Option<&'static Calling> {
     callings::CALLINGS.iter().find(|c| c.id == id)
+}
+
+/// All revered witnesses of the Hagiography's witness roll (lore-only,
+/// non-combatant), sorted by id.
+pub fn all_witnesses() -> &'static [witnesses::Witness] {
+    witnesses::WITNESSES
+}
+
+pub fn witness_by_id(id: u16) -> Option<&'static witnesses::Witness> {
+    witnesses::WITNESSES.iter().find(|w| w.id == id)
 }
 
 /// Effectiveness percent (25..=400 via dual-type product; see chart rules).
