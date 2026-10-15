@@ -1,1 +1,2 @@
 grid 3x2 row-major: 01 idle / 02 step / 03 pray / 04 idle2 (idle variant) / 05 look (turn-look back over shoulder) / 06 bow | all poses face right | src sheet kirk-anim-sheet-friar-osbert-v1 (nano-banana-2-1, 1024x1024 raw, $0.00) | staged 2026-10-14
+| D6 combat arc per-frame (4.3 hybrid): 07 strike / 08 hit | src frames kirk-anim-frame-friar-osbert-strike-v1 + kirk-anim-frame-friar-osbert-hit-v1 (nano-banana-2-1, 1024x1024 raw, $0.00) | staged 2026-10-15

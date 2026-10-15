@@ -6,7 +6,7 @@ crusade-app/assets/ in the species_id-keyed layout the Bevy shell loads
     assets/sprites/champions/{id:03}-{slug}.png   128x128 battle sprite
     assets/sprites/icons/{id:03}.png              32x32 roster icon
     assets/sprites/scenes/<name>.png              128x128 scene/hero art
-    assets/sprites/anim/{id:03}-{slug}/NN_<pose>.png  128x128 idle-loop frames
+    assets/sprites/anim/{id:03}-{slug}/NN_<pose>.png  128x128 idle+arc frames
 
 This script is the single source of truth for the art -> assets step
 (cards D1 battle sprites + D2 roster icons). Stdlib + Pillow only.
@@ -81,19 +81,24 @@ SCENES = [
     ("audric-prayer",),
 ]
 
-# Battle idle-loop animation frames (card D5): copied from the 4.5 staging
-# area art/anim-staging/<cell>/ to sprites/anim/{id:03}-{slug}/NN_<pose>.png
+# Battle animation frames (cards D5 + D6): copied from the staging area
+# art/anim-staging/<cell>/ to sprites/anim/{id:03}-{slug}/NN_<pose>.png
 # (stem minus the `_q128` tag), keyed by the same edge-flood pass as the
 # battle sprites. Only the poses the shell actually animates ship: `01_idle`
-# for every champion plus `04_idle2` where the sheet is the 4.5 batch grid.
-# `audric-battle` is the 4.3 PILOT grid (idle/step/strike/hit/defend/pray —
-# no idle2), so its loop is the single idle frame. Bosses (ids 101+) have
-# no anim sheets at all and stay on the static battle sprite. step/pray/
-# look/bow and the pilot's combat family stay in art/anim-staging only,
-# awaiting the later combat-arc card; pray never auto-plays.
-ANIM_IDLE_POSES = ["01_idle", "04_idle2"]
+# for every champion plus `04_idle2` where the sheet is the 4.5 batch grid
+# (card D5 idle loop), and the card D6 combat arc `07_strike`/`08_hit`
+# per-frame generations (4.3 hybrid decision: arcs are per-frame, never
+# sheet slices). `audric-battle` is the 4.3 PILOT grid (idle/step/strike/
+# hit/defend/pray — no idle2), so its loop is the single idle frame; its D6
+# arc frames are the same per-frame generations as every other champion
+# (07/08), NOT the pilot's 03/04 cells. Bosses (ids 101+) have no anim
+# sheets at all and stay on the static battle sprite; their hurt feedback
+# is a shell-side tint flash (battle.rs). step/pray/look/bow and the
+# pilot's combat family stay in art/anim-staging only; pray never
+# auto-plays.
+ANIM_POSES = ["01_idle", "04_idle2", "07_strike", "08_hit"]
 ANIM_POSES_BY_CELL = {
-    "audric-battle": ["01_idle"],
+    "audric-battle": ["01_idle", "07_strike", "08_hit"],
 }
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -234,17 +239,18 @@ def main(argv):
         print(f"  {'':>4} {'scene':22} {cell:22} {keyed:>8}  "
               f"{os.path.relpath(scene, args.assets)}")
 
-    # Card D5: idle-loop frame sets under sprites/anim/. Missing poses on a
-    # listed cell are an error like any missing cell (exit 1 via load_canvas)
-    # EXCEPT the boss rows, which are skipped outright below.
+    # Cards D5/D6: idle-loop + combat-arc frame sets under sprites/anim/.
+    # Missing poses on a listed cell are an error like any missing cell
+    # (exit 1 via load_canvas) EXCEPT the boss rows, which are skipped
+    # outright below.
     anim_frames = 0
     if not os.path.isdir(args.anim_staging):
         print(f"stage_sprites: anim staging not found: {args.anim_staging} "
-              f"(skipping idle-frame staging)", file=sys.stderr)
+              f"(skipping anim-frame staging)", file=sys.stderr)
     for species_id, slug, cell in SUBJECTS:
         if species_id >= 100:
             continue  # bosses: no anim sheets (4.5), static sprite only
-        poses = ANIM_POSES_BY_CELL.get(cell, ANIM_IDLE_POSES)
+        poses = ANIM_POSES_BY_CELL.get(cell, ANIM_POSES)
         if not os.path.isdir(args.anim_staging):
             break
         outs = []

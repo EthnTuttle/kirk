@@ -265,6 +265,29 @@ mechanics, mask bits, and rest-screen portraits. 42/42 app tests (new:
 manuscript_of_sins_gates_by_phase_and_defeat_mask); harness two-pass
 byte-identical incl. hagiography.png (1 revealed + 6 sealed).
 
+### 4.8 Combat-arc frames + battle wiring (DONE 2026-10-15, $0.00)
+
+Card D6. Per the 4.3 hybrid decision, strike/hit are PER-FRAME generations
+(nano-banana-2-1, 1024, identities verbatim from ppq_roster/ppq_portfolio):
+24 frames (`07_strike_q128.png`/`08_hit_q128.png` per champion under
+art/anim-staging/, poses.txt extended, +24 MANIFEST entries, cost 0.0; all
+0 off-palette px, right-facing). 25/26 passed at v1; vigil-knight-wymar
+strike retried v2 (v1 foul: red sash off-identity) — hit kept v1 via
+deterministic re-quant of its preserved raw. stage_sprites.py ANIM pass
+ships 01_idle (+04_idle2) + 07_strike + 08_hit for ids 1..=12 (rerun wrote
+24, kept 62, idempotent); Audric uses the same fresh frames. Shell
+(battle.rs): arcs trigger off `ViewSnapshot.fresh_events` (RiteUsed ->
+strike, Damage -> hit), stamped per rebuild as beat slices summing to
+exactly 45 app frames (consecutive-run dedup so multi-hit is no strobe;
+ailment chip deliberately never a beat), counted down in ChampionAnim, then
+back to the idle loop. Champion hit = hit frame + white tint flash; bosses
+get the flash alone via a degenerate always-idle ChampionAnim. Attribution
+honesty: engine sides map exactly only for practice/campaign (me==0); net
+duels self-suppress arcs on the roster_count==0 tell (documented in
+battle_row). +4 arc tests; --smoke exit 0; ui-shots full pass twice all 9
+PNGs byte-identical; battle.png deterministically catches turn 2 mid-arc.
+Project spend unchanged at $0.664.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

@@ -513,5 +513,199 @@
   "src_dims": "1024x1024",
   "cost_usd": 0.0,
   "note": "retried v2 (v1 dcy 15.5 row-baseline break); residual dcy 9.5 = bow-vs-standing pairs + mild row scale wobble; staging fine after eyeball"
+ },
+ "nano-banana-2-1/audric-battle-strike": {
+  "raw_bytes": 897015,
+  "client_request_id": "kirk-anim-frame-audric-battle-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/audric-battle-hit": {
+  "raw_bytes": 865001,
+  "client_request_id": "kirk-anim-frame-audric-battle-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/cleric-mabel-strike": {
+  "raw_bytes": 879418,
+  "client_request_id": "kirk-anim-frame-cleric-mabel-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/cleric-mabel-hit": {
+  "raw_bytes": 917155,
+  "client_request_id": "kirk-anim-frame-cleric-mabel-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/serjeant-bastien-strike": {
+  "raw_bytes": 955221,
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/serjeant-bastien-hit": {
+  "raw_bytes": 810636,
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/hospitaller-ysolt-strike": {
+  "raw_bytes": 912880,
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/hospitaller-ysolt-hit": {
+  "raw_bytes": 911897,
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/wayfarer-aelis-strike": {
+  "raw_bytes": 907247,
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/wayfarer-aelis-hit": {
+  "raw_bytes": 842002,
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/canoness-hrothwyn-strike": {
+  "raw_bytes": 990212,
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/canoness-hrothwyn-hit": {
+  "raw_bytes": 779352,
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/vexillor-anchetil-strike": {
+  "raw_bytes": 876844,
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/vexillor-anchetil-hit": {
+  "raw_bytes": 912275,
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/brother-aldwyn-strike": {
+  "raw_bytes": 934574,
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/brother-aldwyn-hit": {
+  "raw_bytes": 917539,
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/cantor-sabina-strike": {
+  "raw_bytes": 908756,
+  "client_request_id": "kirk-anim-frame-cantor-sabina-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/cantor-sabina-hit": {
+  "raw_bytes": 902761,
+  "client_request_id": "kirk-anim-frame-cantor-sabina-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/chevalier-raimbaud-strike": {
+  "raw_bytes": 966805,
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/chevalier-raimbaud-hit": {
+  "raw_bytes": 888267,
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/vigil-knight-wymar-strike": {
+  "raw_bytes": 918006,
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-strike-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-hit": {
+  "raw_bytes": 911668,
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)"
+ },
+ "nano-banana-2-1/friar-osbert-strike": {
+  "raw_bytes": 951877,
+  "client_request_id": "kirk-anim-frame-friar-osbert-strike-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert-strike",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/friar-osbert-hit": {
+  "raw_bytes": 923115,
+  "client_request_id": "kirk-anim-frame-friar-osbert-hit-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert-hit",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
  }
 }
