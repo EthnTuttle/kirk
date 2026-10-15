@@ -5,16 +5,18 @@ crusade-app/assets/ in the species_id-keyed layout the Bevy shell loads
 
     assets/sprites/champions/{id:03}-{slug}.png   128x128 battle sprite
     assets/sprites/icons/{id:03}.png              32x32 roster icon
+    assets/sprites/scenes/<name>.png              128x128 scene/hero art
 
 This script is the single source of truth for the art -> assets step
 (cards D1 battle sprites + D2 roster icons). Stdlib + Pillow only.
 
 The subject map below is hand-copied from crusade-core/src/data/species.rs
 (names are the static SPECIES table; slugs are their lowercase hyphenated
-form). Id 1 Squire Audric stages the `audric-battle` cell; `audric-prayer`
-is deliberately NOT wired (user lock). The lane is USER-LOCKED to
-nano-banana-2-1; the gpt-image-1.5 staging lane stays on disk untouched as
-an alternate set.
+form). Id 1 Squire Audric stages the `audric-battle` cell for the battle
+slot per the user lock; `audric-prayer` is never a species sprite -- it
+stages only via SCENES as the menu hero (card D3). The lane is USER-LOCKED
+to nano-banana-2-1; the gpt-image-1.5 staging lane stays on disk untouched
+as an alternate set.
 
 Rerunnable/idempotent: outputs are pure functions of the staging cells and
 are only rewritten when their bytes would change, so repeat runs do not
@@ -69,6 +71,14 @@ SUBJECTS = [
 CANVAS = 128  # production canvas (ART-STATUS section 1)
 ICON = 32  # roster icon side (ART-PIPELINE section 6)
 INK = (0x0B, 0x0E, 0x1B)  # palette background: shell NAVY, quarter-dark shell
+
+# Decorative scene/hero slots (card D3): staging cell -> sprites/scenes/
+# <cell>.png. These are ambience, never species sprites: `audric-prayer`
+# here is the menu hero, while species id 1 keeps `audric-battle` for the
+# battle slot (user lock, unchanged).
+SCENES = [
+    ("audric-prayer",),
+]
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -147,6 +157,18 @@ def write_png_if_changed(img, path):
     return True
 
 
+def load_canvas(src):
+    """Open a staging cell's q128.png and enforce the production canvas."""
+    if not os.path.exists(src):
+        print(f"stage_sprites: MISSING {src}", file=sys.stderr)
+        sys.exit(1)
+    img = Image.open(src).convert("RGBA")
+    if img.size != (CANVAS, CANVAS):
+        print(f"stage_sprites: {src} is {img.size}, expected {CANVAS}x{CANVAS}", file=sys.stderr)
+        sys.exit(1)
+    return img
+
+
 def main(argv):
     args = parse_args(argv)
     if not os.path.isdir(args.staging):
@@ -158,13 +180,7 @@ def main(argv):
     print(f"  {'id':>4} {'slug':22} {'cell':22} {'keyed px':>8}  outputs")
     for species_id, slug, cell in SUBJECTS:
         src = os.path.join(args.staging, cell, "q128.png")
-        if not os.path.exists(src):
-            print(f"stage_sprites: MISSING {src}", file=sys.stderr)
-            return 1
-        img = Image.open(src).convert("RGBA")
-        if img.size != (CANVAS, CANVAS):
-            print(f"stage_sprites: {src} is {img.size}, expected {CANVAS}x{CANVAS}", file=sys.stderr)
-            return 1
+        img = load_canvas(src)
 
         keyed = 0
         if args.key_bg:
@@ -184,9 +200,25 @@ def main(argv):
         print(f"  {species_id:>4} {slug:22} {cell:22} {keyed:>8}  "
               f"{os.path.relpath(sprite, args.assets)} + {os.path.relpath(icon, args.assets)}")
 
+    for (cell,) in SCENES:
+        src = os.path.join(args.staging, cell, "q128.png")
+        img = load_canvas(src)
+        keyed = 0
+        if args.key_bg:
+            img, keyed = key_edge_connected_ink(img)
+        scene = os.path.join(args.assets, "sprites", "scenes", f"{cell}.png")
+        if write_png_if_changed(img, scene):
+            written += 1
+        else:
+            kept += 1
+        print(f"  {'':>4} {'scene':22} {cell:22} {keyed:>8}  "
+              f"{os.path.relpath(scene, args.assets)}")
+
     n = len(SUBJECTS)
-    print(f"stage_sprites: {n} subjects, {written} files written, {kept} unchanged, "
-          f"{2 * n} files expected under {os.path.relpath(args.assets, REPO_ROOT)}/sprites/")
+    total = 2 * n + len(SCENES)
+    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s), {written} files written, "
+          f"{kept} unchanged, {total} files expected under "
+          f"{os.path.relpath(args.assets, REPO_ROOT)}/sprites/")
     if os.path.basename(args.staging.rstrip(os.sep)) != "nano-banana-2-1":
         print("stage_sprites: NOTE — non-default lane staged; production lock is nano-banana-2-1")
     return 0

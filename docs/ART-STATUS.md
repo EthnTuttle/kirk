@@ -140,6 +140,30 @@ after any in-flight shell work touching `bevy_shell/`).
   crisp + correct, roster.png 6/6 icon slots populated, `--smoke` exit 0. No
   atlas, no view/crate-surface changes; wasm32 check skipped (target not
   installed here; CI covers).
+- OUTCOME (2026-10-14, card D3 menu/campaign polish, nano-banana lane only):
+  `audric-prayer` staged as the first scene slot,
+  `assets/sprites/scenes/audric-prayer.png` (keyed transparent by the same
+  edge-flood pass; stage_sprites.py gained a SCENES table + shared
+  load/validate; rerun: 38 unchanged + 1 scene written, idempotent re-run
+  writes 0; 0 semi-transparent px). id 1's battle cell stays `audric-battle`
+  per the lock — the prayer tile is decoration only. **Menu hero SHIPPED**:
+  128x128 kneeling-at-dawn side piece left of the DEUS VULT/subtitle lockup
+  (not above-title: the column was ~645px of 720 already); AssetServer-gated
+  like every seam, buttons untouched. Reads as a manuscript initial; corner
+  dawn-bands verified on-palette at x4 magnify. **Next-boss face SHIPPED** on
+  the rest screen: panel with the staged 128x128 boss sprite + "Node N/7 -
+  {name} waits beyond the rest." Verified `CampaignView` carries only
+  node/defeated/shards_earned (no boss-id field) and
+  `client.rs::CAMPAIGN_NODE_SPECIES` is private, so the shell mirrors that
+  immutable 7-id table in `screens.rs` under the same shell-side
+  id-reconstruction discipline as `battle.rs::champion_sprite_path`, pinned
+  by 3 new bin tests (7 distinct static sin species; node>=7 → None; paths
+  == staged slugs). Cleaner future seam if the mirror ever annoys:
+  `pub(crate)` the client's const or add `CampaignView.next_boss_species`.
+  `cargo test -p crusade-app` green ±bevy-ui; check --features bevy-ui clean;
+  `--smoke` exit 0. ui-shots: menu.png + campaign.png (Glutton-Maw at node
+  2) verified; the other 6 screens diff at exactly 0 changed pixels vs the
+  pre-D3 baseline harness run.
 
 ### 4.5 Animation sheets (DONE 2026-10-14)
 Scaled the 4.3 pilot recipe across **all 12 champions**, nano-banana-2-1 only

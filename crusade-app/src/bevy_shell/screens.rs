@@ -7,6 +7,7 @@ use crusade_app::{
     ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot, WitnessCard,
 };
 use crusade_core::data;
+use crusade_core::types::SpeciesBase;
 
 use crate::battle;
 use crate::state::{
@@ -75,7 +76,7 @@ pub fn rebuild_ui(
             _ => (battle::battle_screen(&mut commands, &duel, assets), false),
         },
         _ => match snap.phase {
-            Phase::Menu => (menu_screen(&mut commands, ladder), true),
+            Phase::Menu => (menu_screen(&mut commands, ladder, assets), true),
             Phase::Roster => (roster_screen(&mut commands, &roster, assets), false),
             Phase::BattleSetup => (
                 vec![text_node(
@@ -90,7 +91,7 @@ pub fn rebuild_ui(
             Phase::ForcedSwitchSelect => {
                 (battle::forced_switch_screen(&mut commands, &snap, assets), false)
             }
-            Phase::CampaignRest => (rest_screen(&mut commands, &snap), true),
+            Phase::CampaignRest => (rest_screen(&mut commands, &snap, assets), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap), true),
             Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
             Phase::Hagiography => (hagiography_screen(&mut commands, &snap), false),
@@ -176,15 +177,42 @@ pub(crate) fn log_panel(cmd: &mut Commands, title: &str, lines: &[String]) -> En
 
 // ---------- Menu ----------
 
-fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
-    vec![
-        text_node(cmd, "DEUS VULT".into(), style::title_font(), style::GOLD),
-        text_node(
-            cmd,
-            "- Champions of the Cross -".into(),
-            style::head_font(),
-            style::GOLD_DIM,
-        ),
+fn menu_screen(cmd: &mut Commands, ladder: Option<u64>, assets: Option<&AssetServer>) -> Vec<Entity> {
+    let title = text_node(cmd, "DEUS VULT".into(), style::title_font(), style::GOLD);
+    let subtitle = text_node(
+        cmd,
+        "- Champions of the Cross -".into(),
+        style::head_font(),
+        style::GOLD_DIM,
+    );
+    // The hero art (card D3) kneels beside the title when an asset server
+    // exists -- a dignified side piece that adds no height to this already
+    // full column, leaving the buttons dominant. Without one (headless
+    // smoke) the title stands alone exactly as before.
+    let mut kids: Vec<Entity> = match menu_hero(cmd, assets) {
+        Some(hero) => {
+            let words = cmd
+                .spawn(Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    row_gap: Val::Px(14.0),
+                    ..default()
+                })
+                .add_children(&[title, subtitle])
+                .id();
+            vec![
+                cmd.spawn(Node {
+                    column_gap: Val::Px(18.0),
+                    align_items: AlignItems::Center,
+                    ..default()
+                })
+                .add_children(&[hero, words])
+                .id(),
+            ]
+        }
+        None => vec![title, subtitle],
+    };
+    kids.extend([
         action_button(cmd, "Roster".into(), ClientInput::OpenRoster),
         action_button(
             cmd,
@@ -219,7 +247,28 @@ fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
             style::small_font(),
             style::DIM,
         ),
-    ]
+    ]);
+    kids
+}
+
+/// The menu hero: `sprites/scenes/audric-prayer.png` (the squire at dawn
+/// prayer from the locked nano-banana-2-1 lane, staged keyed-transparent by
+/// `tools/artbake/stage_sprites.py`). 128x128 like the battle portraits.
+/// Spawned only when an asset server exists; a 404ing fetch draws nothing
+/// and every text/button row is unconditional either way.
+fn menu_hero(cmd: &mut Commands, assets: Option<&AssetServer>) -> Option<Entity> {
+    let assets = assets?;
+    Some(
+        cmd.spawn((
+            ImageNode::new(assets.load("sprites/scenes/audric-prayer.png")),
+            Node {
+                width: Val::Px(128.0),
+                height: Val::Px(128.0),
+                ..default()
+            },
+        ))
+        .id(),
+    )
 }
 
 /// The alms box at the chapel door. Looks like an [`action_button`], but its
@@ -383,7 +432,7 @@ fn champion_icon(cmd: &mut Commands, species_id: u16, assets: Option<&AssetServe
 
 // ---------- Campaign rest ----------
 
-fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot, assets: Option<&AssetServer>) -> Vec<Entity> {
     let mut kids = vec![text_node(
         cmd,
         "The company rests.".into(),
@@ -400,6 +449,12 @@ fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
             style::body_font(),
             style::BONE,
         ));
+        // The gauntlet has a face (card D3): the next sin-boss's staged
+        // portrait over a caption line. Absent art or a cleared gauntlet
+        // keeps the screen exactly as it was.
+        if let Some(face) = next_boss_panel(cmd, c.node, assets) {
+            kids.push(face);
+        }
     }
     kids.push(log_panel(cmd, "Word from the camp", &snap.log_tail));
     let cont = action_button(
@@ -421,6 +476,98 @@ fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
         .id();
     kids.push(buttons);
     kids
+}
+
+/// The next sin-boss's face on the rest screen: the staged 128x128 battle
+/// sprite over a one-line caption in a small panel, so the gauntlet has a
+/// face while the company mends. `None` once the gauntlet is cleared (node
+/// 7) or if the mirrored table ever pointed off the static species table --
+/// the node then renders nothing. Same AssetServer discipline as the other
+/// sprite seams: the `ImageNode` spawns only when an asset server exists,
+/// and a 404ing fetch (partial wasm deploy) simply draws nothing over the
+/// caption; every pre-existing text row is unconditional.
+fn next_boss_panel(cmd: &mut Commands, node: u8, assets: Option<&AssetServer>) -> Option<Entity> {
+    let sp = next_boss_species(node)?;
+    let mut kids = Vec::new();
+    if let Some(assets) = assets {
+        kids.push(
+            cmd.spawn((
+                ImageNode::new(assets.load(boss_sprite_path(sp))),
+                Node {
+                    width: Val::Px(128.0),
+                    height: Val::Px(128.0),
+                    ..default()
+                },
+            ))
+            .id(),
+        );
+    }
+    kids.push(text_node(
+        cmd,
+        format!("Node {}/7 - {} waits beyond the rest.", node + 1, sp.name),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    Some(
+        cmd.spawn((
+            Node {
+                align_items: AlignItems::Center,
+                ..style::panel_node()
+            },
+            BackgroundColor(style::PANEL),
+            BorderColor::all(style::GOLD_DIM),
+        ))
+        .add_children(&kids)
+        .id(),
+    )
+}
+
+/// MIRROR of `client.rs::CAMPAIGN_NODE_SPECIES` (the seven-node gauntlet
+/// order: Lust, Gluttony, Greed, Sloth, Envy, Wrath, Pride last): the
+/// client's const is private, and `CampaignView.node` is the index the
+/// snapshot already carries, so the shell re-derives the next boss's
+/// species id here rather than touching the view plumbing -- the same
+/// shell-side reconstruction discipline as `battle.rs::champion_sprite_path`.
+/// Presentation-only: the order is locked design, the tests below pin it to
+/// the static species table, and if this copy ever did drift from the
+/// client's, the worst case is a wrong portrait on this screen, never wrong
+/// mechanics.
+const CAMPAIGN_NODE_SPECIES: [u16; 7] = [103, 106, 107, 104, 102, 105, 101];
+
+/// The sin-boss species waiting at gauntlet `node` (0-based), or `None`
+/// once the gauntlet is cleared.
+fn next_boss_species(node: u8) -> Option<&'static SpeciesBase> {
+    let id = *CAMPAIGN_NODE_SPECIES.get(usize::from(node))?;
+    data::species_by_id(id)
+}
+
+/// Staged battle-sprite asset path for a static-table species
+/// (`sprites/champions/{id:03}-{slug}.png` -- the same files
+/// `battle.rs::champion_sprite` draws, staged by
+/// `tools/artbake/stage_sprites.py`).
+fn boss_sprite_path(sp: &SpeciesBase) -> String {
+    format!("sprites/champions/{:03}-{}.png", sp.id, slugify(sp.name))
+}
+
+/// Asset-slug form of a species name: lowercase ASCII, with every run of
+/// non-alphanumerics collapsed to one dash. Same recipe as
+/// `battle.rs::slugify` (kept private there), so both files resolve the
+/// same staged slugs.
+fn slugify(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut pending_dash = false;
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() {
+            if pending_dash && !out.is_empty() {
+                out.push('-');
+            }
+            pending_dash = false;
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            pending_dash = true;
+        }
+    }
+    out
 }
 
 // ---------- Battle over ----------
@@ -1000,4 +1147,57 @@ fn witness_panel(cmd: &mut Commands, card: &WitnessCard) -> Entity {
 /// "Tournament of Virtue" button.
 pub fn hagiography_menu_button(cmd: &mut Commands) -> Entity {
     action_button(cmd, "Hagiography".into(), ClientInput::ViewHagiography)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crusade_core::types::Typing;
+
+    /// The mirrored gauntlet table must be the seven distinct sin-spawn
+    /// species from the static table -- the anchor that glues the mirror to
+    /// `client.rs::CAMPAIGN_NODE_SPECIES` and to the staged files from
+    /// stage_sprites.py. (D1/D2 keep their sprite tests in battle.rs.)
+    #[test]
+    fn gauntlet_mirror_covers_each_sin_boss_once() {
+        let mut ids = CAMPAIGN_NODE_SPECIES.to_vec();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), 7, "seven distinct gauntlet nodes");
+        for id in ids {
+            let sp = data::species_by_id(id).expect("node id in the static table");
+            assert!(
+                matches!(sp.typing, Typing::Sin(_)),
+                "node species {id} ({}) must be a sin-spawn",
+                sp.name
+            );
+        }
+    }
+
+    /// A cleared gauntlet (node 7) offers no next boss: the rest screen
+    /// then shows neither face nor caption.
+    #[test]
+    fn cleared_gauntlet_offers_no_boss() {
+        assert!(next_boss_species(7).is_none());
+        assert!(next_boss_species(200).is_none());
+    }
+
+    /// The mirror must resolve to exactly the staged file paths
+    /// (`tools/artbake/stage_sprites.py` SUBJECTS), in gauntlet order.
+    #[test]
+    fn gauntlet_paths_match_staged_slugs() {
+        let expected = [
+            "sprites/champions/103-fiend-of-lust.png",
+            "sprites/champions/106-glutton-maw.png",
+            "sprites/champions/107-grasper-of-greed.png",
+            "sprites/champions/104-sleeper-of-sloth.png",
+            "sprites/champions/102-wretch-of-envy.png",
+            "sprites/champions/105-brute-of-wrath.png",
+            "sprites/champions/101-prince-of-pride.png",
+        ];
+        for (node, want) in expected.iter().enumerate() {
+            let sp = next_boss_species(node as u8).expect("gauntlet node has a boss");
+            assert_eq!(boss_sprite_path(sp), *want, "node {node}");
+        }
+    }
 }
