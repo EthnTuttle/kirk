@@ -30,7 +30,6 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use async_trait::async_trait;
 use bevy::app::{RunMode, ScheduleRunnerPlugin};
 use bevy::prelude::*;
 
@@ -41,7 +40,7 @@ use crusade_core::data;
 use crusade_core::types::{ChampionInstance, DevotionStats, GraceStats, RiteSlot};
 use crusade_data::RosterStore;
 use crusade_net::nostr_transport::NostrTransport;
-use crusade_net::zaps::{self, Http, PayParams, ZapError};
+use crusade_net::zaps::{self, PayParams, ZapError};
 use kirk::events::EventParser;
 use nostr::{Event, Filter, Keys, Kind, PublicKey, ToBech32};
 use nostr_sdk::EventSource;
@@ -93,6 +92,10 @@ fn main() {
     .init_resource::<SnapshotVersion>()
     .init_resource::<RenderedVersion>()
     .init_resource::<NetBridge>()
+    // The menu support panel's shell-local state (A3 expansion): resource
+    // only, never part of the client; support_bridge is its invoice-fetch
+    // mailbox drain (the NetBridge pattern at menu size).
+    .init_resource::<screens::SupportPanel>()
     .add_systems(Startup, setup);
     #[cfg(not(target_arch = "wasm32"))]
     app.insert_resource(state::NetRuntime(
@@ -109,6 +112,7 @@ fn main() {
                 input::collect_clicks,
                 input::process_inputs,
                 net_bridge,
+                screens::support_bridge,
                 screens::rebuild_ui,
             )
                 .chain(),
@@ -120,6 +124,7 @@ fn main() {
                 input::collect_clicks,
                 input::process_inputs,
                 net_bridge,
+                screens::support_bridge,
                 screens::rebuild_ui,
             )
                 .chain(),
@@ -870,7 +875,7 @@ async fn build_alms_session(
     address: String,
     shared: &Arc<Mutex<NetShared>>,
 ) -> Option<AlmsSession> {
-    match zaps::fetch_pay_params(&shell_http(), &address).await {
+    match zaps::fetch_pay_params(&screens::shell_http(), &address).await {
         Ok(params) if params.allows_nostr => {
             set_alms(shared, |a| a.purse = AlmsPurse::Victor(address));
             Some(AlmsSession {
@@ -986,77 +991,8 @@ async fn alms_invoice(
             "the desktop shell carries no lightning heralds — give by hand".into(),
         ));
     };
-    let http = shell_http();
+    let http = screens::shell_http();
     zaps::request_invoice(&http, params, amount_msat, &signed).await
-}
-
-/// The shell's HTTPS transport for the zaps module: the browser's `fetch`
-/// on wasm. Redirects are refused outright (the module's cross-origin
-/// invariants rest on never following one).
-#[cfg(target_arch = "wasm32")]
-struct BrowserHttp;
-
-#[cfg(target_arch = "wasm32")]
-#[async_trait(?Send)]
-impl Http for BrowserHttp {
-    async fn get_text(&self, url: &str, max_bytes: u64) -> Result<String, ZapError> {
-        let window = web_sys::window().ok_or_else(|| ZapError::Http("no browser window".into()))?;
-        let init = web_sys::RequestInit::new();
-        // SECURITY: refuse every redirect rather than follow anywhere.
-        init.set_redirect(web_sys::RequestRedirect::Error);
-        let request = web_sys::Request::new_with_str_and_init(url, &init)
-            .map_err(|e| ZapError::Http(format!("request build: {e:?}")))?;
-        let value = wasm_bindgen_futures::JsFuture::from(window.fetch_with_request(&request))
-            .await
-            .map_err(|e| ZapError::Http(format!("fetch failed or redirected: {e:?}")))?;
-        let response: web_sys::Response = wasm_bindgen::JsCast::dyn_into(value)
-            .map_err(|_| ZapError::Http("fetch resolved to a non-Response".into()))?;
-        if !response.ok() {
-            return Err(ZapError::Http(format!("http status {}", response.status())));
-        }
-        let text_promise = response
-            .text()
-            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?;
-        let text = wasm_bindgen_futures::JsFuture::from(text_promise)
-            .await
-            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?
-            .as_string()
-            .ok_or_else(|| ZapError::Http("body was not text".into()))?;
-        // A buffered browser fetch cannot stop mid-body; the module cap is
-        // still enforced before the response is handed to the parser.
-        if text.len() as u64 > max_bytes {
-            return Err(ZapError::TooLarge(max_bytes));
-        }
-        Ok(text)
-    }
-}
-
-/// The desktop shell ships no HTTPS stack (no TLS client in the dependency
-/// tree by design); the alms address renders display-only and invoice
-/// requests fail over to the house purse, in-theme.
-#[cfg(not(target_arch = "wasm32"))]
-struct NoHttp;
-
-#[cfg(not(target_arch = "wasm32"))]
-#[async_trait]
-impl Http for NoHttp {
-    async fn get_text(&self, _url: &str, _max_bytes: u64) -> Result<String, ZapError> {
-        Err(ZapError::Http(
-            "the desktop shell carries no lightning heralds".into(),
-        ))
-    }
-}
-
-/// The one permitted HTTPS transport for this shell (wasm fetch / desktop
-/// stub), as a value so generic zaps calls stay monomorphic per target.
-#[cfg(target_arch = "wasm32")]
-fn shell_http() -> BrowserHttp {
-    BrowserHttp
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn shell_http() -> NoHttp {
-    NoHttp
 }
 
 /// A duel that died out of band: in-theme notice + terminal state; the

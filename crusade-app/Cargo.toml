@@ -28,6 +28,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 thiserror = "1.0"
+# The support panel's QR codes (menu alms box, ZAP-MONETIZATION surface
+# #1): pure-Rust code-matrix generation, wasm-safe, and drawn by the shell
+# itself as bevy UI rects -- default features OFF so no image/svg codecs
+# enter the tree (only the matrix API is used).
+qrcode = { version = "0.14", default-features = false }
 # The Bevy shell's ONE async boundary: lobby/duel task channels + select.
 # tokio is already in the tree (crusade-net depends on these same
 # features); nothing new enters the dependency graph.

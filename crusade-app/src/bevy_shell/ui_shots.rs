@@ -11,7 +11,10 @@
 //!
 //! All game-state changes ride the same `InputQueue -> process_inputs ->
 //! rebuild_ui` path as the windowed shell and the smoke driver; screen
-//! layouts are never reimplemented here. Screens: `menu`, `roster`,
+//! layouts are never reimplemented here. Screens: `menu`, `support` (the
+//! menu's alms panel, toggled open via its shell-local resource — the QR
+//! is drawn offline from the address const and native chips are inert, so
+//! the capture is fully deterministic), `roster`,
 //! `hagiography` (the witness roll), `battle`, `battle-over`,
 //! `battle-over-net` (post-duel alms CTA via an
 //! offline-seeded mailbox), `campaign`, `lobby` (offline fixture cards).
@@ -58,8 +61,9 @@ use state::{
 /// Default capture size (CSS px = px; scale factor is 1.0 headless).
 const DEFAULT_SIZE: (u32, u32) = (1280, 720);
 /// Every screen name `--screens` may select (also the full pass order).
-const ALL_SCREENS: [&str; 8] = [
+const ALL_SCREENS: [&str; 9] = [
     "menu",
+    "support",
     "roster",
     "hagiography",
     "battle",
@@ -189,6 +193,9 @@ enum Step {
     DriveBattle { cap: u32, stash: bool },
     /// Offline stand-in for the net task's post-settle mailbox write.
     SeedNetOver,
+    /// Toggle the menu's shell-local support panel (offline stand-in for
+    /// clicking its button — the observer writes this same resource).
+    SupportPanel(bool),
     /// Drop the seeded mailbox so the menu path renders again.
     ClearNet,
     /// Route out of the campaign leg: rest -> abandon, over -> amen.
@@ -226,6 +233,13 @@ impl ShotDriver {
         };
         let mut steps = vec![Step::Settle(BOOT_SETTLE)];
         steps.extend(capture("menu"));
+        // The menu's support panel: a shell-local toggle, fully offline —
+        // the code is drawn from the address const and the chips are
+        // inert slabs on a native build, so the capture is deterministic.
+        // Closed again afterwards so the rest of the pass is untouched.
+        steps.extend([Step::SupportPanel(true), Step::Settle(10)]);
+        steps.extend(capture("support"));
+        steps.extend([Step::SupportPanel(false), Step::Settle(4)]);
         steps.extend([
             Step::Push(vec![ClientInput::OpenRoster]),
             Step::WaitPhase(Phase::Roster, WAIT_PHASE_CAP),
@@ -366,6 +380,7 @@ fn main() -> ExitCode {
     .init_resource::<SnapshotVersion>()
     .init_resource::<RenderedVersion>()
     .init_resource::<NetBridge>()
+    .init_resource::<screens::SupportPanel>()
     .init_resource::<SaveLog>()
     .insert_resource(ShotDriver::new(&cli))
     .add_systems(Startup, setup_target)
@@ -375,6 +390,7 @@ fn main() -> ExitCode {
             driver,
             input::collect_clicks,
             input::process_inputs,
+            screens::support_bridge,
             screens::rebuild_ui,
         )
             .chain(),
@@ -419,6 +435,7 @@ fn driver(
     mut queue: ResMut<InputQueue>,
     mut version: ResMut<SnapshotVersion>,
     mut bridge: ResMut<NetBridge>,
+    mut support: ResMut<screens::SupportPanel>,
     mut drv: ResMut<ShotDriver>,
     saved: Res<SaveLog>,
     mut exit: MessageWriter<AppExit>,
@@ -520,6 +537,13 @@ fn driver(
             },
             Step::ClearNet => {
                 bridge.detach();
+                version.0 = version.0.wrapping_add(1);
+                drv.advance();
+            }
+            Step::SupportPanel(open) => {
+                // Exactly what `on_support_click` writes (the resource is
+                // the panel's whole state); the bump repaints the menu.
+                support.open = open;
                 version.0 = version.0.wrapping_add(1);
                 drv.advance();
             }

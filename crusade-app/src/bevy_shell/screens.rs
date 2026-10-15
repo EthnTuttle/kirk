@@ -1,11 +1,20 @@
 //! The rebuild dispatch system, shared node builders, and the non-battle
 //! screens (menu, roster, campaign rest, battle over).
 
+use std::sync::{Arc, Mutex};
+
+use async_trait::async_trait;
 use bevy::prelude::*;
 
 use crusade_app::{
     ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot, WitnessCard,
 };
+// The house purse's LNURL-pay switchboard reuses the B3a zaps module
+// (fetch_pay_params + the 64 KiB body cap) exactly as shipped -- the
+// support panel's own additions stay in this file's menu section.
+use crusade_net::zaps::{Http, ZapError};
+#[cfg(target_arch = "wasm32")]
+use crusade_net::zaps;
 use crusade_core::data;
 use crusade_core::types::SpeciesBase;
 
@@ -17,9 +26,10 @@ use crate::state::{
 use crate::style;
 
 /// "Support the Order" alms box (ZAP-MONETIZATION.md surface #1): a static,
-/// voluntary-donation lightning address. Purely cosmetic — the menu shows it
-/// and hands it to the player's own wallet on click; it is never an input to
-/// the game and no game system reads it back (integrity firewall, §2).
+/// voluntary-donation lightning address. Purely cosmetic — the menu's
+/// support panel shows it as copyable text, a QR code, and a wallet hop;
+/// it is never an input to the game and no game system reads it back
+/// (integrity firewall, §2).
 pub(crate) const SUPPORT_LIGHTNING_ADDRESS: &str = "average@minitbits.cash";
 
 /// Repaint the world when (and only when) a handled input bumped the
@@ -31,6 +41,8 @@ pub fn rebuild_ui(
     bridge: Res<NetBridge>,
     version: Res<SnapshotVersion>,
     mut rendered: ResMut<RenderedVersion>,
+    // Shell-local menu support panel (alms box; no client state involved).
+    support: Res<SupportPanel>,
     roots: Query<Entity, With<UiRoot>>,
     // `None` under MinimalPlugins (the headless smoke run): every sprite
     // slot then collapses to the plain text rows it supplements.
@@ -76,7 +88,7 @@ pub fn rebuild_ui(
             _ => (battle::battle_screen(&mut commands, &duel, assets), false),
         },
         _ => match snap.phase {
-            Phase::Menu => (menu_screen(&mut commands, ladder, assets), true),
+            Phase::Menu => (menu_screen(&mut commands, ladder, assets, &support), true),
             Phase::Roster => (roster_screen(&mut commands, &roster, assets), false),
             Phase::BattleSetup => (
                 vec![text_node(
@@ -177,7 +189,12 @@ pub(crate) fn log_panel(cmd: &mut Commands, title: &str, lines: &[String]) -> En
 
 // ---------- Menu ----------
 
-fn menu_screen(cmd: &mut Commands, ladder: Option<u64>, assets: Option<&AssetServer>) -> Vec<Entity> {
+fn menu_screen(
+    cmd: &mut Commands,
+    ladder: Option<u64>,
+    assets: Option<&AssetServer>,
+    support: &SupportPanel,
+) -> Vec<Entity> {
     let title = text_node(cmd, "DEUS VULT".into(), style::title_font(), style::GOLD);
     let subtitle = text_node(
         cmd,
@@ -221,19 +238,18 @@ fn menu_screen(cmd: &mut Commands, ladder: Option<u64>, assets: Option<&AssetSer
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
         // The alms box (card A3, ZAP-MONETIZATION.md surface #1) sits
-        // directly under Campaign: button, reverent helper line, then the
-        // address itself in plain text so any platform can copy it into a
-        // wallet by hand.
+        // directly under Campaign: the button toggles its shell-local
+        // panel (address, QR code, wallet hop, amount chips) in place,
+        // above the reverent helper line.
         support_button(cmd),
+    ]);
+    if support.open {
+        kids.push(support_panel(cmd, support));
+    }
+    kids.extend([
         text_node(
             cmd,
             "Alms freely given keep the torches lit.".into(),
-            style::small_font(),
-            style::DIM,
-        ),
-        text_node(
-            cmd,
-            format!("alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}"),
             style::small_font(),
             style::DIM,
         ),
@@ -271,6 +287,111 @@ fn menu_hero(cmd: &mut Commands, assets: Option<&AssetServer>) -> Option<Entity>
     )
 }
 
+// ---------- Support the Order: the menu's alms panel ----------
+//
+// (A3 expansion; ZAP-MONETIZATION.md surface #1, firewall §2) Everything
+// below is shell-local and purely cosmetic: a click toggles a bevy UI
+// panel via an entity observer plus a plain resource — NO ClientInput,
+// NO Phase, and nothing here can reach a battle, the RNG, matchmaking,
+// the ladder, or an attestation. Soft money may change what a player
+// SEES, never what a player IS. Alms buy nothing.
+
+/// The chooser's presets: modest amounts, in sats, carried as msat — the
+/// same 21/100/1,000 chips as the post-duel alms box (B3b).
+const SUPPORT_ALMS_PRESETS: [(u64, &str); 3] = [
+    (21_000, "21 sats"),
+    (100_000, "100 sats"),
+    (1_000_000, "1,000 sats"),
+];
+
+/// Shell-local state of the menu's support panel. The whole-tree rebuild
+/// reads it on every snapshot-version bump, so it lives in a resource
+/// rather than on any despawned node. Handled by the panel's observers
+/// only — the client never sees it.
+#[derive(Resource, Default)]
+pub(crate) struct SupportPanel {
+    /// Whether the panel row under the menu's alms button is expanded.
+    pub open: bool,
+    /// Desktop shell only: a wallet-button click already surfaced its
+    /// "scan or copy" note (there is no browser to hand a URI to; the
+    /// browser build opens the tab directly and never needs the note).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub wallet_note: bool,
+    /// The amount chooser's latest house-purse invoice.
+    pub invoice: SupportInvoice,
+    /// Mailbox of the at-most-one in-flight invoice fetch (the B3b
+    /// NetShared pattern at menu size): the spawned task writes, the
+    /// `support_bridge` system drains. Always `None` in practice on the
+    /// desktop shell, which wires no live chips.
+    pub shared: Option<Arc<Mutex<SupportShared>>>,
+}
+
+/// The chooser's latest house-purse invoice. No failure payload by design
+/// (mirroring B3b's `AlmsInvoice`): a failed fetch dims into
+/// `Unavailable`, leaving a clean idle/retry cycle — alms never block the
+/// game and never surface as errors.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) enum SupportInvoice {
+    /// No amount chip chosen yet.
+    #[default]
+    Idle,
+    /// A bolt11 for `amount_msat` is being requested.
+    Fetching { amount_msat: u64 },
+    /// The purse answered with this bolt11 for `amount_msat`.
+    Ready { amount_msat: u64, bolt11: String },
+    /// The fetch failed: chips dim to the fallback note; retry is free.
+    Unavailable,
+}
+
+/// Written by the one in-flight support invoice fetch; drained once per
+/// frame by [`support_bridge`]. Results carry no amount — the resource's
+/// `Fetching` arm still identifies it.
+#[derive(Default)]
+pub(crate) struct SupportShared {
+    /// The landed fetch: a bolt11 string, or a plain failure flag.
+    pub done: Option<Result<String, ()>>,
+}
+
+/// The drain half of the invoice mailbox: a landed fetch repaints the
+/// panel via the version bump. No-op whenever no fetch is in flight —
+/// which is always, on the desktop shell (its chips are inert slabs).
+pub(crate) fn support_bridge(
+    mut panel: ResMut<SupportPanel>,
+    mut version: ResMut<SnapshotVersion>,
+) {
+    let Some(shared) = panel.shared.as_ref() else {
+        return;
+    };
+    let done = shared
+        .lock()
+        .expect("support mailbox mutex poisoned")
+        .done
+        .take();
+    let Some(done) = done else { return };
+    panel.invoice = match (&panel.invoice, done) {
+        (SupportInvoice::Fetching { amount_msat }, Ok(bolt11)) => SupportInvoice::Ready {
+            amount_msat: *amount_msat,
+            bolt11,
+        },
+        _ => SupportInvoice::Unavailable,
+    };
+    version.0 = version.0.wrapping_add(1);
+}
+
+/// An amount chip: `SupportChip(msat)` asks the house purse for an
+/// invoice of that many millisatoshis.
+#[derive(Component, Clone, Copy)]
+struct SupportChip(u64);
+
+/// Which `lightning:` target a support link button hands to the wallet.
+#[derive(Component, Clone, Copy)]
+enum SupportLink {
+    /// The plain address const.
+    Address,
+    /// The bolt11 last fetched from the house purse.
+    Invoice,
+}
+
 /// The alms box at the chapel door. Looks like an [`action_button`], but its
 /// click is handled by an entity observer instead of the `ClientInput` queue,
 /// so the donation path can never touch battles, RNG, ladders, or saves.
@@ -293,29 +414,553 @@ fn support_button(cmd: &mut Commands) -> Entity {
 }
 
 /// Almsgiving, not a purchase: nothing unlocks, nothing is owed in return.
-/// The address is always visible below the button, so on any platform the
-/// player can type it into their own wallet by hand. Native echoes it once
-/// to stderr; wasm also asks the browser to hand `lightning:{addr}` to a
-/// wallet in a new tab.
-fn on_support_click(_click: On<Pointer<Click>>) {
-    #[cfg(not(target_arch = "wasm32"))]
-    eprintln!("Support the Order - voluntary alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}");
-    #[cfg(target_arch = "wasm32")]
-    open_lightning_uri();
+/// The button now toggles the shell-local support panel open/shut — the
+/// wallet hop itself lives one row deeper, next to the address and code.
+fn on_support_click(
+    _click: On<Pointer<Click>>,
+    mut panel: ResMut<SupportPanel>,
+    mut version: ResMut<SnapshotVersion>,
+) {
+    panel.open = !panel.open;
+    version.0 = version.0.wrapping_add(1);
 }
 
-/// Browser-only hop to the player's own wallet via the `lightning:` URI
-/// scheme, mirroring the `persist.rs` wasm/native split (no new deps; popup
-/// failures degrade to the always-visible address line in the menu).
-#[cfg(target_arch = "wasm32")]
-fn open_lightning_uri() {
-    let Some(window) = web_sys::window() else {
+/// The expanded alms panel: the address in plain text first — the one row
+/// every platform can use by hand — then the scannable code, the wallet
+/// hop, and the amount chips. Every row is a fallback for the row above
+/// it; failures dim in place, never panic, never block the menu.
+fn support_panel(cmd: &mut Commands, panel: &SupportPanel) -> Entity {
+    let mut kids = vec![text_node(
+        cmd,
+        format!("alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}"),
+        style::small_font(),
+        style::DIM,
+    )];
+    // The code: `lightning:average@minitbits.cash`, drawn offline from the
+    // same const on every platform — it can only be absent if even a
+    // version-40 matrix could not hold 32 bytes, which cannot happen.
+    match qr_code_node(
+        cmd,
+        format!("lightning:{SUPPORT_LIGHTNING_ADDRESS}").as_bytes(),
+        QR_URI_CELL_PX,
+        usize::MAX,
+    ) {
+        Some(code) => kids.push(code),
+        None => kids.push(text_node(
+            cmd,
+            "(the code could not be drawn - the address above still gives)".into(),
+            style::small_font(),
+            style::DIM,
+        )),
+    }
+    kids.push(support_link_button(cmd, "Open in your wallet", SupportLink::Address));
+    #[cfg(not(target_arch = "wasm32"))]
+    if panel.wallet_note {
+        kids.push(text_node(
+            cmd,
+            "this build cannot dial a wallet - scan the code or copy the address by hand".into(),
+            style::small_font(),
+            style::DIM,
+        ));
+    }
+    // Amount chips: live invoice fetches in the browser build; inert slabs
+    // plus the static note on the desktop shell, which ships no HTTPS
+    // stack by design (main.rs::NoHttp) — its flow stays the code above.
+    kids.push(text_node(
+        cmd,
+        "or ask the alms purse for an invoice:".into(),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    let chips: Vec<Entity> = SUPPORT_ALMS_PRESETS
+        .iter()
+        .map(|&(msat, label)| support_chip_button(cmd, label, msat))
+        .collect();
+    kids.push(
+        cmd.spawn(Node {
+            column_gap: Val::Px(12.0),
+            ..default()
+        })
+        .add_children(&chips)
+        .id(),
+    );
+    #[cfg(not(target_arch = "wasm32"))]
+    kids.push(text_node(
+        cmd,
+        "invoices in the browser build".into(),
+        style::small_font(),
+        style::DIM,
+    ));
+    // Invoice states. On the desktop shell the resource never leaves Idle,
+    // so this renders nothing; the browser build repaints per state.
+    match &panel.invoice {
+        SupportInvoice::Idle => {}
+        SupportInvoice::Fetching { amount_msat } => kids.push(text_node(
+            cmd,
+            format!("asking the purse for an invoice of {} sats...", amount_msat / 1000),
+            style::small_font(),
+            style::DIM,
+        )),
+        SupportInvoice::Unavailable => kids.push(text_node(
+            cmd,
+            "the purse did not answer - the address and code above still give freely".into(),
+            style::small_font(),
+            style::DIM,
+        )),
+        SupportInvoice::Ready { amount_msat, bolt11 } => {
+            kids.push(text_node(
+                cmd,
+                format!(
+                    "{} sats - pay this invoice with any lightning wallet:",
+                    amount_msat / 1000
+                ),
+                style::small_font(),
+                style::BONE,
+            ));
+            // Eye-sized chunks, wrapped to the panel measure (the raw
+            // bolt11 would be one unreadable line; bolt11 is pure ASCII
+            // per spec, and the shell holds no wallet to pass it to).
+            kids.push(
+                cmd.spawn((
+                    Text::new(chunk_bolt11(bolt11)),
+                    style::small_font(),
+                    TextColor(style::DIM),
+                    Node {
+                        max_width: Val::Px(340.0),
+                        ..default()
+                    },
+                ))
+                .id(),
+            );
+            // 3 px/cell cap: up to version 15 (77 modules, ~412 bytes at
+            // EC level M) fits the panel; a longer invoice is text-only
+            // there — the capped QR would no longer scan anyway.
+            match qr_code_node(cmd, bolt11.as_bytes(), QR_INVOICE_CELL_PX, QR_INVOICE_MAX_MODULES)
+            {
+                Some(code) => kids.push(code),
+                None => kids.push(text_node(
+                    cmd,
+                    "(this invoice is too long for a code here - copy the text above)".into(),
+                    style::small_font(),
+                    style::DIM,
+                )),
+            }
+            kids.push(support_link_button(
+                cmd,
+                "Open your wallet (lightning)",
+                SupportLink::Invoice,
+            ));
+        }
+    }
+    cmd.spawn((
+        Node {
+            align_items: AlignItems::Center,
+            // The 21/100/1,000 chip row is the widest child (~410 px).
+            max_width: Val::Px(440.0),
+            ..style::panel_node()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&kids)
+    .id()
+}
+
+/// `lightning:` link button (the plain address, or a fetched invoice).
+fn support_link_button(cmd: &mut Commands, label: &str, link: SupportLink) -> Entity {
+    let text = text_node(cmd, label.to_string(), style::body_font(), style::BONE);
+    cmd.spawn((
+        Button,
+        style::button_node(),
+        BackgroundColor(style::BUTTON),
+        BorderColor::all(style::GOLD_DIM),
+        link,
+    ))
+    .add_children(&[text])
+    .observe(on_support_link)
+    .id()
+}
+
+/// A link click hands the payment string to the player's own wallet — the
+/// exact A3 pattern (the shell holds no wallet): the browser build asks
+/// for a new tab on the `lightning:` URI; the desktop shell has no browser
+/// to ask, so it echoes the target to stderr once and surfaces its
+/// "scan or copy" note inside the panel.
+fn on_support_link(
+    click: On<Pointer<Click>>,
+    links: Query<&SupportLink>,
+    mut panel: ResMut<SupportPanel>,
+    mut version: ResMut<SnapshotVersion>,
+) {
+    let Ok(link) = links.get(click.entity) else {
         return;
     };
-    let uri = format!("lightning:{SUPPORT_LIGHTNING_ADDRESS}");
-    if let Err(err) = window.open_with_url_and_target(&uri, "_blank") {
-        warn!("could not open lightning URI ({err:?}); address is shown in the menu");
+    let uri = match link {
+        SupportLink::Address => format!("lightning:{SUPPORT_LIGHTNING_ADDRESS}"),
+        SupportLink::Invoice => {
+            let SupportInvoice::Ready { bolt11, .. } = &panel.invoice else {
+                return;
+            };
+            format!("lightning:{bolt11}")
+        }
+    };
+    #[cfg(target_arch = "wasm32")]
+    {
+        open_wallet_uri(&uri);
+        // A bare wallet hop needs no repaint; sinks keep the observer's
+        // signature uniform across targets.
+        let _ = (&mut panel, &mut version);
     }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        eprintln!("Support the Order - voluntary alms for the developers: {uri}");
+        if !panel.wallet_note {
+            panel.wallet_note = true;
+            version.0 = version.0.wrapping_add(1);
+        }
+    }
+}
+
+
+/// An alms chip (the 21/100/1,000-sat chooser precedent of the post-duel
+/// alms box). Live in the browser build — a click arms the one in-flight
+/// invoice fetch. The desktop shell ships no HTTPS transport
+/// (main.rs::NoHttp), so there it is an inert dim slab ahead of the
+/// static "browser build" note: the observer is attached but unreachable
+/// (a slab spawns no `Button`, so picking never fires on it).
+fn support_chip_button(cmd: &mut Commands, label: &str, amount_msat: u64) -> Entity {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let text = text_node(cmd, label.to_string(), style::body_font(), style::BONE);
+        cmd.spawn((
+            Button,
+            style::button_node(),
+            BackgroundColor(style::BUTTON),
+            BorderColor::all(style::GOLD_DIM),
+            SupportChip(amount_msat),
+        ))
+        .add_children(&[text])
+        .observe(on_support_chip)
+        .id()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let slab = disabled_button(cmd, label.to_string());
+        cmd.entity(slab)
+            .insert(SupportChip(amount_msat))
+            .observe(on_support_chip);
+        slab
+    }
+}
+
+/// A chooser click arms an invoice fetch. Guards against double fetches
+/// exactly like B3b: one invoice at a time, and only from a live chip.
+/// The mailbox is created on every platform (the drain system is
+/// cross-platform), but only the browser build spawns the fetch itself —
+/// the desktop arm provokes nothing the static address cannot pay.
+fn on_support_chip(
+    click: On<Pointer<Click>>,
+    chips: Query<&SupportChip>,
+    mut panel: ResMut<SupportPanel>,
+    mut version: ResMut<SnapshotVersion>,
+) {
+    let Ok(chip) = chips.get(click.entity) else {
+        return;
+    };
+    if matches!(panel.invoice, SupportInvoice::Fetching { .. }) {
+        return;
+    }
+    let shared = Arc::new(Mutex::new(SupportShared::default()));
+    panel.shared = Some(shared.clone());
+    panel.invoice = SupportInvoice::Fetching {
+        amount_msat: chip.0,
+    };
+    version.0 = version.0.wrapping_add(1);
+    #[cfg(target_arch = "wasm32")]
+    spawn_support_invoice(shared, chip.0);
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // Statically reachable but dynamically dead (native chips never
+        // carry picking): no fetch exists to serve here.
+        let _ = shared;
+        panel.invoice = SupportInvoice::Unavailable;
+    }
+}
+
+// ---------- Support-panel QR codes ----------
+//
+// Codes are generated offline from shell constants/state with the
+// pure-Rust `qrcode` crate (default features off: no image codecs), then
+// drawn as bevy UI rects — same code path on native and wasm.
+
+/// Pixels per module for the panel's address code: the `lightning:` URI
+/// (~40 chars, a version-3 matrix at EC level M) gets a generous 6 px so
+/// a phone camera resolves it at arm's length.
+const QR_URI_CELL_PX: f32 = 6.0;
+
+/// Pixels per module cap for a bolt11 code (~300-500 chars -> versions
+/// 10..=15 at EC level M): 3 px keeps even the panel cap scannable.
+const QR_INVOICE_CELL_PX: f32 = 3.0;
+
+/// An invoice whose matrix exceeds version 15 (77 modules ~ (77+8)*3 =
+/// 255 px) no longer fits the panel tastefully at the 3 px cap: the
+/// invoice then renders text-only, with the copy affordances it already
+/// has. Pinned by the tests below.
+const QR_INVOICE_MAX_MODULES: usize = 77;
+
+/// ISO/IEC 18004 quiet zone: four modules of light margin on every side.
+/// Rendered as the white pad around the matrix — scannability needs it.
+const QR_QUIET_MODULES: usize = 4;
+
+/// The dark-module matrix for `data` at EC level M (`true` = dark,
+/// row-major, no quiet zone — the renderer adds that as the white pad).
+/// Pure, so the unit tests pin the geometry without a bevy `Commands`.
+fn qr_matrix(data: &[u8]) -> Option<(usize, Vec<bool>)> {
+    let code =
+        qrcode::QrCode::with_error_correction_level(data, qrcode::EcLevel::M).ok()?;
+    let width = code.width();
+    let dark = code
+        .to_colors()
+        .iter()
+        .map(|c| *c == qrcode::Color::Dark)
+        .collect();
+    Some((width, dark))
+}
+
+/// One QR code as bevy UI rects: a white pad (the quiet zone) around a
+/// matrix square, dark modules drawn as absolute-positioned run-length
+/// rects — adjacent dark modules in a row merge into one node, so the
+/// entity count stays a fraction of the module count, and the bitmap is
+/// pixel-exact (same fill, no seams). True black on true white: palette
+/// theming is kept off the codes for scan contrast. `None` — the caller
+/// shows its text fallback — when the data exceeds `max_modules` or even
+/// a version-40 matrix (never for this panel's two payloads).
+fn qr_code_node(
+    cmd: &mut Commands,
+    data: &[u8],
+    cell_px: f32,
+    max_modules: usize,
+) -> Option<Entity> {
+    let (width, dark) = qr_matrix(data)?;
+    if width > max_modules {
+        return None;
+    }
+    let mut runs: Vec<Entity> = Vec::new();
+    for y in 0..width {
+        let row = &dark[y * width..(y + 1) * width];
+        let mut x = 0;
+        while x < width {
+            if !row[x] {
+                x += 1;
+                continue;
+            }
+            let start = x;
+            while x < width && row[x] {
+                x += 1;
+            }
+            runs.push(
+                cmd.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(start as f32 * cell_px),
+                        top: Val::Px(y as f32 * cell_px),
+                        width: Val::Px((x - start) as f32 * cell_px),
+                        height: Val::Px(cell_px),
+                        ..default()
+                    },
+                    BackgroundColor(Color::BLACK),
+                ))
+                .id(),
+            );
+        }
+    }
+    let matrix_px = width as f32 * cell_px;
+    let quiet_px = QR_QUIET_MODULES as f32 * cell_px;
+    let matrix = cmd
+        .spawn(Node {
+            position_type: PositionType::Relative,
+            width: Val::Px(matrix_px),
+            height: Val::Px(matrix_px),
+            ..default()
+        })
+        .add_children(&runs)
+        .id();
+    Some(
+        cmd.spawn((
+            Node {
+                width: Val::Px(matrix_px + 2.0 * quiet_px),
+                height: Val::Px(matrix_px + 2.0 * quiet_px),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::WHITE),
+        ))
+        .add_children(&[matrix])
+        .id(),
+    )
+}
+
+// ---------- Support-panel house-purse invoices ----------
+
+/// The callback's answer: `{"pr": "ln..."}`, or LNURL's shared
+/// `status:"ERROR"` shape. Split from the fetch so the contract tests
+/// offline against fixed fixtures (the fetch's own validation rides
+/// crusade-net's mock-tested `fetch_pay_params`). Only the browser build
+/// fetches, so its callers here are the wasm fetch and the unit tests.
+#[cfg(any(target_arch = "wasm32", test))]
+fn parse_support_invoice(body: &str) -> Result<String, ZapError> {
+    // The B3a module's identical wire shape, kept private there.
+    #[derive(serde::Deserialize)]
+    struct InvoiceResponse {
+        #[serde(default)]
+        status: Option<String>,
+        #[serde(default)]
+        reason: Option<String>,
+        #[serde(default)]
+        pr: Option<String>,
+    }
+    let resp: InvoiceResponse = serde_json::from_str(body)
+        .map_err(|e| ZapError::BadInvoice(format!("invoice json: {e}")))?;
+    if resp.status.as_deref() == Some("ERROR") {
+        return Err(ZapError::Lnurl(
+            resp.reason.unwrap_or_else(|| "unknown".into()),
+        ));
+    }
+    let pr = resp
+        .pr
+        .ok_or_else(|| ZapError::BadInvoice("missing pr".into()))?;
+    let bolt11_shaped = pr.len() >= 6 && pr.get(..2).is_some_and(|p| p.eq_ignore_ascii_case("ln"));
+    if !bolt11_shaped {
+        return Err(ZapError::BadInvoice("pr is not bolt11-shaped".into()));
+    }
+    Ok(pr)
+}
+
+/// Spawn the invoice fetch on the browser's executor: the same pattern as
+/// main.rs::spawn_net_task's wasm arm, for a one-shot op (no channel back;
+/// the shared mailbox + [`support_bridge`] carry the result).
+#[cfg(target_arch = "wasm32")]
+fn spawn_support_invoice(shared: Arc<Mutex<SupportShared>>, amount_msat: u64) {
+    wasm_bindgen_futures::spawn_local(async move {
+        let done = fetch_support_invoice(amount_msat)
+            .await
+            .map_err(|err| warn!("support invoice failed ({err}); the static address remains"));
+        shared
+            .lock()
+            .expect("support mailbox mutex poisoned")
+            .done = Some(done);
+    });
+}
+
+/// The house purse's LNURL-pay switchboard, via the shell's one HTTPS
+/// transport (main.rs::shell_http, the browser's fetch). Step 1 reuses
+/// the zaps module's validating fetch: https-only well-known derivation,
+/// 64 KiB cap, `payRequest` tag, same-origin callback, and the advertised
+/// min/max — all exactly as B3a/B3b. Step 2 is a plain
+/// `callback?amount=<msat>` GET: house alms carry no attestation a
+/// kind-9734 could tag, so unlike B3b there is NO zap request here, and
+/// crusade-net stays as-is.
+#[cfg(target_arch = "wasm32")]
+async fn fetch_support_invoice(amount_msat: u64) -> Result<String, ZapError> {
+    let http = shell_http();
+    let params = zaps::fetch_pay_params(&http, SUPPORT_LIGHTNING_ADDRESS).await?;
+    if amount_msat < params.min_sendable_msat || amount_msat > params.max_sendable_msat {
+        return Err(ZapError::AmountOutOfRange {
+            amount: amount_msat,
+            min: params.min_sendable_msat,
+            max: params.max_sendable_msat,
+        });
+    }
+    let sep = if params.callback.contains('?') {
+        '&'
+    } else {
+        '?'
+    };
+    let url = format!("{}{sep}amount={amount_msat}", params.callback);
+    let body = http.get_text(&url, zaps::MAX_RESPONSE_BYTES).await?;
+    parse_support_invoice(&body)
+}
+
+// ---------- The shell's one HTTPS transport (shared by menu + duel alms) ----------
+//
+// This trio dates from B3b and lived in main.rs; it moved here so BOTH
+// shell binaries (crusade-desktop and the ui-shots harness, which builds
+// this same `screens` module with its own crate root) resolve it
+// identically. Behavior unchanged.
+
+/// The shell's HTTPS transport for the zaps module: the browser's `fetch`
+/// on wasm. Redirects are refused outright (the module's cross-origin
+/// invariants rest on never following one).
+#[cfg(target_arch = "wasm32")]
+pub(crate) struct BrowserHttp;
+
+#[cfg(target_arch = "wasm32")]
+#[async_trait(?Send)]
+impl Http for BrowserHttp {
+    async fn get_text(&self, url: &str, max_bytes: u64) -> Result<String, ZapError> {
+        let window = web_sys::window().ok_or_else(|| ZapError::Http("no browser window".into()))?;
+        let init = web_sys::RequestInit::new();
+        // SECURITY: refuse every redirect rather than follow anywhere.
+        init.set_redirect(web_sys::RequestRedirect::Error);
+        let request = web_sys::Request::new_with_str_and_init(url, &init)
+            .map_err(|e| ZapError::Http(format!("request build: {e:?}")))?;
+        let value = wasm_bindgen_futures::JsFuture::from(window.fetch_with_request(&request))
+            .await
+            .map_err(|e| ZapError::Http(format!("fetch failed or redirected: {e:?}")))?;
+        let response: web_sys::Response = wasm_bindgen::JsCast::dyn_into(value)
+            .map_err(|_| ZapError::Http("fetch resolved to a non-Response".into()))?;
+        if !response.ok() {
+            return Err(ZapError::Http(format!("http status {}", response.status())));
+        }
+        let text_promise = response
+            .text()
+            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?;
+        let text = wasm_bindgen_futures::JsFuture::from(text_promise)
+            .await
+            .map_err(|e| ZapError::Http(format!("body read: {e:?}")))?
+            .as_string()
+            .ok_or_else(|| ZapError::Http("body was not text".into()))?;
+        // A buffered browser fetch cannot stop mid-body; the module cap is
+        // still enforced before the response is handed to the parser.
+        if text.len() as u64 > max_bytes {
+            return Err(ZapError::TooLarge(max_bytes));
+        }
+        Ok(text)
+    }
+}
+
+/// The desktop shell ships no HTTPS stack (no TLS client in the dependency
+/// tree by design); the alms address renders display-only and invoice
+/// requests fail over to the house purse, in-theme. The support panel
+/// mirrors this exactly with its inert chips + "browser build" note.
+/// (Dead in the ui-shots binary, which builds this module but has no
+/// net/alms task — same allowances its shared mods already carry.)
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(dead_code)]
+pub(crate) struct NoHttp;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait]
+impl Http for NoHttp {
+    async fn get_text(&self, _url: &str, _max_bytes: u64) -> Result<String, ZapError> {
+        Err(ZapError::Http(
+            "the desktop shell carries no lightning heralds".into(),
+        ))
+    }
+}
+
+/// The one permitted HTTPS transport for this shell (wasm fetch / desktop
+/// stub), as a value so generic zaps calls stay monomorphic per target.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn shell_http() -> BrowserHttp {
+    BrowserHttp
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(dead_code)] // ui-shots builds this module too; its crate has no caller
+pub(crate) fn shell_http() -> NoHttp {
+    NoHttp
 }
 
 // ---------- Roster ----------
@@ -1198,6 +1843,88 @@ mod tests {
         for (node, want) in expected.iter().enumerate() {
             let sp = next_boss_species(node as u8).expect("gauntlet node has a boss");
             assert_eq!(boss_sprite_path(sp), *want, "node {node}");
+        }
+    }
+
+    // ---------- Support-panel codes & invoice parsing ----------
+
+    /// The menu's `lightning:` URI QR, pinned exactly: 32 bytes of
+    /// byte-mode payload at EC level M encode into a version-3 matrix,
+    /// 29 modules wide (26-M bytes is too small, 42-M suffices) -- the
+    /// known-input module count behind the panel's generous 6 px lane.
+    /// The finder assertions pin ISO/IEC 18004 invariants: a 7x7 dark
+    /// ring / light moat / dark 3x3 eye at three corners, true of every
+    /// QR code regardless of version or mask choice.
+    #[test]
+    fn support_uri_qr_is_a_version3_matrix() {
+        let uri = format!("lightning:{SUPPORT_LIGHTNING_ADDRESS}");
+        let (width, dark) = qr_matrix(uri.as_bytes()).expect("the URI must fit a QR matrix");
+        assert_eq!(width, 29, "expected a version-3 (29x29) matrix");
+        assert_eq!(dark.len(), width * width);
+        let at = |x: usize, y: usize| dark[y * width + x];
+        for (cx, cy) in [(0, 0), (width - 7, 0), (0, width - 7)] {
+            for i in 0..7 {
+                assert!(at(cx + i, cy), "finder ring, corner ({cx},{cy})");
+                assert!(at(cx + i, cy + 6), "finder ring, corner ({cx},{cy})");
+                assert!(at(cx, cy + i), "finder ring, corner ({cx},{cy})");
+                assert!(at(cx + 6, cy + i), "finder ring, corner ({cx},{cy})");
+            }
+            for i in 1..6 {
+                assert!(!at(cx + i, cy + 1), "finder moat, corner ({cx},{cy})");
+                assert!(!at(cx + i, cy + 5), "finder moat, corner ({cx},{cy})");
+                assert!(!at(cx + 1, cy + i), "finder moat, corner ({cx},{cy})");
+                assert!(!at(cx + 5, cy + i), "finder moat, corner ({cx},{cy})");
+            }
+            for dy in 2..5 {
+                for dx in 2..5 {
+                    assert!(at(cx + dx, cy + dy), "finder eye, corner ({cx},{cy})");
+                }
+            }
+        }
+        // The scannability margin: ISO/IEC 18004 requires a four-module
+        // quiet zone, which the white pad renders exactly.
+        assert_eq!(QR_QUIET_MODULES, 4, "quiet zone must stay the ISO 4 modules");
+    }
+
+    /// The invoice lane's size policy, pinned: a too-long bolt11 (600
+    /// bytes needs more than a version-15 matrix at EC level M) exceeds
+    /// the panel cap, which is exactly what sends it text-only -- and a
+    /// short chip-amount invoice stays inside.
+    #[test]
+    fn invoice_qr_size_policy_is_pinned() {
+        let oversized = [b'x'; 600];
+        let (width, _) = qr_matrix(&oversized).expect("600 bytes still fit a QR");
+        assert!(
+            width > QR_INVOICE_MAX_MODULES,
+            "a version-15+ ({width} modules) matrix must cap out of the QR lane"
+        );
+        let short = [b'l'; 200];
+        let (width, _) = qr_matrix(&short).expect("200 bytes fit");
+        assert!(width <= QR_INVOICE_MAX_MODULES, "a short invoice stays in-lane");
+    }
+
+    /// The invoice callback's contract, pinned offline against fixed
+    /// bodies: happy path, LNURL ERROR, and the bad shapes. (The fetch
+    /// producing these bodies is browser `fetch` under main.rs's
+    /// redirect-refusing BrowserHttp, and step 1's validation is
+    /// crusade-net's already mock-tested `fetch_pay_params`.)
+    #[test]
+    fn support_invoice_parsing_offline_fixtures() {
+        let pr = parse_support_invoice(r#"{"pr": "lnbc210n1pjexample"}"#).expect("fixture parses");
+        assert_eq!(pr, "lnbc210n1pjexample");
+        let err = parse_support_invoice(r#"{"status":"ERROR","reason":"amount too small"}"#)
+            .unwrap_err();
+        assert!(matches!(err, ZapError::Lnurl(ref r) if r == "amount too small"));
+        for bad in [
+            r#"{"pr": 42}"#,                    // wrong type
+            r#"{"successAction":{}}"#,          // missing pr
+            r#"{"pr": "not-a-bolt11-string"}"#, // wrong prefix
+            "certainly not json",
+        ] {
+            assert!(
+                matches!(parse_support_invoice(bad), Err(ZapError::BadInvoice(_))),
+                "{bad} must be BadInvoice"
+            );
         }
     }
 }

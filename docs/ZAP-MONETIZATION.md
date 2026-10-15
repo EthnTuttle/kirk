@@ -18,11 +18,18 @@ Design constraints (not negotiable):
 
 ## 1. Zap surfaces (ranked by cost/benefit)
 
-1. **Menu donation link — "Support the Order".** A static lightning address
-   on the menu/about screen (`crusade-app/src/bevy_shell/screens.rs` —
-   `Phase::Menu` at line 36). A button opens `lightning:addr@domain` or
-   copies it. No wallet integration, no events, works offline-first because
-   it does nothing until the user acts. **Ship first (v1.0+epsilon).**
+1. **Menu donation panel — "Support the Order" (SHIPPED 2026-10-15, full
+   flow).** The menu button toggles a shell-local alms panel: copyable
+   address, an offline-rendered QR of the `lightning:` URI (v3 matrix,
+   6 px/cell, ISO quiet zone), a wallet hop (wasm `window.open`; native
+   scan-or-copy note), and 21/100/1,000-sat chips that draw LNURL-pay
+   bolt11 invoices — browser build only (reuses `zaps::fetch_pay_params`
+   validation + a plain `callback?amount=` GET, no kind-9734 from the
+   menu); desktop chips are inert dim slabs by NoHttp design. Failures are
+   cosmetic dims, never panics. Dep: `qrcode 0.14.1` (default-features off,
+   zero transitive deps, matrix rendered as bevy UI rects). Firewall
+   intact: pure shell observers + one cosmetic mailbox; nothing touches
+   RNG, matchmaking, Elo, or attestation.
 2. **Zap the winner after a duel ("tip the victor").** At duel end,
    `NetDuelDriver::attestation_event()` (`crusade-app/src/pvp.rs:246`)
    already yields a signed kind-9265 event id. Once PvP UI lands (v1.1), the
@@ -103,7 +110,7 @@ New code inside the repo, all small:
 
 | Piece | Crate | Size |
 |---|---|---|
-| Static donation address constant + menu/about button opening a `lightning:` URI | `crusade-app/src/bevy_shell/screens.rs` (menu section, `Phase::Menu`) | ~30 lines, v1.0+ε |
+| Static donation address constant + menu/about button opening a `lightning:` URI | `crusade-app/src/bevy_shell/screens.rs` (menu section, `Phase::Menu`) | ~30 lines, v1.0+ε — SHIPPED, then expanded 2026-10-15 to the full panel above (QR + invoice chips + wallet hop) |
 | `crusade-net/src/zaps.rs` (thin module): build a NIP-57 kind-9734 zap request tagging an attestation event id + recipient pubkey; URL-encode LNURL-pay switchboard flow (fetch LNURL params from the recipient's endpoint, POST callback with the signed zap request) | `crusade-net` new module; re-export from `lib.rs` | ~150 lines + tests, v1.1 |
 | Battle-over screen zap CTA wiring `NetDuelDriver::we_won()` / spectator view to the zap module | `crusade-app` (pvp surface + bevy shell) | ~60 lines, v1.1 |
 | Optional: fetch/display kind-9735 zap receipts on a spectator transcript view | deferred to the v2.0 replay viewer | later |
