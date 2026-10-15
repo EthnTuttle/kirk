@@ -768,6 +768,44 @@ mod tests {
         LobbyCommitment::new(party).expect("commitment")
     }
 
+    /// Start a mock relay, retrying the port hunt with jitter.
+    ///
+    /// nostr-relay-builder 0.35's `MockRelay::run` picks a port by
+    /// probe-then-release (`find_available_port` binds 8000..65535 to test,
+    /// drops the listener, then re-binds it): two relays starting
+    /// concurrently — parallel test threads or parallel `cargo test`
+    /// processes — deterministically scan from port 8000 and can BOTH probe
+    /// the same port free; the loser's real bind then fails with
+    /// `AddrInUse`. The 0.35 API exposes no port-0/ephemeral constructor,
+    /// so the fix that keeps tests parallel (no serialization) is a bounded
+    /// retry with decorrelating jitter: the probe→bind race window is
+    /// microseconds wide, and a loser that backs off re-scans past the
+    /// winner's now-bound port.
+    async fn mock_relay() -> MockRelay {
+        const ATTEMPTS: u32 = 16;
+        let mut attempt = 0;
+        loop {
+            attempt += 1;
+            match MockRelay::run().await {
+                Ok(relay) => return relay,
+                Err(e) => {
+                    let retryable = matches!(
+                        &e,
+                        nostr_relay_builder::mock::Error::IO(io_err)
+                            if io_err.kind() == std::io::ErrorKind::AddrInUse
+                    );
+                    if !retryable || attempt == ATTEMPTS {
+                        panic!("mock relay failed to start after {attempt} attempt(s): {e}");
+                    }
+                    // Cheap per-attempt jitter without a rand dep: one byte
+                    // of a fresh secp key spaces contenders 5..=132ms apart.
+                    let jitter_ms = Keys::generate().secret_key().to_secret_bytes()[0] as u64 / 2;
+                    sleep(Duration::from_millis(5 + jitter_ms)).await;
+                }
+            }
+        }
+    }
+
     fn pair_events(
         host_keys: &Keys,
         join_keys: &Keys,
@@ -935,7 +973,7 @@ mod tests {
     /// identical battle id and seed, with rosters exchanged.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn host_joiner_handshake_over_embedded_relay() {
-        let relay = MockRelay::run().await.expect("mock relay starts");
+        let relay = mock_relay().await;
         let url = relay.url();
 
         let host = Lobby::connect(Keys::generate(), &[url.clone()])
@@ -997,7 +1035,7 @@ mod tests {
     /// A challenge from an unknown suite / an expired one never lists.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn foreign_and_expired_challenges_are_invisible() {
-        let relay = MockRelay::run().await.expect("mock relay starts");
+        let relay = mock_relay().await;
         let url = relay.url();
         let watcher = Lobby::connect(Keys::generate(), &[url.clone()])
             .await
@@ -1028,7 +1066,7 @@ mod tests {
     /// fills the newest end, the listing still surfaces the oldest first.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn spam_does_not_starve_oldest_genuine_challenge() {
-        let relay = MockRelay::run().await.expect("mock relay starts");
+        let relay = mock_relay().await;
         let url = relay.url();
         let watcher = Lobby::connect(Keys::generate(), &[url.clone()])
             .await
