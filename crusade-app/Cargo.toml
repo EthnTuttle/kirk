@@ -77,6 +77,11 @@ name = "crusade-desktop"
 path = "src/bevy_shell/main.rs"
 required-features = ["bevy-ui"]
 
+[[bin]]
+name = "ui-shots"
+path = "src/bevy_shell/ui_shots.rs"
+required-features = ["bevy-ui"]
+
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
 # Embedded relay fixture for lobby tests (same dev-dep crusade-net uses).

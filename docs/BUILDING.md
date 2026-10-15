@@ -53,6 +53,36 @@ is required. The same swap happens automatically for the plain binary when
 neither `DISPLAY` nor `WAYLAND_DISPLAY` is set — on such a display-less
 host bevy's window/render setup would otherwise panic.
 
+### UI screenshots (`ui-shots`)
+
+```console
+$ cargo run -p crusade-app --features bevy-ui --bin ui-shots -- <outdir> \
+    [--screens menu,roster,battle,battle-over,battle-over-net,campaign,lobby] \
+    [--size 1280x720]
+```
+
+Renders the real shell screens to PNGs (menu, roster, mid-duel, practice
+battle-over, the post-duel alms CTA, the campaign rest screen, and the
+lobby with fixture challenge cards) with no window and no display server:
+the winit plugin is disabled and a single camera draws into a fixed-size
+offscreen image target that bevy's own `Screenshot`/`save_to_disk` path
+reads back. No new dependencies; any wgpu-supported GPU works — on a
+display-less box, install Mesa's lavapipe ICD (`mesa-vulkan-drivers` on
+Debian/Ubuntu); if several ICDs are visible, pin it with
+`VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json`. All state
+changes ride the same `InputQueue -> process_inputs -> rebuild_ui` path as
+the windowed shell, driven by the smoke driver's scripted turns against
+fixed-seed fixtures (the starter band uses deterministic roster ids), so
+captures are byte-stable artifacts: open them after editing
+`screens.rs`/`style.rs` instead of flying blind. `--size 390x844` runs a
+portrait (mobile-shaped) pass; `--screens` restricts which captures are
+written (the scripted game legs still run, so later screens have their
+fixtures). Exit code is 0 only when every requested PNG landed
+non-empty; a frame cap bounds run-time. Known limits: no relay is
+contacted, so the lobby's challenge cards and the post-duel alms box are
+offline fixtures of the mailbox states the net task would publish, and
+practice battles always face the built-in level-25 team.
+
 ## (b) Web (wasm32 + trunk)
 
 ### Play in browser (PWA)
