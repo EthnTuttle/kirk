@@ -17,7 +17,7 @@ use crate::style;
 /// voluntary-donation lightning address. Purely cosmetic — the menu shows it
 /// and hands it to the player's own wallet on click; it is never an input to
 /// the game and no game system reads it back (integrity firewall, §2).
-pub(crate) const SUPPORT_LIGHTNING_ADDRESS: &str = "average@minibits.cash";
+pub(crate) const SUPPORT_LIGHTNING_ADDRESS: &str = "average@minitbits.cash";
 
 /// Repaint the world when (and only when) a handled input bumped the
 /// snapshot version: the UI is a pure function of `ClientGame` state, so
@@ -189,15 +189,25 @@ fn menu_screen(cmd: &mut Commands, ladder: Option<u64>) -> Vec<Entity> {
             ClientInput::StartPractice { level: 25 },
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
-        action_button(cmd, "Tournament of Virtue".into(), ClientInput::EnterLobby),
-        text_node(cmd, ladder_line(ladder), style::small_font(), style::DIM),
+        // The alms box (card A3, ZAP-MONETIZATION.md surface #1) sits
+        // directly under Campaign: button, reverent helper line, then the
+        // address itself in plain text so any platform can copy it into a
+        // wallet by hand.
         support_button(cmd),
+        text_node(
+            cmd,
+            "Alms freely given keep the torches lit.".into(),
+            style::small_font(),
+            style::DIM,
+        ),
         text_node(
             cmd,
             format!("alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}"),
             style::small_font(),
             style::DIM,
         ),
+        action_button(cmd, "Tournament of Virtue".into(), ClientInput::EnterLobby),
+        text_node(cmd, ladder_line(ladder), style::small_font(), style::DIM),
         text_node(
             cmd,
             "Contrition and cold steel.".into(),
@@ -230,10 +240,12 @@ fn support_button(cmd: &mut Commands) -> Entity {
 
 /// Almsgiving, not a purchase: nothing unlocks, nothing is owed in return.
 /// The address is always visible below the button, so on any platform the
-/// player can type it into their own wallet by hand. Native logs; wasm also
-/// asks the browser to hand `lightning:{addr}` to a wallet in a new tab.
+/// player can type it into their own wallet by hand. Native echoes it once
+/// to stderr; wasm also asks the browser to hand `lightning:{addr}` to a
+/// wallet in a new tab.
 fn on_support_click(_click: On<Pointer<Click>>) {
-    info!("Support the Order — voluntary alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}");
+    #[cfg(not(target_arch = "wasm32"))]
+    eprintln!("Support the Order - voluntary alms for the developers: {SUPPORT_LIGHTNING_ADDRESS}");
     #[cfg(target_arch = "wasm32")]
     open_lightning_uri();
 }
