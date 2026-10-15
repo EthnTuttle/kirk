@@ -285,7 +285,7 @@ async fn net_task(
             report(
                 &shared,
                 LobbyNet::Failed {
-                    text: "The heralds could not be reached — the tournament grounds stay closed."
+                    text: "The heralds could not be reached - the tournament grounds stay closed."
                         .into(),
                 },
             );
@@ -418,7 +418,7 @@ async fn post_challenge(
         shared,
         LobbyNet::Notice {
             stage: LobbyStage::AwaitingAccept,
-            text: "Challenge issued — awaiting a worthy answer.".into(),
+            text: "Challenge issued - awaiting a worthy answer.".into(),
         },
     );
     let accept = driven(
@@ -439,7 +439,7 @@ async fn post_challenge(
         shared,
         LobbyNet::Notice {
             stage: LobbyStage::AwaitingAccept,
-            text: "An answer arrived — sealing the covenant.".into(),
+            text: "An answer arrived - sealing the covenant.".into(),
         },
     );
     let outcome = driven(
@@ -517,7 +517,7 @@ async fn accept_challenge(
         shared,
         LobbyNet::Notice {
             stage: LobbyStage::Accepting,
-            text: "Answer carried — sealing the covenant.".into(),
+            text: "Answer carried - sealing the covenant.".into(),
         },
     );
     let outcome = driven(
@@ -1055,10 +1055,10 @@ fn shell_http() -> NoHttp {
 fn abort_duel(shared: &Arc<Mutex<NetShared>>, err: &crusade_app::AppError) {
     let text = match err {
         crusade_app::AppError::Net(crusade_net::NetError::Closed) => {
-            "The foe has fled the field — the duel is abandoned.".to_string()
+            "The foe has fled the field - the duel is abandoned.".to_string()
         }
         crusade_app::AppError::Net(crusade_net::NetError::TranscriptDiverged(_)) => {
-            "The two chronicles disagree — the duel is void.".to_string()
+            "The two chronicles disagree - the duel is void.".to_string()
         }
         other => format!("The duel is abandoned: {other}"),
     };
@@ -1079,11 +1079,11 @@ fn lobby_failed(stage: &'static str, err: &LobbyError) -> LobbyNet {
     let text = match err {
         LobbyError::Timeout(_) => match stage {
             "the answer" => "None answered the challenge before the candles burned low.",
-            _ => "The heralds grew weary waiting — try again.",
+            _ => "The heralds grew weary waiting - try again.",
         },
         LobbyError::Client(_) => "The heralds faltered; the grounds could not be reached.",
         LobbyError::Protocol(_) | LobbyError::Bridge(_) => {
-            "The covenant could not be sealed — the answer was not honest."
+            "The covenant could not be sealed - the answer was not honest."
         }
     };
     LobbyNet::Failed {
@@ -1107,7 +1107,7 @@ fn challenge_card(open: &crusade_app::lobby::OpenChallenge) -> Option<ChallengeC
 fn short_label(key: &nostr::PublicKey) -> String {
     let full = key.to_bech32().unwrap_or_else(|_| key.to_hex());
     let end = full.len().min(16);
-    format!("{}…", &full[..end])
+    format!("{}...", &full[..end])
 }
 
 /// Startup roster: a previously saved browser document wins; the starter

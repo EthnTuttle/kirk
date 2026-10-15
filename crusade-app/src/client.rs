@@ -463,7 +463,7 @@ impl ClientGame {
                 lobby.relays = relays;
                 lobby.key_label = key_label;
                 lobby.notice =
-                    format!("The tournament grounds are open — {count} herald(s) carry the lists.");
+                    format!("The tournament grounds are open - {count} herald(s) carry the lists.");
                 Ok(())
             }
             LobbyNet::Notice { stage, text } => {
@@ -482,7 +482,7 @@ impl ClientGame {
                     lobby.stage = LobbyStage::Idle;
                 }
                 lobby.notice = if count == 0 {
-                    "The lists are empty — no champion stands challenged. Issue yours.".to_string()
+                    "The lists are empty - no champion stands challenged. Issue yours.".to_string()
                 } else {
                     format!("{count} open challenge(s) await an answer.")
                 };
@@ -493,7 +493,7 @@ impl ClientGame {
                 self.lobby = None;
                 self.fresh_events.borrow_mut().clear();
                 self.push_log(vec![
-                    "The covenant is sealed — the duel is joined.".to_string()
+                    "The covenant is sealed - the duel is joined.".to_string()
                 ]);
                 self.phase = Phase::BattleSetup;
                 Ok(())
@@ -509,9 +509,9 @@ impl ClientGame {
                 self.push_log(vec![format!(
                     "{} The honor ladder records a standing of {rating} (kept on good faith).",
                     if won {
-                        "Victory — Deo Gratias!"
+                        "Victory - Deo Gratias!"
                     } else {
-                        "Defeat — pray and regroup."
+                        "Defeat - pray and regroup."
                     }
                 )]);
                 self.phase = Phase::BattleOver;
@@ -576,7 +576,7 @@ impl ClientGame {
         self.phase = Phase::InBattle;
         self.fresh_events.borrow_mut().clear();
         self.push_log(vec![format!(
-            "Practice duel at level {level} begins — facing {foes}."
+            "Practice duel at level {level} begins - facing {foes}."
         )]);
         Ok(())
     }
@@ -644,7 +644,7 @@ impl ClientGame {
         self.phase = Phase::InBattle;
         self.fresh_events.borrow_mut().clear();
         self.push_log(vec![format!(
-            "Node {}/7 — {boss_name} (level {boss_lv}) waits behind its spawn (level {minion_lv}).",
+            "Node {}/7 - {boss_name} (level {boss_lv}) waits behind its spawn (level {minion_lv}).",
             node + 1
         )]);
         Ok(())
@@ -733,7 +733,7 @@ impl ClientGame {
             .expect("static species table covers all campaign nodes");
         if winner != MY_SIDE {
             self.push_log(vec![format!(
-                "The company breaks before {boss}. The campaign is over — {defeated} node(s) cleared, {shards} contrition shard(s) kept."
+                "The company breaks before {boss}. The campaign is over - {defeated} node(s) cleared, {shards} contrition shard(s) kept."
             )]);
             self.phase = Phase::BattleOver;
             return Ok(());
@@ -786,7 +786,7 @@ impl ClientGame {
             usize::from(c.node) >= CAMPAIGN_NODE_SPECIES.len()
         };
         if done {
-            lines.push("Pride itself is broken — the gauntlet is cleared!".to_string());
+            lines.push("Pride itself is broken - the gauntlet is cleared!".to_string());
             self.push_log(lines);
             self.phase = Phase::BattleOver;
         } else {
@@ -1163,7 +1163,7 @@ fn active_name(b: &Battle, side: u8, actives: &[usize; 2]) -> String {
 #[allow(unreachable_patterns)] // forward-compat: future BattleEvent variants hit the catch-all
 fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2], local: u8) -> String {
     match e {
-        BattleEvent::TurnStart { turn } => format!("— Turn {turn} —"),
+        BattleEvent::TurnStart { turn } => format!("- Turn {turn} -"),
         BattleEvent::RiteUsed { side, rite_id } => {
             let who = active_name(b, *side, actives);
             let rite = data::rite_by_id(*rite_id)
@@ -1269,9 +1269,9 @@ fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2], local: u8
         }
         BattleEvent::BattleEnded { winner } => {
             if *winner == MY_SIDE {
-                "Battle over — you prevail.".to_string()
+                "Battle over - you prevail.".to_string()
             } else {
-                "Battle over — the foe prevails.".to_string()
+                "Battle over - the foe prevails.".to_string()
             }
         }
         unknown => format!("{unknown:?}"),

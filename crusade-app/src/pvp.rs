@@ -192,7 +192,7 @@ impl NetDuelDriver {
             keys: attestation_keys.cloned(),
             attestation: None,
             finalized: false,
-            log: vec!["The duel begins — may your resolve hold.".to_string()],
+            log: vec!["The duel begins - may your resolve hold.".to_string()],
             fresh_events: RefCell::new(Vec::new()),
             seen_events: 0,
             actives: [0, 0],
