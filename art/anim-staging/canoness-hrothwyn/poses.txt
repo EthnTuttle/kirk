@@ -1,0 +1,1 @@
+grid 3x2 row-major: 01 idle / 02 step / 03 pray / 04 idle2 (idle variant) / 05 look (turn-look back over shoulder) / 06 bow | all poses face right | src sheet kirk-anim-sheet-canoness-hrothwyn-v1 (nano-banana-2-1, 1024x1024 raw, $0.00) | staged 2026-10-14

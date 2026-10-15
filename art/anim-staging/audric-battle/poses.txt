@@ -1,0 +1,1 @@
+grid 3x2 row-major: 01 idle / 02 step / 03 strike / 04 hit / 05 defend / 06 pray (PILOT combat-family grid from card 4.3; differs from the other 11 sheets whose grid is idle/step/pray/idle2/look/bow) | src sheet kirk-anim-pilot-audric-battle-v1 (nano-banana-2-1, 1024x1024 raw, $0.00) | staged 2026-10-14

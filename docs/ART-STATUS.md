@@ -141,6 +141,56 @@ after any in-flight shell work touching `bevy_shell/`).
   atlas, no view/crate-surface changes; wasm32 check skipped (target not
   installed here; CI covers).
 
+### 4.5 Animation sheets (DONE 2026-10-14)
+Scaled the 4.3 pilot recipe across **all 12 champions**, nano-banana-2-1 only
+($0.00/img). **Grid (11 new sheets):** 3x2 row-major `idle / step / pray /
+idle2 / look / bow`, all facing right; identity descriptors reused verbatim
+from `ppq_roster.py`/`ppq_portfolio.py` SUBJECTS (pose-locks neutralized to
+props where needed); prompt carries the two pilot fixes ("absolutely no
+captions, no labels, no words, no letters" + "every pose faces right").
+**Audit-battle exception:** Squire Audric reuses the 4.3 pilot sheet
+(idle/step/strike/hit/defend/pray — combat-family grid; documented in its
+poses.txt), not regenerated. Labels stay scoring-compatible (idle, step,
+pray, idle2, look, bow). Staged at `art/anim-staging/<subject>/` (6 q128
+cells + one-line `poses.txt` each) — **not wired into the game yet**.
+**Bosses skipped this pass:** mostly single dominant poses; combat arcs are
+per-frame per the 4.3 hybrid decision.
+Driver: `/tmp/opencode/sprite-bakeoff/anim_batch.py` (scratch, AST-reads the
+roster prompts; idempotent per `client_request_id kirk-anim-sheet-<s>-vN`);
+slicing/analysis by existing `tools/artbake/slice.py` (no changes needed) +
+`quant.py --size 128`. Gates per sheet: centroid drift ≤~8px @q128 across
+non-kneel pose pairs, 0 off-palette px in q128s, full eyeball of every q128
+strip. **16 API calls total** (11 v1 + 5 v2 re-prompts), **0 API errors**,
+spend **$0.00** (cumulative project spend unchanged at $0.664).
+
+| subject | final sheet id | tries | drift excl. kneel @q128 (dcx/dcy max) | eyeball | verdict |
+|---|---|---|---|---|---|
+| audric-battle | kirk-anim-pilot-audric-battle-v1 | 0 (reuse) | 8.5/4.7 (4.3 pilot) | OK (idle faces left — known pilot foul, see 4.3) | OK (pilot) |
+| cleric-mabel | kirk-anim-sheet-cleric-mabel-v1 | 1 | 5.1/2.8 | OK | OK |
+| serjeant-bastien | kirk-anim-sheet-serjeant-bastien-v1 | 1 | 4.4/6.2 | OK | OK |
+| hospitaller-ysolt | kirk-anim-sheet-hospitaller-ysolt-v1 | 1 | 8.3/4.3 | OK | OK |
+| wayfarer-aelis | kirk-anim-sheet-wayfarer-aelis-v2 | 2 | 1.4/9.5 | OK all cells | **RETRY, recorded residual:** dcy 9.5 from bow-vs-standing pairs + mild row scale wobble; staged anyway, hand-tune at integration |
+| canoness-hrothwyn | kirk-anim-sheet-canoness-hrothwyn-v1 | 1 | 7.5/6.3 | OK; minor: raised psalter tip kisses top edge in idle/step | OK |
+| vexillor-anchetil | kirk-anim-sheet-vexillor-anchetil-v2 | 2 | 2.8/8.3 | OK (banner pinned upright in all cells) | OK (v1 foul: banner shouldered in step, dcx 17.0) |
+| brother-aldwyn | kirk-anim-sheet-brother-aldwyn-v2 | 2 | 4.8/3.2 | OK | OK (v1 foul: row-1 sprites spilled into bottom-row cells) |
+| cantor-sabina | kirk-anim-sheet-cantor-sabina-v1 | 1 | 3.5/3.8 | OK | OK |
+| chevalier-raimbaud | kirk-anim-sheet-chevalier-raimbaud-v2 | 2 | 3.9/4.4 | OK | OK (v1 foul: heads clipped at top in 5/6 cells — sprites too tall) |
+| vigil-knight-wymar | kirk-anim-sheet-vigil-knight-wymar-v2 | 2 | 7.7/10.3 | OK (sword+lantern pinned in all cells) | **RETRY, recorded residual:** dcy 10.3 from bow-vs-standing pairs (bow bend lifts centroid; standing family ≤7.7); staged, hand-tune at integration |
+| friar-osbert | kirk-anim-sheet-friar-osbert-v1 | 1 | 8.3/2.6 | OK (crate prop consistent, incl. pray-before-crate) | OK |
+
+- Aggregate, 11 new sheets: drift excl. kneel pairs — dcx_max mean 5.2 /
+  worst 8.3; dcy_max mean 5.6 / worst 10.3 (both >9 are the documented
+  bow-pair residuals). Silhouette IoU mean 0.483. **0 off-palette pixels in
+  all 66 new q128 cells** (also verified 0 in the 6 reused pilot cells).
+- v2 rewording that worked (kept in the driver): small-figure margins
+  ("about two thirds of cell height, clear background band on all sides") for
+  overflow/clipping fouls, and per-cell prop pinning ("banner pole stays
+  planted upright in every cell" / lantern at feet) for centroid walks.
+- No caption text drawn in any of the 11 sheets (v1 wording fix held);
+  slice.py caption-strip stayed a no-op backstop.
+- Ledger: +12 entries in `tools/artbake/MANIFEST.json` (`*-sheet` subjects,
+  src_dims, cost 0.0; retry notes on the 5 re-prompted cells).
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

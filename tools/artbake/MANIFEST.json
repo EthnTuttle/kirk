@@ -410,5 +410,108 @@
   "subject": "sleeper-of-sloth",
   "src_dims": "1024x1024",
   "cost_usd": 0.0
+ },
+ "nano-banana-2-1/audric-battle-sheet": {
+  "raw_bytes": 1149871,
+  "client_request_id": "kirk-anim-pilot-audric-battle-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "pilot reuse from card 4.3 (idle/step/strike/hit/defend/pray grid); no new API call"
+ },
+ "nano-banana-2-1/brother-aldwyn-sheet": {
+  "raw_bytes": 1036467,
+  "client_request_id": "kirk-anim-sheet-brother-aldwyn-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "retried v2 (v1 top-row sprites spilled into bottom-row cells)"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-sheet": {
+  "raw_bytes": 1031893,
+  "client_request_id": "kirk-anim-sheet-canoness-hrothwyn-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "minor: raised psalter corner kisses top edge in idle/step cells (prop tip only, head/body intact)"
+ },
+ "nano-banana-2-1/cantor-sabina-sheet": {
+  "raw_bytes": 961379,
+  "client_request_id": "kirk-anim-sheet-cantor-sabina-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/chevalier-raimbaud-sheet": {
+  "raw_bytes": 1144846,
+  "client_request_id": "kirk-anim-sheet-chevalier-raimbaud-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "retried v2 (v1 heads clipped at window top)"
+ },
+ "nano-banana-2-1/cleric-mabel-sheet": {
+  "raw_bytes": 963244,
+  "client_request_id": "kirk-anim-sheet-cleric-mabel-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/friar-osbert-sheet": {
+  "raw_bytes": 1100512,
+  "client_request_id": "kirk-anim-sheet-friar-osbert-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/hospitaller-ysolt-sheet": {
+  "raw_bytes": 981904,
+  "client_request_id": "kirk-anim-sheet-hospitaller-ysolt-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/serjeant-bastien-sheet": {
+  "raw_bytes": 1056683,
+  "client_request_id": "kirk-anim-sheet-serjeant-bastien-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0
+ },
+ "nano-banana-2-1/vexillor-anchetil-sheet": {
+  "raw_bytes": 1035948,
+  "client_request_id": "kirk-anim-sheet-vexillor-anchetil-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "retried v2 (v1 dcx 17.0; banner shouldered in step cell)"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-sheet": {
+  "raw_bytes": 1061791,
+  "client_request_id": "kirk-anim-sheet-vigil-knight-wymar-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "retried v2 (v1 dcx 16.2/dcy 9.0); residual dcy 10.3 = bow-vs-standing pairs (bow-bend intrinsic; standing family <=7.7)"
+ },
+ "nano-banana-2-1/wayfarer-aelis-sheet": {
+  "raw_bytes": 999433,
+  "client_request_id": "kirk-anim-sheet-wayfarer-aelis-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis-sheet",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "retried v2 (v1 dcy 15.5 row-baseline break); residual dcy 9.5 = bow-vs-standing pairs + mild row scale wobble; staging fine after eyeball"
  }
 }
