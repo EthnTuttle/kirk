@@ -66,12 +66,12 @@ fn game_with_roster(champs: &[ChampionInstance]) -> ClientGame {
 }
 
 /// Six level-50 champions covering six of the seven virtues (Patience and
-/// Kindness ride on Romilda): every sin boss meets at least one opposed
+/// Kindness ride on Raimbaud): every sin boss meets at least one opposed
 /// blade, and every slot carries a high-power damaging rite. All rites are
 /// learnable well below 50.
 fn strong_roster() -> Vec<ChampionInstance> {
     vec![
-        mkchamp(10, 50, &[18, 25, 7, 1]), // Romilda: Patience 80p / Kindness 60p
+        mkchamp(10, 50, &[18, 25, 7, 1]), // Raimbaud: Patience 80p / Kindness 60p
         mkchamp(11, 50, &[16, 17, 22, 1]), // Wymar: Diligence 75p+65p / Temperance 65p
         mkchamp(6, 50, &[14, 13, 21, 12]), // Hrothwyn: Chastity 70p+55p (piety 90)
         mkchamp(4, 50, &[11, 4, 27, 1]),  // Ysolt: Charity 60p+45p drain

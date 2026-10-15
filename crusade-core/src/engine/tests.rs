@@ -340,9 +340,9 @@ fn recoil_double_ko_keeps_first_decided_winner() {
     // Recoil 33%); the attacker sits at 1 hp so its own recoil would finish
     // it too. The first faint must stand: exactly one BattleEnded in the
     // whole log, winner == 1 (the defender fainted first).
-    let mut romilda = mkchamp(10, 20, &[19]); // learns Glorious Burden at 16
-    romilda.current_resolve = 1;
-    let mut b = Battle::new(vec![audric(1, &[])], vec![romilda], [RECOIL_SEED; 32])
+    let mut raimbaud = mkchamp(10, 20, &[19]); // learns Glorious Burden at 16
+    raimbaud.current_resolve = 1;
+    let mut b = Battle::new(vec![audric(1, &[])], vec![raimbaud], [RECOIL_SEED; 32])
         .expect("legal fixture battle");
     let ev = b.apply_turn(rite(0), rite(0)).expect("turn resolves");
     let battle_ended: Vec<&BattleEvent> = b

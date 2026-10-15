@@ -145,7 +145,7 @@ pub static SPECIES: &[SpeciesBase] = &[
     },
     SpeciesBase {
         id: 10,
-        name: "Chevalier Romilda",
+        name: "Chevalier Raimbaud",
         typing: Typing::Virtues([Some(Virtue::Patience), Some(Virtue::Kindness)]),
         base: Stats { resolve: 70, valour: 75, piety: 40, guard: 75, aegis: 60, alacrity: 40 },
         learnset: &[

@@ -18,7 +18,7 @@ SECTIONS = [
         ("vexillor-anchetil", "Vexillor Anchetil — the standard-bearer"),
         ("brother-aldwyn", "Brother Aldwyn — Humility"),
         ("cantor-sabina", "Cantor Sabina — the measured psalm"),
-        ("chevalier-romilda", "Chevalier Romilda — Patience in arms"),
+        ("chevalier-raimbaud", "Chevalier Raimbaud — Patience in arms"),
         ("vigil-knight-wymar", "Vigil-Knight Wymar — the long vigil"),
         ("friar-osbert", "Friar Osbert — Purity of heart"),
     ]),

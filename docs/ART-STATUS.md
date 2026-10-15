@@ -12,24 +12,30 @@ WS-D cards); this file is the live state. Everything art-bake-off now lives in
 - **Production canvas: 128×128** (nano-banana quantized to 128; the 64×64 vs
   128×128 question resolved in favor of 128). `q128.png` is the production
   candidate; `q64.png` kept for downscale checks; raw = concept art only.
-- **Canon gender rule (NEW, NOT YET APPLIED):** combat characters are men;
-  support/other characters may be women. Agent task card below (§4.2).
+- **Canon gender rule (APPLIED 2026-10-14):** combat characters are men;
+  support/other characters may be women. Pass done: species 10 renamed
+  `Chevalier Romilda` → `Chevalier Raimbaud` (id/stats/kit/lore untouched,
+  lore was already gender-neutral); all other champions conform by role; slug
+  + prompt in `ppq_roster.py` updated with id bumped to `-v2`; old staged
+  banana cell retired (was free) pending regeneration in 4.1.
 - Hand-painted lane finalists for reference: deepseek-v4.1-flash-uncensored-fp8,
   kimi-k3, glm-5.3 (portfolios in `/tmp/opencode/sprite-bakeoff/r2/` on the
   origin box, not in-repo).
 
 ## 2. Current artifact state
 
-24 of 40 planned subject×model cells are complete (raw + q64 + q128 each),
-staged quantized at `art/roster-staging/<model>/<subject>/{q64,q128}.png`
-(82 KiB total). `tools/artbake/MANIFEST.json` = per-cell ledger: bytes,
+23 of 40 planned subject×model cells are complete (raw + q64 + q128 each);
+was 24 before the §4.2 rename retired the banana romilda cell. Staged
+quantized at `art/roster-staging/<model>/<subject>/{q64,q128}.png`
+(79 KiB total). `tools/artbake/MANIFEST.json` = per-cell ledger: bytes,
 client_request_id (idempotency), cost, dims, status.
 
-- nano-banana-2-1: **19/20** done ($0 total). Missing: `sleeper-of-sloth`
+- nano-banana-2-1: **18/20** done ($0 total). Missing: `sleeper-of-sloth`
   (upstream moderation 400 on v1 prompt — reworded already in
-  `tools/artbake/ppq_roster.py`; rerun is free).
-- gpt-image-1.5: **5/20** done ($0.115). Missing 15 (job was paused with
-  `pkill`; zero half-written files by design).
+  `tools/artbake/ppq_roster.py`; rerun is free) and `chevalier-raimbaud`
+  (romilda cell retired in the 4.2 rename; regenerates free at `-v2` id).
+- gpt-image-1.5: **5/20** done ($0.115). Missing 15, incl. the renamed
+  `chevalier-raimbaud` (job was paused with `pkill`; zero half-written files).
 - Spend to date: bake-off $0.204 + portfolio $0.115 ≈ **$0.32** (all PayPerQ).
 
 ### Resume procedure (any machine)
@@ -69,7 +75,7 @@ Resume §2 procedure until 40/40 complete: banana sleeper-of-sloth (v2 prompt,
 free) + gpt 15 subjects (~$0.35). Regen site, eyeball fouls (text/border/
 subject drift), re-prompt individual cells same as before (bump `-vN` id).
 
-### 4.2 Canon gender rule pass (agent card — USER-ORDERED, not yet dispatched)
+### 4.2 Canon gender rule pass (DONE 2026-10-14)
 Rule: **combat characters are men; support/other characters may be women.**
 - Audit `crusade-core/src/data/species.rs` + `callings.rs`/`rites.rs`:
   classify each of 12 champions combat vs support/other by rites/stats
@@ -86,6 +92,11 @@ Rule: **combat characters are men; support/other characters may be women.**
   green; species ids stable; then update `tools/artbake/ppq_roster.py` prompt
   wording to match any rename, and bump that cell's client_request_id.
 - Worker: tff/kimi-k3; reviewer: tff/kimi-k3#high.
+- OUTCOME (2026-10-14): renamed to **Chevalier Raimbaud** (id 10; stats, kit,
+  typing, lore all untouched — lore was already gender-neutral). Only
+  combat-role violation found; all other champions conform. 53 core + 40 app
+  tests green; prompt/slug/staging/ledger updated; **review: SHIP** (three
+  doc nits fixed same-day). Raimbaud cell regenerates in 4.1 at `-v2` id.
 
 ### 4.3 Holistic animation generation (exploratory card)
 Single-call sprite **sheets**, not per-frame images: prompt the winner model

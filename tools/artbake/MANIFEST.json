@@ -117,7 +117,9 @@
   "model": "ppq:nano-banana-2-1",
   "subject": "chevalier-romilda",
   "src_dims": "1024x1024",
-  "cost_usd": 0.0
+  "cost_usd": 0.0,
+  "status": "superseded",
+  "note": "canon gender rule pass 2026-10-14: species renamed Chevalier Raimbaud (male); cell regenerates as nano-banana-2-1/chevalier-raimbaud with id ...-v2"
  },
  "nano-banana-2-1/cleric-mabel": {
   "raw_bytes": 983343,

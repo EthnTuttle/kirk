@@ -48,9 +48,9 @@ SUBJECTS = {
     "cantor-sabina": ("Cantor Sabina, a young cantor nun in white habit with a "
         "pale-gold stole, ringing a small brass handbell at measured pace, composed "
         "rhythmic poise." + CHAMP_TAIL),
-    "chevalier-romilda": ("Chevalier Romilda, a serene woman knight in battered "
+    "chevalier-raimbaud": ("Chevalier Raimbaud, a serene veteran knight in battered "
         "polished steel plate with a plain bone tabard bearing a small gold cross, "
-        "shield lowered at her side, merciful steady gaze." + CHAMP_TAIL),
+        "shield lowered at his side, merciful steady gaze, weathered stubbled face." + CHAMP_TAIL),
     "vigil-knight-wymar": ("Vigil-Knight Wymar, a gaunt watchful knight kneeling "
         "upright in dark steel armor, both hands resting on the pommel of a "
         "longsword planted point-down before him, dim lantern glow at his feet." + CHAMP_TAIL),
@@ -80,10 +80,16 @@ SUBJECTS = {
         "avaricious eyes." + BOSS_TAIL),
 }
 
+# Per-subject idempotency-key version override: bump a cell here (never edit
+# v1 history) when its prompt changes materially and it must regenerate.
+ID_VERSION = {
+    "chevalier-raimbaud": "v2",  # renamed from chevalier-romilda (canon gender rule)
+}
+
 def gen(model, extra, subject):
     payload = {"model": model, "prompt": STYLE + SUBJECTS[subject], "n": 1,
                "size": "1:1", "output_format": "png",
-               "client_request_id": f"kirk-portfolio-{model}-{subject}-v1"}
+               "client_request_id": f"kirk-portfolio-{model}-{subject}-{ID_VERSION.get(subject, 'v1')}"}
     payload.update(extra)
     req = urllib.request.Request(API, data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"})
