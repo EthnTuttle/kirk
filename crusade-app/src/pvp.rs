@@ -443,6 +443,9 @@ impl NetDuelDriver {
             // Seam required by view.rs: the witness roll is ClientGame's
             // read-only memorial screen; a duel never carries it.
             witnesses: Vec::new(),
+            // Seam required by view.rs: the Manuscript of Sins belongs to
+            // ClientGame's Hagiography screen; a duel never carries it.
+            sins: Vec::new(),
             fresh_events: self.fresh_events.take(),
         }
     }

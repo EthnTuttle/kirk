@@ -23,9 +23,10 @@ pub enum Phase {
     /// renderable state.
     Lobby,
     /// The Hagiography: the witness roll of the revered non-combatant dead
-    /// (pure lore). A read-only memorial off the menu, like the roster
-    /// minus every mechanic; [`ViewSnapshot::witnesses`] carries the roll
-    /// only while this phase is up.
+    /// (pure lore) plus the Manuscript of Sins bestiary. A read-only
+    /// memorial off the menu, like the roster minus every mechanic;
+    /// [`ViewSnapshot::witnesses`] and [`ViewSnapshot::sins`] carry the
+    /// two books only while this phase is up.
     Hagiography,
 }
 
@@ -186,6 +187,27 @@ pub struct WitnessCard {
     pub vignette: String,
 }
 
+/// One entry of the Hagiography's Manuscript of Sins: the bestiary row of
+/// one sin-boss of the campaign gauntlet (`species_id` 101..=107, in
+/// gauntlet order — Lust first, Pride last). The row always names the
+/// boss; once the boss's node has been cleared (`defeated`), `sin` and
+/// `lore` are revealed. A sealed row carries EMPTY `sin`/`lore` strings, so no UI
+/// binding can leak the reward text before it is earned.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SinCard {
+    /// Static-table species id (101..=107); also the 32px icon key
+    /// `sprites/icons/{id:03}.png`.
+    pub species_id: u16,
+    /// The boss's name (always shown — dimmed while sealed).
+    pub name: String,
+    /// The cardinal sin ("Lust", ...); empty until `defeated`.
+    pub sin: String,
+    /// The grotesque allegory reading; empty until `defeated`.
+    pub lore: String,
+    /// The boss's gauntlet node has been cleared (the entry is revealed).
+    pub defeated: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewSnapshot {
     pub phase: Phase,
@@ -211,6 +233,12 @@ pub struct ViewSnapshot {
     /// lean). Read-only: the roll is rendered, never targeted.
     #[serde(default)]
     pub witnesses: Vec<WitnessCard>,
+    /// The Hagiography's Manuscript of Sins: the 7-row sin-boss bestiary,
+    /// gated exactly like the witness roll above. Reveal state comes from
+    /// the persisted defeat mask (client.rs `SINS_DEFEATED_KEY`), never
+    /// from the live run — sealed rows carry empty `sin`/`lore`.
+    #[serde(default)]
+    pub sins: Vec<SinCard>,
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }

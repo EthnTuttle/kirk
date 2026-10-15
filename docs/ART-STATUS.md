@@ -250,6 +250,21 @@ emblem inside the maskable safe circle — 57.5px vs the 76.8px limit @192).
 sw.js; sw CACHE bumped to `deusvult-v2`), zero dangling refs (grep-verified).
 ART-PIPELINE §2's icon paragraph is now historical.
 
+### 4.7 Hagiography second book: Manuscript of Sins (DONE 2026-10-15)
+
+ViewSnapshot gains `sins: Vec<SinCard>` (serde-default, populated only in
+Phase::Hagiography): 7 rows in gauntlet order; sealed rows carry EMPTY
+sin/lore so no view binding can leak allegories early. Reveal record: new
+settings key `client.rs::SINS_DEFEATED_KEY` ("campaign.sins_defeated", u8
+bit per node) written in on_battle_end beside the shard bounty. Finding of
+note: campaign `defeated` was session-scoped (Hagiography unreachable
+mid-run), so the persisted mask is the only reachable reveal source; it
+survives reload + roster sync. DEDUP: `client.rs::CAMPAIGN_NODE_SPECIES`
+went `pub` and screens.rs's D3 mirror const was deleted — one table drives
+mechanics, mask bits, and rest-screen portraits. 42/42 app tests (new:
+manuscript_of_sins_gates_by_phase_and_defeat_mask); harness two-pass
+byte-identical incl. hagiography.png (1 revealed + 6 sealed).
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

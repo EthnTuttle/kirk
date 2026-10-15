@@ -26,7 +26,7 @@ use crate::policy::greedy_action;
 use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
     BattleChampionView, CampaignView, ChampionCard, ClientInput, LobbyNet, LobbyStage, LobbyView,
-    Phase, RiteCard, ViewSnapshot, WitnessCard,
+    Phase, RiteCard, SinCard, ViewSnapshot, WitnessCard,
 };
 use crate::AppError;
 
@@ -49,13 +49,25 @@ const PARTY_CAP: usize = 6;
 /// Campaign (PvE gauntlet): seven sin-spawn boss nodes ordered by drama —
 /// Lust, Gluttony, Greed, Sloth, Envy, Wrath, and Pride last. Species ids
 /// follow each spawn's `Typing::Sin` in `crusade_core::data::species`.
-const CAMPAIGN_NODE_SPECIES: [u16; 7] = [103, 106, 107, 104, 102, 105, 101];
+///
+/// SINGLE SOURCE for the boss order: the mechanics below index it by node,
+/// bit i of the [`SINS_DEFEATED_KEY`] mask means "node i's boss has
+/// yielded", and the bevy shell imports this very const for its rest-screen
+/// portraits (the old `screens.rs` mirror was hoisted here — card D3
+/// documented exactly this seam as the cleaner end-state).
+pub const CAMPAIGN_NODE_SPECIES: [u16; 7] = [103, 106, 107, 104, 102, 105, 101];
 /// Base seed for campaign node battles; the node index is folded in so each
 /// node's rng stream is fixed but distinct (same recipe as PRACTICE_SEED).
 const CAMPAIGN_SEED: [u8; 32] = [0xC9; 32];
 /// PvE rewards paid to the shared inventory (writes to the store, unlike
 /// anything else mid-battle).
 const SHARD_ITEM: &str = "contrition-shard";
+/// Settings key for the persisted sin-boss defeat mask: bit i (node i of
+/// [`CAMPAIGN_NODE_SPECIES`]) is set the moment that boss's node is
+/// cleared, beside the shard bounty. This is the Hagiography's Manuscript
+/// of Sins reveal record — durable through the roster document like the
+/// ladder rating, so revealed entries survive reload and roster sync.
+pub const SINS_DEFEATED_KEY: &str = "campaign.sins_defeated";
 
 /// Settings key for the player's persisted nostr secret (hex) — the
 /// Tournament of Virtue identity ("seal"). Minted on first lobby entry.
@@ -173,6 +185,15 @@ impl ClientGame {
             } else {
                 Vec::new()
             },
+            // The Manuscript of Sins rides with the witness roll — the
+            // same phase-gated discipline. Its reveal state is the
+            // persisted defeat mask, not the live run: Hagiography is a
+            // Menu-neighbour phase, where `campaign` is always `None`.
+            sins: if self.phase == Phase::Hagiography {
+                sin_cards(self.sins_defeated_mask())
+            } else {
+                Vec::new()
+            },
             fresh_events,
         };
         let Some(b) = self.battle.as_ref() else {
@@ -252,6 +273,20 @@ impl ClientGame {
             .ok()
             .flatten()
             .and_then(|s| s.parse::<u64>().ok())
+    }
+
+    /// The persisted sin-boss defeat mask (bit i: the node-i boss of
+    /// [`CAMPAIGN_NODE_SPECIES`] has yielded, at least once, in any run on
+    /// this document). An absent or unparseable value degrades to 0 — a
+    /// sealed manuscript — never to an error, mirroring how
+    /// [`Self::ladder_rating`] degrades to unranked.
+    fn sins_defeated_mask(&self) -> u8 {
+        self.store
+            .setting(SINS_DEFEATED_KEY)
+            .ok()
+            .flatten()
+            .and_then(|s| s.parse::<u8>().ok())
+            .unwrap_or(0)
     }
 
     /// The relay list the bridge connects the lobby to: the store's
@@ -756,6 +791,11 @@ impl ClientGame {
         // the shared inventory (the one store write a campaign performs).
         let bounty = i64::from(node) + 1;
         let carried = self.store.add_item(SHARD_ITEM, bounty)?;
+        // ...and at that same sanctioned write point the Manuscript of
+        // Sins records the fallen sin for good (the second and last store
+        // write a campaign performs): reveal = defeat-mask bit per node.
+        let mask = self.sins_defeated_mask() | (1u8 << node.min(6));
+        self.store.set_setting(SINS_DEFEATED_KEY, &mask.to_string())?;
         let mut lines = vec![format!(
             "{boss} yields! The node grants {bounty} contrition shard(s) (carried: {carried})."
         )];
@@ -988,6 +1028,43 @@ fn witness_cards() -> Vec<WitnessCard> {
             name: w.name.to_string(),
             epithet: w.epithet.to_string(),
             vignette: w.vignette.to_string(),
+        })
+        .collect()
+}
+
+/// The Manuscript of Sins as renderable cards: one row per gauntlet boss,
+/// in gauntlet order, drawn off the same static table+[`SINS_DEFEATED_KEY`]
+/// pairing the campaign mechanics use. A boss's entry is revealed once bit
+/// `node` of the defeat mask is set; sealed rows keep the name (shown
+/// dimmed) but carry EMPTY sin/lore, so the reward text never leaves the
+/// client before it is earned. Like [`witness_cards`], this reads the
+/// static lore verbatim and never targets anything.
+fn sin_cards(defeated_mask: u8) -> Vec<SinCard> {
+    CAMPAIGN_NODE_SPECIES
+        .iter()
+        .enumerate()
+        .map(|(node, &id)| {
+            let sp = data::species_by_id(id)
+                .expect("static species table covers all campaign nodes");
+            let Typing::Sin(sin) = sp.typing else {
+                panic!("gauntlet node species {} is a sin-spawn", sp.name)
+            };
+            let revealed = defeated_mask & (1u8 << node) != 0;
+            SinCard {
+                species_id: id,
+                name: sp.name.to_string(),
+                sin: if revealed {
+                    sin_name(sin).to_string()
+                } else {
+                    String::new()
+                },
+                lore: if revealed {
+                    sp.lore.to_string()
+                } else {
+                    String::new()
+                },
+                defeated: revealed,
+            }
         })
         .collect()
 }
@@ -1584,5 +1661,73 @@ mod hagiography_tests {
             .expect("the back-path returns to the menu");
         assert_eq!(game.phase(), Phase::Menu);
         assert!(game.snapshot().witnesses.is_empty());
+    }
+
+    /// The Manuscript of Sins: 7 rows in gauntlet order, phase-gated like
+    /// the witness roll, each entry sealed (name only) until its node bit
+    /// is set in the persisted defeat mask — and the mask rides the roster
+    /// document, so a revealed entry survives a reload. ASCII only.
+    #[test]
+    fn manuscript_of_sins_gates_by_phase_and_defeat_mask() {
+        let mut game = ClientGame::new(RosterStore::new());
+        // Menu (and every other phase): no sins ride the snapshot.
+        assert!(game.snapshot().sins.is_empty());
+
+        game.handle(ClientInput::ViewHagiography)
+            .expect("the menu opens the hagiography");
+        let snap = game.snapshot();
+        assert_eq!(snap.sins.len(), 7, "one row per gauntlet sin-boss");
+        // Gauntlet order is the campaign's: Lust, Gluttony, Greed, Sloth,
+        // Envy, Wrath, Pride last (client.rs::CAMPAIGN_NODE_SPECIES).
+        let order: Vec<u16> = snap.sins.iter().map(|s| s.species_id).collect();
+        assert_eq!(order, vec![103, 106, 107, 104, 102, 105, 101]);
+        for card in &snap.sins {
+            assert!(!card.defeated, "a fresh manuscript has faced nothing");
+            assert!(!card.name.is_empty(), "even a sealed row is named");
+            assert!(card.name.is_ascii(), "{}", card.name);
+            assert!(
+                card.sin.is_empty() && card.lore.is_empty(),
+                "a sealed row carries no sin/lore text: {}",
+                card.name
+            );
+        }
+
+        // Node 1 defeated (Glutton Maw): exactly that row flips.
+        game.store()
+            .set_setting(SINS_DEFEATED_KEY, "2") // bit 1
+            .expect("defeat mask writable");
+        let snap = game.snapshot();
+        let glutton = &snap.sins[1];
+        assert!(glutton.defeated, "node 1's row is revealed");
+        assert_eq!(glutton.species_id, 106);
+        assert_eq!(glutton.name, "Glutton Maw");
+        assert_eq!(glutton.sin, "Gluttony");
+        assert_eq!(
+            glutton.lore,
+            data::species_by_id(106).expect("boss in static table").lore,
+            "revealed lore is the species table's, verbatim"
+        );
+        for (node, card) in snap.sins.iter().enumerate() {
+            if node != 1 {
+                assert!(
+                    !card.defeated && card.sin.is_empty() && card.lore.is_empty(),
+                    "node {node} stays sealed"
+                );
+            }
+        }
+
+        // The mask persists through the roster document: a reloaded client
+        // opens the same manuscript.
+        let bytes = game.store().save_bytes().expect("document saves");
+        let store = RosterStore::load_bytes(&bytes).expect("document loads");
+        let mut reloaded = ClientGame::new(store);
+        reloaded
+            .handle(ClientInput::ViewHagiography)
+            .expect("the reloaded menu opens the hagiography");
+        assert_eq!(
+            reloaded.snapshot().sins,
+            snap.sins,
+            "the manuscript survives reload unchanged"
+        );
     }
 }
