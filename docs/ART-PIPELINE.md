@@ -62,7 +62,7 @@ Total v1-must-exist: **19 battle sprites** (+19 derived icons = 38 files).
   gold `#c9a227` cross, full-bleed maskable-safe. **Honest verdict: shippable
   for v1.0.** Crisp, on-palette with the shell, theme-accurate, zero IP
   exposure. Weakness: generic vector, no linkage to pixel-art identity.
-  Keep it; optional pixel-art re-render in card D4.
+  (Superseded: D4 pixel-art icon shipped 2026-10-15 — see docs/ART-STATUS.md §4.6.)
 
 ## 3. Environment check (verbatim, run on this box)
 

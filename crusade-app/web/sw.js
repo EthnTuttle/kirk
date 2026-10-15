@@ -5,13 +5,12 @@
  * picked up by the runtime cache on first fetch. Bump CACHE when the precache
  * contract changes; old caches are dropped on activate.
  */
-const CACHE = "deusvult-v1";
+const CACHE = "deusvult-v2";
 
 const CORE = [
   "./",
   "index.html",
   "manifest.webmanifest",
-  "icon.svg",
   "icon-192.png",
   "icon-512.png",
 ];

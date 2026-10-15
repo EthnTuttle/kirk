@@ -122,7 +122,7 @@ $ trunk serve --release
 
 then open the printed localhost URL (service workers need a secure context;
 `localhost` counts). The production file set — `index.html`, hashed
-`*_bg.wasm` + `*.js`, `manifest.webmanifest`, `sw.js`, `icon.svg` +
+`*_bg.wasm` + `*.js`, `manifest.webmanifest`, `sw.js`, +
 `icon-192.png`/`icon-512.png` — lands in
 `crusade-app/web/dist/`; build it standalone with `trunk build --release`
 (add `--public-url /kirk/` when targeting Pages).

@@ -237,6 +237,19 @@ spend **$0.00** (cumulative project spend unchanged at $0.664).
   battle.rs bin tests: anim resolver incl. boss/unknown None, phase-plateau
   boundaries); `--smoke` exit 0.
 
+### 4.6 Pixel app icon — D4 (DONE 2026-10-15, $0.00)
+
+`crusade-app/web/icon.svg` (generic vector) replaced by a native pixel-art
+mark: nano-banana-2-1, 3 candidates (`kirk-icon-v1..v3`), winner **v1** —
+flat ink-navy #0B0E1B heater-shield field, deep-gold #C9A227 pilgrim-
+star-cross, bone upper-left rim highlight; quantized via quant.py @1024.
+Rejects: v2 (tilt + rim speckle), v3 (muddy multi-tone rim). Shipped
+`icon-192.png` + `icon-512.png` (NN exports, palette-true, 100% opaque,
+emblem inside the maskable safe circle — 57.5px vs the 76.8px limit @192).
+`icon.svg` deleted, ALL refs scrubbed (index.html / manifest.webmanifest /
+sw.js; sw CACHE bumped to `deusvult-v2`), zero dangling refs (grep-verified).
+ART-PIPELINE §2's icon paragraph is now historical.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
