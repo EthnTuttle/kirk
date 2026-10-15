@@ -135,9 +135,12 @@ after any in-flight shell work touching `bevy_shell/`).
   `nostr_duel` relay test is pre-existing flaky; lobby commands drop
   post-settle by design.
 - The 9 `kirk::cashu` test panics remain pre-existing/out-of-scope (v1.2 mint).
-- Known cosmetic debt: `screens.rs` menu subtitle tofu glyphs (embedded font
-  lacks emoji); RECV_TIMEOUT liveness flake; mutex `.expect()` hardening —
-  all listed in `docs/SHIPPING.md` limitations or §7bis notes.
+- Known cosmetic debt (updated 2026-10-14): mutex `.expect()` hardening only.
+  CLOSED today: UI tofu glyphs (embedded font is ASCII-only by design; all
+  rendered strings swept to ASCII, ui-shots-verified), lobby/relay test port
+  races (retry+jitter at every MockRelay::run call site), RECV_TIMEOUT flake
+  (diagnosed as box-saturation budget pressure on the 30s deadline, not a
+  race — deadline deliberately left at 30s to keep liveness regressions loud).
 
 ## 6. Secrets & shelved threads
 
