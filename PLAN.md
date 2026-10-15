@@ -138,3 +138,6 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 - Reviewer gets: diff only + contract; returns issue list. Worker fixes.
 - Orchestrator commits after each green milestone. Concise conventional commits.
 - Parallel workers never share a file; orchestrator writes shared contracts first.
+- Research/exploration happens INSIDE agents, never in the orchestrator thread:
+  workers/reviewers read sources and search the web themselves and return
+  distilled reports. Orchestrator context holds decisions and state only.
