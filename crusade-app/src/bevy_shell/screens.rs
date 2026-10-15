@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use bevy::prelude::*;
 
 use crusade_app::{
-    ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, ViewSnapshot, WitnessCard,
+    ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, SinCard, ViewSnapshot, WitnessCard,
 };
 // The house purse's LNURL-pay switchboard reuses the B3a zaps module
 // (fetch_pay_params + the 64 KiB body cap) exactly as shipped -- the
@@ -15,6 +15,9 @@ use crusade_app::{
 use crusade_net::zaps::{Http, ZapError};
 #[cfg(target_arch = "wasm32")]
 use crusade_net::zaps;
+// The gauntlet's boss order, single-sourced at the client (hoisted out of
+// this file — see the comment at `next_boss_species`).
+use crusade_app::client::CAMPAIGN_NODE_SPECIES;
 use crusade_core::data;
 use crusade_core::types::SpeciesBase;
 
@@ -106,7 +109,7 @@ pub fn rebuild_ui(
             Phase::CampaignRest => (rest_screen(&mut commands, &snap, assets), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap), true),
             Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
-            Phase::Hagiography => (hagiography_screen(&mut commands, &snap), false),
+            Phase::Hagiography => (hagiography_screen(&mut commands, &snap, assets), false),
         },
     };
     commands
@@ -1167,17 +1170,15 @@ fn next_boss_panel(cmd: &mut Commands, node: u8, assets: Option<&AssetServer>) -
     )
 }
 
-/// MIRROR of `client.rs::CAMPAIGN_NODE_SPECIES` (the seven-node gauntlet
-/// order: Lust, Gluttony, Greed, Sloth, Envy, Wrath, Pride last): the
-/// client's const is private, and `CampaignView.node` is the index the
-/// snapshot already carries, so the shell re-derives the next boss's
-/// species id here rather than touching the view plumbing -- the same
-/// shell-side reconstruction discipline as `battle.rs::champion_sprite_path`.
-/// Presentation-only: the order is locked design, the tests below pin it to
-/// the static species table, and if this copy ever did drift from the
-/// client's, the worst case is a wrong portrait on this screen, never wrong
-/// mechanics.
-const CAMPAIGN_NODE_SPECIES: [u16; 7] = [103, 106, 107, 104, 102, 105, 101];
+/// The gauntlet order is single-sourced in the client:
+/// `crusade_app::client::CAMPAIGN_NODE_SPECIES` (imported above). Card D3
+/// noted a mirror here would be the interim and "pub the client's const"
+/// the cleaner end-state; the Manuscript of Sins work hoisted it, so the
+/// portraits below — keyed off `CampaignView.node` — and the client's
+/// mechanics/defeat-mask bits now provably share one table. The tests
+/// still pin it to the static species table and the staged sprite slugs.
+/// Presentation-only consumption: if this screen misread it, the worst
+/// case is a wrong portrait, never wrong mechanics.
 
 /// The sin-boss species waiting at gauntlet `node` (0-based), or `None`
 /// once the gauntlet is cleared.
@@ -1708,20 +1709,45 @@ fn duel_aborted_screen(cmd: &mut Commands, notice: &str) -> Vec<Entity> {
     ]
 }
 
-// ---------- Hagiography (witness roll) ----------
+// ---------- Hagiography (witness roll + Manuscript of Sins) ----------
 //
 // The memorial roll of the revered non-combatant dead: pure lore, drawn
 // from `crusade_core::data::all_witnesses()` through
-// `ViewSnapshot::witnesses`. The only button is the way back — nothing on
-// this screen is an input to any game system.
+// `ViewSnapshot::witnesses`. Beneath it, the Manuscript of Sins: the
+// seven sin-bosses of the campaign gauntlet via `ViewSnapshot::sins`,
+// each entry sealed (name only, dimmed) until its node has been cleared.
+// The only button is the way back — nothing on this screen is an input to
+// any game system.
 
 /// The Hagiography screen: a single-column memorial scroll. One panel per
 /// witness — "name, epithet" as the heading over the vignette reading —
 /// with generous room around each, flowing from the top like the roster so
-/// the roll may lengthen without crowding.
-fn hagiography_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+/// the roll may lengthen without crowding. The Manuscript of Sins follows
+/// as one register panel of seven rows (a sin-boss revealed only reads its
+/// full allegory; an unfaced one keeps its name dimmed beside its icon).
+/// Back rides the header row, roster-style: with the manuscript appended
+/// the scroll can outgrow a 720 window, so the one exit must never wait
+/// below the fold.
+fn hagiography_screen(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
+    let title = text_node(cmd, "Hagiography".into(), style::head_font(), style::GOLD);
+    let back = action_button(cmd, "Back".into(), ClientInput::CloseToMenu);
+    // Roster-style header: title left, Back right, within the same 760px
+    // measure both sections' panels use.
+    let head = cmd
+        .spawn(Node {
+            width: Val::Px(760.0),
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            ..default()
+        })
+        .add_children(&[title, back])
+        .id();
     let mut kids = vec![
-        text_node(cmd, "Hagiography".into(), style::head_font(), style::GOLD),
+        head,
         text_node(
             cmd,
             "- The Witness Roll -".into(),
@@ -1747,7 +1773,23 @@ fn hagiography_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
         style::small_font(),
         style::DIM,
     ));
-    kids.push(action_button(cmd, "Back".into(), ClientInput::CloseToMenu));
+    kids.push(text_node(
+        cmd,
+        "- The Manuscript of Sins -".into(),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    if snap.sins.is_empty() {
+        // The phase guarantees the seven rows; stay defensive, never panic.
+        kids.push(text_node(
+            cmd,
+            "The manuscript is being read...".into(),
+            style::small_font(),
+            style::DIM,
+        ));
+    } else {
+        kids.push(manuscript_panel(cmd, &snap.sins, assets));
+    }
     kids
 }
 
@@ -1787,6 +1829,123 @@ fn witness_panel(cmd: &mut Commands, card: &WitnessCard) -> Entity {
     .id()
 }
 
+/// The Manuscript of Sins as ONE register panel holding the seven sin-boss
+/// rows: the book is a single artifact, so the rows share one gold-dim
+/// border rather than seven. Row gating is doubled here even though the
+/// client already strips sealed rows' text: sin and lore render only for
+/// `defeated` cards, so a mis-built snapshot cannot leak the allegories.
+fn manuscript_panel(cmd: &mut Commands, sins: &[SinCard], assets: Option<&AssetServer>) -> Entity {
+    let rows: Vec<Entity> = sins
+        .iter()
+        .map(|card| sin_row(cmd, card, assets))
+        .collect();
+    // A touch tighter than the stock panel recipe (row_gap 8 -> 4, vertical
+    // padding 14 -> 8): seven icon rows must still close their border
+    // inside a 720 window.
+    cmd.spawn((
+        Node {
+            max_width: Val::Px(760.0),
+            row_gap: Val::Px(4.0),
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            ..style::panel_node()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&rows)
+    .id()
+}
+
+/// One sin-boss row. Revealed: a two-line entry — 32px icon with "name,
+/// Sin of X" in gold, then the lore reading in bone (wrapped to the same
+/// measure as the witness vignettes). Sealed: one dimmed line, icon tinted
+/// down to match — "{name} - Unfaced"; the dignity of "not yet witnessed",
+/// with neither sin nor lore shown.
+fn sin_row(cmd: &mut Commands, card: &SinCard, assets: Option<&AssetServer>) -> Entity {
+    if card.defeated {
+        let mut head_kids: Vec<Entity> = Vec::new();
+        head_kids.extend(sin_icon(cmd, card.species_id, true, assets));
+        head_kids.push(text_node(
+            cmd,
+            format!("{}, Sin of {}", card.name, card.sin),
+            style::body_font(),
+            style::GOLD,
+        ));
+        let heading = cmd
+            .spawn(Node {
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(10.0),
+                ..default()
+            })
+            .add_children(&head_kids)
+            .id();
+        let lore = cmd
+            .spawn((
+                Text::new(card.lore.clone()),
+                style::small_font(),
+                TextColor(style::BONE),
+                Node {
+                    max_width: Val::Px(700.0),
+                    ..default()
+                },
+            ))
+            .id();
+        return cmd
+            .spawn(Node {
+                row_gap: Val::Px(4.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            })
+            .add_children(&[heading, lore])
+            .id();
+    }
+    let mut kids: Vec<Entity> = Vec::new();
+    kids.extend(sin_icon(cmd, card.species_id, false, assets));
+    kids.push(text_node(
+        cmd,
+        format!("{} - Unfaced", card.name),
+        style::body_font(),
+        style::DIM,
+    ));
+    cmd.spawn(Node {
+        align_items: AlignItems::Center,
+        column_gap: Val::Px(10.0),
+        ..default()
+    })
+    .add_children(&kids)
+    .id()
+}
+
+/// The boss's 32x32 icon in the manuscript — the same
+/// `sprites/icons/{id:03}.png` seam as [`champion_icon`] (D2): spawned
+/// only when an asset server exists AND the id is a static-table species;
+/// a 404ing fetch draws nothing over the row's unconditional text. Sealed
+/// entries tint the icon down to the row's dimmed tone.
+fn sin_icon(
+    cmd: &mut Commands,
+    species_id: u16,
+    revealed: bool,
+    assets: Option<&AssetServer>,
+) -> Option<Entity> {
+    data::species_by_id(species_id)?;
+    let assets = assets?;
+    let mut image = ImageNode::new(assets.load(format!("sprites/icons/{species_id:03}.png")));
+    if !revealed {
+        image.color = Color::srgb(0.30, 0.30, 0.38);
+    }
+    Some(
+        cmd.spawn((
+            image,
+            Node {
+                width: Val::Px(32.0),
+                height: Val::Px(32.0),
+                ..default()
+            },
+        ))
+        .id(),
+    )
+}
+
 /// The menu's Hagiography button, same look as every [`action_button`].
 /// Wired into `menu_screen` between the alms address line and the
 /// "Tournament of Virtue" button.
@@ -1799,9 +1958,10 @@ mod tests {
     use super::*;
     use crusade_core::types::Typing;
 
-    /// The mirrored gauntlet table must be the seven distinct sin-spawn
-    /// species from the static table -- the anchor that glues the mirror to
-    /// `client.rs::CAMPAIGN_NODE_SPECIES` and to the staged files from
+    /// The gauntlet table (hoisted to the client as the single source)
+    /// must be the seven distinct sin-spawn
+    /// species from the static table -- the anchor that pins the imported
+    /// `client.rs::CAMPAIGN_NODE_SPECIES` to the staged files from
     /// stage_sprites.py. (D1/D2 keep their sprite tests in battle.rs.)
     #[test]
     fn gauntlet_mirror_covers_each_sin_boss_once() {

@@ -15,8 +15,8 @@
 //! menu's alms panel, toggled open via its shell-local resource — the QR
 //! is drawn offline from the address const and native chips are inert, so
 //! the capture is fully deterministic), `roster`,
-//! `hagiography` (the witness roll), `battle`, `battle-over`,
-//! `battle-over-net` (post-duel alms CTA via an
+//! `hagiography` (the witness roll + Manuscript of Sins), `battle`,
+//! `battle-over`, `battle-over-net` (post-duel alms CTA via an
 //! offline-seeded mailbox), `campaign`, `lobby` (offline fixture cards).
 //! Exits 0 only when every requested capture landed on disk.
 
@@ -48,6 +48,8 @@ use bevy::window::ExitCondition;
 use bevy::winit::WinitPlugin;
 
 use crusade_app::{ChallengeCard, ClientGame, ClientInput, LobbyNet, Phase, ViewSnapshot};
+// The Manuscript of Sins reveal record (fixture seeding below).
+use crusade_app::client::SINS_DEFEATED_KEY;
 use crusade_core::data;
 use crusade_core::types::{ChampionInstance, DevotionStats, GraceStats, RiteSlot};
 use crusade_data::RosterStore;
@@ -249,10 +251,13 @@ impl ShotDriver {
         steps.extend([
             Step::Push(vec![ClientInput::CloseToMenu]),
             Step::WaitPhase(Phase::Menu, WAIT_PHASE_CAP),
-            // The witness roll: a memorial detour off the menu, then back.
+            // The witness roll + Manuscript of Sins: a memorial detour off
+            // the menu, then back. The settle window matches the roster
+            // leg's: the manuscript spawns seven icon fetches that must be
+            // resolved before the capture (deterministic bytes).
             Step::Push(vec![ClientInput::ViewHagiography]),
             Step::WaitPhase(Phase::Hagiography, WAIT_PHASE_CAP),
-            Step::Settle(8),
+            Step::Settle(10),
         ]);
         steps.extend(capture("hagiography"));
         steps.extend([
@@ -720,9 +725,19 @@ fn lobby_list_fixture() -> ClientInput {
 /// `add_champion` assigns uuid v4 keys, and the practice/campaign flows
 /// sort roster ids before fielding a party, so random ids would reshuffle
 /// the party (and therefore every battle frame) between runs.
+///
+/// The store also carries a fixed campaign record of one cleared gauntlet
+/// node (`SINS_DEFEATED_KEY` bit 0, exactly what the client writes at a
+/// node clear): the hagiography capture then shows the Manuscript of Sins
+/// in both states — Fiend of Lust revealed in gold over its allegory, the
+/// other six sins sealed as dimmed Unfaced rows. Nothing but the sins
+/// section reads the mask, so every other screen is untouched.
 fn fixture_store() -> RosterStore {
     const STARTER_LEVEL: u8 = 25;
     let mut store = RosterStore::new();
+    store
+        .set_setting(SINS_DEFEATED_KEY, "1")
+        .expect("fixture store accepts the defeat mask");
     for species_id in 1..=6u16 {
         let species =
             data::species_by_id(species_id).expect("species ids 1..=6 exist in the static table");
