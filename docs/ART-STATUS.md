@@ -350,6 +350,26 @@ path/slug pinning, pager windowing, pre-gallery save compat), 45 plain /
 81 featured green, harness twice byte-identical, roster.png reads
 reverent and fits 1260/710 of the frame exactly.
 
+### 4.13 Extended combat-arc frames - E4 (DONE 2026-10-15, $0.00)
+
+Four new per-frame pose families for all 12 battle champions: 09_windup
+(recoil-back before the lunge), 10_followthrough (weight past the target),
+11_victory (temperament-matched per species lore: kneel+weapon-raised or
+prayer of thanks - Wymar returns to his canon vigil pose, Anchetil's
+banner never touches ground even in 12_defeat), 12_defeat (collapse/
+slumped). 48 frames under art/anim-staging/<subject>/, poses.txt extended
+with one E4 segment per subject. 48/48 passed eyeball at v1 - ZERO v2
+retries; Wymar's D6 no-red identity pin applied from v1 (0 red-palette px
+verified). 0 API errors, 0 off-palette px across all 48 q128s (PIL sweep).
+Driver /tmp/opencode/sprite-bakeoff/anim_frames2.py (scratch; sibling of
+anim_frames.py). Ledger art/anim-staging/.ledger-e4.jsonl (48 lines).
+Both deferred ledgers now folded into tools/artbake/MANIFEST.json in this
+commit (168 keys total): 48 E4 pose cells keyed
+"nano-banana-2-1/<subject>-<pose>", 24 E5 alt cells keyed
+"nano-banana-2-1/<subject>-alt-<a|b>" (fouled hrothwyn v1 excluded, v2
+noted). Spend unchanged at $0.664. Not yet wired into stage_sprites/
+battle.rs - that wave-2 card lands next.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
