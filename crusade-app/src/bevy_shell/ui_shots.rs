@@ -31,6 +31,7 @@ mod smoke;
 #[allow(dead_code)]
 mod state;
 mod style;
+mod tooltip;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -245,7 +246,11 @@ impl ShotDriver {
         steps.extend([
             Step::Push(vec![ClientInput::OpenRoster]),
             Step::WaitPhase(Phase::Roster, WAIT_PHASE_CAP),
-            Step::Settle(10),
+            // The redesigned gallery page: six 512px painted plates must
+            // resolve before the capture (page 1 only; the fixture roster
+            // is unchanged and fits the first leaf exactly). A touch wider
+            // settle than the old 32px icon row.
+            Step::Settle(14),
         ]);
         steps.extend(capture("roster"));
         steps.extend([

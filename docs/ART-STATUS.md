@@ -303,6 +303,21 @@ panel's name line "Foe {Name} - Lv {N}"; ours stays plain, no sprite tint.
 +1 bin test -> 74 green under bevy-ui, 42 plain; --smoke exit 0; D5/D6 arc
 machinery 0 diff lines; harness 3-byte-identical passes, no leg edits.
 
+### 4.10 E3 tooltip scaffold (DONE 2026-10-15)
+
+crusade-app/src/bevy_shell/tooltip.rs (379 lines): `TooltipText(&'static
+str)` component + `with_tooltip(&mut EntityCommands, tip)` builder.
+Entity-local On<Pointer<Over>>/Out observers (matches the shell's click
+pattern; zero app-level registration — the whole wiring is one
+`mod tooltip;` per binary). Popup: one max, dark-navy PANEL fill, gold 1px
+border, bone 14px text, 480px wrap, Pickable::IGNORE, parents under UiRoot
+so rebuild_ui despawn cleans it free; anchors top-right of cursor in
+windowed runs, deterministic below-right fallback headless. Two headless
+tests drive the production observers via World::trigger (bevy picking
+events are pure ECS — no winit needed): hover swap/reap roundtrip + layout
+pin contract. Call-site wave next (battle stats/rites/chips, roster stats)
+once sibling E1 lands.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

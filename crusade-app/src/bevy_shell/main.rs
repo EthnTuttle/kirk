@@ -25,6 +25,7 @@ mod screens;
 mod smoke;
 mod state;
 mod style;
+mod tooltip;
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
