@@ -1,8 +1,10 @@
 //! Hover tooltips: one floating panel, spawned and reaped purely by
 //! pointer events. This is shell-local infrastructure ONLY — the widget's
-//! [`TooltipText`] holds a caller-picked fixed string, so the system never
-//! reads game state, never starts a timer, and never touches IO: it is
-//! wall-clock-free, wasm-safe, and deterministic in headless runs.
+//! [`TooltipText`] holds a caller-picked string (a fixed literal, or one
+//! composed at attach time from the same snapshot/view rows the widget was
+//! built from), so the system never reads game state, never starts a
+//! timer, and never touches IO: it is wall-clock-free, wasm-safe, and
+//! deterministic in headless runs.
 //!
 //! The house rules (each pinned by a test below):
 //!
@@ -25,9 +27,7 @@
 //! observers are entity-local, the same pattern `screens.rs` uses for its
 //! `On<Pointer<Click>>` handlers — nothing is registered app-wide.
 
-// The two pub items have no in-repo callers until the content-wiring wave
-// lands; keep `cargo check` warning-free until then.
-#![allow(dead_code)]
+use std::borrow::Cow;
 
 use bevy::prelude::*;
 
@@ -43,11 +43,15 @@ pub(crate) const TOOLTIP_GAP_Y_PX: f32 = 10.0;
 /// Breathing room so the text does not kiss the gold border.
 pub(crate) const TOOLTIP_PADDING_PX: f32 = 8.0;
 
-/// Hover-help body for one widget. The text is `&'static`: either a fixed
-/// compile-time string or one the CALLER owns — this module never computes
-/// tip contents and never touches `GameShell`.
+/// Hover-help body for one widget. `Cow` covers both caller shapes the
+/// content wave needs: a fixed compile-time literal for static guidance,
+/// or a String composed at attach time from the same snapshot/view row the
+/// widget renders (per-rite stats, per-species matchups) — attached once at
+/// spawn, never recomputed, so a rebuilt string never drifts from the row
+/// it explains. This module never computes tip contents and never touches
+/// `GameShell`.
 #[derive(Component)]
-pub struct TooltipText(pub &'static str);
+pub struct TooltipText(pub Cow<'static, str>);
 
 /// The one live tooltip panel. Pure despawn-then-spawn bookkeeping keeps
 /// at most one of these in the world at any moment.
@@ -57,8 +61,8 @@ pub(crate) struct TooltipPopup;
 /// Attach hover help to an already-spawned widget: `tip` shows while the
 /// pointer is over the widget (or any child of it), and vanishes when the
 /// pointer leaves or the screen rebuilds.
-pub fn with_tooltip(cmd: &mut EntityCommands, tip: &'static str) {
-    cmd.insert(TooltipText(tip))
+pub fn with_tooltip(cmd: &mut EntityCommands, tip: impl Into<Cow<'static, str>>) {
+    cmd.insert(TooltipText(tip.into()))
         .observe(on_tooltip_over)
         .observe(on_tooltip_out);
 }
@@ -90,7 +94,7 @@ fn on_tooltip_over(
     }
     let cursor = over.pointer_location.position;
     let window_height = windows.iter().next().map(Window::height);
-    spawn_tooltip(&mut commands, root, tip.0, cursor, window_height);
+    spawn_tooltip(&mut commands, root, &tip.0, cursor, window_height);
 }
 
 /// Hover-out: reap the panel, whatever widget it belongs to. No
@@ -116,7 +120,7 @@ fn on_tooltip_out(
 fn spawn_tooltip(
     commands: &mut Commands,
     root: Entity,
-    tip: &'static str,
+    tip: &str,
     cursor: Vec2,
     window_height: Option<f32>,
 ) -> Entity {
@@ -256,7 +260,7 @@ mod tests {
         let mut world = World::new();
         let root = world.spawn((UiRoot, Node::default())).id();
         let (a, b) = fixture_widgets(&mut world);
-        assert_eq!(world.get::<TooltipText>(a).map(|t| t.0), Some(TIP_A));
+        assert_eq!(world.get::<TooltipText>(a).map(|t| t.0.as_ref()), Some(TIP_A));
         assert!(popup_entities(&mut world).is_empty(), "no tip before hover");
 
         world.trigger(over_at(a, Vec2::new(120.0, 300.0)));

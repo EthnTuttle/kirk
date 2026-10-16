@@ -15,6 +15,7 @@
 //! per rebuild from the snapshot's `fresh_events` and counts down in
 //! frames — presentation only, never game state, fully deterministic.
 
+use std::borrow::Cow;
 use std::sync::Mutex;
 
 use bevy::prelude::*;
@@ -22,11 +23,12 @@ use bevy::prelude::*;
 use crusade_app::{BattleChampionView, ClientInput, RiteCard, ViewSnapshot};
 use crusade_core::data;
 use crusade_core::engine::BattleEvent;
-use crusade_core::types::Ailment;
+use crusade_core::types::{Ailment, BattleStat, Secondary, Volatile};
 
 use crate::screens::{action_button, panel, text_node};
 use crate::state::{switch_target_idx, switch_target_name, ActionButton, BaseBackground};
 use crate::style;
+use crate::tooltip;
 
 /// Full in-battle layout for [`Phase::InBattle`].
 pub(crate) fn battle_screen(
@@ -137,6 +139,210 @@ fn name_line(view: &BattleChampionView, mirror: bool) -> String {
     }
 }
 
+// ---------- Hover tips (the tooltip call-site wave) ----------
+//
+// Every tip below is ASCII, at most two lines at the 480px wrap (budget
+// [`TIP_LEN_BUDGET`] chars ~= 66 per line inside the box's padding and
+// border), and reads only compile-time tables or the very view row it
+/// hangs from -- never game state, never a clock. ONE tip per widget.
+
+/// The two-line budget, pinned by the tests (480px box, 8px padding, 1px
+/// border, ~7px advance at the 14px font). Shared with screens.rs' tests;
+/// test-only because the prose itself is pinned at the call sites.
+#[cfg(test)]
+pub(crate) const TIP_LEN_BUDGET: usize = 132;
+
+/// The resolve bar row: current/max, and that faint = faint.
+const RESOLVE_TIP: &str =
+    "Resolve, current over full: the strength to fight on. At zero the champion faints and must yield the field.";
+
+/// The virtue/sin typing line: what typing means, including the
+/// Martial/Spiritual split (crusade-core rites test Valour vs Guard or
+/// Piety vs Aegis) and the conqueror matchups of the chart wheel.
+const TYPING_TIP: &str =
+    "A virtue strikes twofold upon the sin it conquers. Martial rites weigh Valour against Guard; Spiritual, Piety against Aegis.";
+
+/// Shared by every "Send X" switch chip: what the standing reserves mean,
+/// and when a switch is owed (a faint) versus freely spent (the deed of
+/// its whole turn, per the engine's turn contract).
+const SWITCH_TIP: &str =
+    "The standing reserves wait in prayer. To call one freely spends the turn's whole deed; after a faint it is owed.";
+
+/// Concede, on a practice field: nothing stands to be lost.
+const CONCEDE_TIP_PRACTICE: &str =
+    "Yield the field and end the bout; practice asks no penance and yields no shame.";
+/// Concede, in a sworn net duel: the attested loss is the whole stake.
+const CONCEDE_TIP_DUEL: &str =
+    "Yield the field. A sworn duel settles as your attested defeat, and the honor ladder records it.";
+/// Concede, mid-crusade: the run ends as a node defeat (client.rs:
+/// yielding hands the node to the boss); shards already earned are kept.
+const CONCEDE_TIP_CAMPAIGN: &str =
+    "Yield the field: the crusade breaks here in defeat; contrition shards already earned are kept.";
+
+/// Pick the honest concede tip. The row KNOWS its context from the
+/// snapshot: a live campaign marks itself, and the net-duel driver's
+/// documented tell is `roster_count == 0` (practice/campaign battles
+/// always stand on a mustered company). Everything else is practice.
+fn concede_tip(in_campaign: bool, roster_count: usize) -> &'static str {
+    if in_campaign {
+        CONCEDE_TIP_CAMPAIGN
+    } else if roster_count == 0 {
+        CONCEDE_TIP_DUEL
+    } else {
+        CONCEDE_TIP_PRACTICE
+    }
+}
+
+/// Hover lore for a battle sprite: the species' short lore line, champions
+/// ONLY. A boss's lore IS the Manuscript of Sins' gated allegory
+/// (client.rs `SINS_DEFEATED_KEY`), and a battle snapshot carries no
+/// defeat mask -- so a boss keeps its allegory until the Hagiography
+/// reveals it, same discipline as the sealed manuscript rows. Unknown
+/// names (the client's "Champion #N" fallback) never resolve.
+fn species_lore_tip(species_name: &str) -> Option<&'static str> {
+    let sp = data::species::SPECIES
+        .iter()
+        .find(|sp| sp.name == species_name)?;
+    (sp.id < 100).then_some(sp.lore)
+}
+
+/// The composed hover tip for one rite cell: typing and category, what Pow
+/// (the wound's weight), Acc (its chance to strike home; 101+ = never
+/// misses) and Zeal (the pool of uses) mean, then the rite's carried
+/// ailment/status clause if the static table lists one. Reads
+/// `data::rite_by_id` (a compile-time table) and the view row only.
+fn rite_tip(rite: &RiteCard) -> Cow<'static, str> {
+    let mut tip = format!("{} {} -- ", rite.type_display, rite.category_display);
+    if rite.power > 0 {
+        tip.push_str(&format!("Pow {} weighs the wound, ", rite.power));
+    }
+    if rite.accuracy > 100 {
+        tip.push_str("it never misses, ");
+    } else {
+        tip.push_str(&format!("Acc {}% strikes home, ", rite.accuracy));
+    }
+    tip.push_str(&format!("zeal {}/{} left.", rite.zeal_left, rite.zeal_max));
+    if let Some(static_rite) = data::rite_by_id(rite.rite_id) {
+        for sec in static_rite.secondaries {
+            tip.push(' ');
+            tip.push_str(&secondary_line(sec));
+        }
+    }
+    tip.into()
+}
+
+/// One rite secondary as one terse sentence ("It may (10%) brand the foe
+/// (a burning).", "It raises its own Guard by 1 stage."). Chance clauses
+/// say "may (p%)"; certainties state the deed plainly.
+fn secondary_line(sec: &Secondary) -> String {
+    match *sec {
+        Secondary::Ailment {
+            ailment,
+            chance_pct,
+        } => {
+            let (base, third) = ailment_verb(ailment);
+            chance_line(
+                chance_pct,
+                format!("It {third}."),
+                format!("It may ({chance_pct}%) {base}."),
+            )
+        }
+        Secondary::Volatile {
+            volatile_,
+            chance_pct,
+        } => {
+            let (base, third) = volatile_verb(volatile_);
+            chance_line(
+                chance_pct,
+                format!("It {third}."),
+                format!("It may ({chance_pct}%) {base}."),
+            )
+        }
+        Secondary::StageOnTarget {
+            stat,
+            delta,
+            chance_pct,
+        } => stage_line("the foe's", stat, delta, chance_pct),
+        Secondary::StageOnSelf {
+            stat,
+            delta,
+            chance_pct,
+        } => stage_line("its own", stat, delta, chance_pct),
+        Secondary::HealSelf { pct } => format!("It restores {pct}% of its own resolve."),
+        Secondary::Drain { pct } => format!("It drinks back {pct}% of the wound."),
+        Secondary::Recoil { pct } => format!("The wound recoils {pct}% upon its caster."),
+        Secondary::MultiHit => "It strikes two to five times.".to_string(),
+        Secondary::HighCrit => "It oft finds the foe's heart (a deeper crit).".to_string(),
+    }
+}
+
+/// The certainty fork shared by the chance-bearing effects.
+fn chance_line(chance_pct: u8, certain: String, maybe: String) -> String {
+    if chance_pct >= 100 {
+        certain
+    } else {
+        maybe
+    }
+}
+
+/// Ailment deeds as verb phrases: base form (after "may (p%)") and
+/// third-person (certainty). The gloss in parentheses is the ailment's
+/// felt effect from crusade-core's ailment docs.
+fn ailment_verb(ailment: Ailment) -> (&'static str, &'static str) {
+    match ailment {
+        Ailment::Brand => ("brand the foe (a burning)", "brands the foe (a burning)"),
+        Ailment::Shackled => ("shackle the foe (a slowing)", "shackles the foe (a slowing)"),
+        Ailment::Venom => ("envenom the foe", "envenoms the foe"),
+        Ailment::Slumber => ("lull the foe to slumber", "lulls the foe to slumber"),
+        Ailment::Frost => ("freeze the foe", "freezes the foe"),
+    }
+}
+
+/// Volatile deeds, same base/third-person recipe as [`ailment_verb`].
+fn volatile_verb(volatile_: Volatile) -> (&'static str, &'static str) {
+    match volatile_ {
+        Volatile::Confusion => ("sow confusion in the foe", "sows confusion in the foe"),
+        Volatile::Flinch => ("make the foe flinch", "makes the foe flinch"),
+        Volatile::SeedLeech => (
+            "seed the foe (resolve seeps to you)",
+            "seeds the foe (resolve seeps to you)",
+        ),
+    }
+}
+
+/// "It raises its own Guard by 1 stage." / "It may (50%) lower the foe's
+/// Valour by 2 stages." -- the conjugation fork rides `chance_pct`, so the
+/// certainty never wears a "may".
+fn stage_line(whose: &str, stat: BattleStat, delta: i8, chance_pct: u8) -> String {
+    let n = delta.unsigned_abs();
+    let stages = if n == 1 { "stage" } else { "stages" };
+    match (chance_pct >= 100, delta > 0) {
+        (true, true) => format!("It raises {whose} {} by {n} {stages}.", stat_label(stat)),
+        (true, false) => format!("It lowers {whose} {} by {n} {stages}.", stat_label(stat)),
+        (false, true) => format!(
+            "It may ({chance_pct}%) raise {whose} {} by {n} {stages}.",
+            stat_label(stat)
+        ),
+        (false, false) => format!(
+            "It may ({chance_pct}%) lower {whose} {} by {n} {stages}.",
+            stat_label(stat)
+        ),
+    }
+}
+
+/// Stat names for the stage lines -- the same short table client.rs keeps
+/// private (mirrored here, like the two local `slugify`s), so the shell
+/// never reaches across the client boundary for display words.
+fn stat_label(stat: BattleStat) -> &'static str {
+    match stat {
+        BattleStat::Valour => "Valour",
+        BattleStat::Piety => "Piety",
+        BattleStat::Guard => "Guard",
+        BattleStat::Aegis => "Aegis",
+        BattleStat::Alacrity => "Alacrity",
+    }
+}
+
 /// One side's champion card: portrait sprite (when the art lane has the
 /// species), then gold edge for ours, ember for the foe. `mirror` marks the
 /// foe half of a same-species pairing ([`name_line`]). The card's node
@@ -165,12 +371,14 @@ fn champion_panel(
     ));
     kids.push(resolve_row(cmd, view.current_resolve, view.max_resolve));
     if !view.types_display.is_empty() {
-        kids.push(text_node(
+        let typing = text_node(
             cmd,
             view.types_display.join(" + "),
             style::small_font(),
             style::GOLD,
-        ));
+        );
+        tooltip::with_tooltip(&mut cmd.entity(typing), TYPING_TIP);
+        kids.push(typing);
     }
     if let Some(ailment) = view.ailment {
         kids.push(text_node(
@@ -449,6 +657,9 @@ fn champion_sprite(
         height: Val::Px(128.0),
         ..default()
     };
+    // The champion-only lore hook (boss allegories stay Manuscript-sealed
+    // -- see species_lore_tip).
+    let lore = species_lore_tip(species_name);
     if let Some((idle, idle2)) = champion_anim_paths(species_name) {
         let idle = assets.load(idle);
         let (strike, hit) = champion_arc_paths(species_name)
@@ -461,7 +672,11 @@ fn champion_sprite(
             hit,
             arc: Mutex::new(arc),
         };
-        return Some(cmd.spawn((ImageNode::new(idle), node, anim)).id());
+        let mut sprite = cmd.spawn((ImageNode::new(idle), node, anim));
+        if let Some(tip) = lore {
+            tooltip::with_tooltip(&mut sprite, tip);
+        }
+        return Some(sprite.id());
     }
     let sprites = champion_sprite_path(species_name)?;
     let sprite = assets.load(sprites);
@@ -472,7 +687,11 @@ fn champion_sprite(
         hit: None,
         arc: Mutex::new(arc),
     };
-    Some(cmd.spawn((ImageNode::new(sprite), node, anim)).id())
+    let mut sprite = cmd.spawn((ImageNode::new(sprite), node, anim));
+    if let Some(tip) = lore {
+        tooltip::with_tooltip(&mut sprite, tip);
+    }
+    Some(sprite.id())
 }
 
 /// Asset path for a battle view's species name. `BattleChampionView`
@@ -548,13 +767,14 @@ fn resolve_row(cmd: &mut Commands, current: u16, max: u16) -> Entity {
         style::small_font(),
         style::BONE,
     );
-    cmd.spawn(Node {
+    // Hovering the bar or its numbers explains resolve (and faint = faint).
+    let mut row = cmd.spawn(Node {
         align_items: AlignItems::Center,
         column_gap: Val::Px(10.0),
         ..default()
-    })
-    .add_children(&[bar, numbers])
-    .id()
+    });
+    tooltip::with_tooltip(&mut row, RESOLVE_TIP);
+    row.add_children(&[bar, numbers]).id()
 }
 
 /// Small gold-edged badges like `Valour +2` for every non-zero stage.
@@ -651,7 +871,9 @@ fn rite_grid(cmd: &mut Commands, rites: &[RiteCard]) -> Entity {
 
 /// One rite cell of [`rite_grid`]: live compact button when usable, inert
 /// slab (no `Button`, no queued input) when the zeal is spent — the exact
-/// live/dead split `action_button`/`disabled_button` had, shrunk.
+/// live/dead split `action_button`/`disabled_button` had, shrunk. Both
+/// halves carry the composed rite tip; on the dead slab it doubles as the
+/// "zeal 0/N left" explanation.
 fn rite_cell(cmd: &mut Commands, name: String, meta: String, rite: &RiteCard) -> Entity {
     let ink = if rite.usable { style::BONE } else { style::DIM };
     let name_node = text_node(cmd, name, style::body_font(), ink);
@@ -678,6 +900,7 @@ fn rite_cell(cmd: &mut Commands, name: String, meta: String, rite: &RiteCard) ->
             BorderColor::all(style::PANEL_EDGE),
         ));
     }
+    tooltip::with_tooltip(&mut cell, rite_tip(rite));
     cell.add_children(&[name_node, meta_node]).id()
 }
 
@@ -717,10 +940,16 @@ fn command_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
                 ClientInput::PickSwitch {
                     party_idx: switch_target_idx(target),
                 },
+                SWITCH_TIP,
             )
         })
         .collect();
-    kids.push(chip_button(cmd, "Concede".into(), ClientInput::Concede));
+    kids.push(chip_button(
+        cmd,
+        "Concede".into(),
+        ClientInput::Concede,
+        concede_tip(snap.campaign.is_some(), snap.roster_count),
+    ));
     cmd.spawn(Node {
         column_gap: Val::Px(8.0),
         row_gap: Val::Px(4.0),
@@ -732,10 +961,11 @@ fn command_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
 }
 
 /// A compact clickable chip: the [`ActionButton`]/hover-tint wiring of
-/// `screens::action_button` with small text and tight padding.
-fn chip_button(cmd: &mut Commands, label: String, input: ClientInput) -> Entity {
+/// `screens::action_button` with small text and tight padding, plus its one
+/// hover tip.
+fn chip_button(cmd: &mut Commands, label: String, input: ClientInput, tip: &'static str) -> Entity {
     let text = text_node(cmd, label, style::small_font(), style::BONE);
-    cmd.spawn((
+    let mut chip = cmd.spawn((
         Button,
         Node {
             padding: UiRect::axes(Val::Px(10.0), Val::Px(4.0)),
@@ -748,9 +978,9 @@ fn chip_button(cmd: &mut Commands, label: String, input: ClientInput) -> Entity 
         BorderColor::all(style::GOLD_DIM),
         BaseBackground(style::BUTTON),
         ActionButton(input),
-    ))
-    .add_children(&[text])
-    .id()
+    ));
+    tooltip::with_tooltip(&mut chip, tip);
+    chip.add_children(&[text]).id()
 }
 
 /// Modal overlay: the engine demands a switch before anything else.
@@ -1059,5 +1289,146 @@ mod tests {
         assert_eq!(slugify("Squire Audric"), "squire-audric");
         assert_eq!(slugify("Vigil-Knight Wymar"), "vigil-knight-wymar");
         assert_eq!(slugify("Glutton Maw"), "glutton-maw");
+    }
+
+    // ---------- Hover-tip composition ----------
+
+    /// Build the RiteCard the client WOULD send for a RiteSlot-ish input
+    /// (same expansion recipe as `client.rs::rite_cards`; the client's
+    /// private display tables are reproduced via the enums' Debug names,
+    /// which read identically: "Humility", "Sin of Wrath", "Martial").
+    fn card_for(rite: &crusade_core::types::Rite, zeal_left: u8) -> RiteCard {
+        let type_display = match rite.rite_type {
+            crusade_core::types::RiteType::Typeless => "Typeless".to_string(),
+            crusade_core::types::RiteType::Virtue(v) => format!("{v:?}"),
+            crusade_core::types::RiteType::Sin(s) => format!("Sin of {s:?}"),
+        };
+        RiteCard {
+            slot: 0,
+            rite_id: rite.id,
+            name: rite.name.to_string(),
+            type_display,
+            category_display: format!("{:?}", rite.category),
+            power: rite.power,
+            accuracy: rite.accuracy,
+            zeal_left,
+            zeal_max: rite.zeal,
+            usable: zeal_left > 0,
+        }
+    }
+
+    /// Every hover tip below this budget stays inside its two lines at the
+    /// 480px wrap (~66 chars per line in the 14px font after padding).
+    fn assert_terse_tip(tip: &str, what: &str) {
+        assert!(tip.is_ascii(), "{what} must stay pure ASCII: {tip:?}");
+        assert!(
+            tip.len() <= TIP_LEN_BUDGET,
+            "{what} over the two-line budget ({TIP_LEN_BUDGET}): {tip:?} ({} chars)",
+            tip.len()
+        );
+    }
+
+    /// The rite tip from a RiteSlot-ish input composes typing, category,
+    /// Pow/Acc/Zeal meanings, and the carried ailment/status clause --
+    /// pinned exactly for a partial-chance ailment rite, a never-miss
+    /// self-stage rite, and a certain ailment rite.
+    #[test]
+    fn rite_tip_composes_typing_stats_and_effects() {
+        let from_slot = |rite_id: u16, zeal_left: u8| {
+            let slot = crusade_core::types::RiteSlot {
+                rite_id,
+                zeal_left,
+            };
+            card_for(
+                data::rite_by_id(slot.rite_id).expect("static rite"),
+                slot.zeal_left,
+            )
+        };
+        // Humble Rebuke: Humility Spiritual, Pow 55, Acc 95, brand 10%.
+        let tip = rite_tip(&from_slot(3, 13));
+        assert_eq!(
+            tip.as_ref(),
+            "Humility Spiritual -- Pow 55 weighs the wound, Acc 95% strikes home, \
+             zeal 13/15 left. It may (10%) brand the foe (a burning)."
+        );
+        assert_terse_tip(&tip, "Humble Rebuke tip");
+        // Steady Ward: status rite, Acc 101 (never misses), certain stage.
+        let tip = rite_tip(&from_slot(2, 20));
+        assert_eq!(
+            tip.as_ref(),
+            "Typeless Status -- it never misses, zeal 20/20 left. \
+             It raises its own Guard by 1 stage."
+        );
+        assert_terse_tip(&tip, "Steady Ward tip");
+        // Litany of Stillness: status rite, certain slumber.
+        let tip = rite_tip(&from_slot(5, 15));
+        assert_eq!(
+            tip.as_ref(),
+            "Typeless Status -- Acc 90% strikes home, zeal 15/15 left. \
+             It lulls the foe to slumber."
+        );
+        assert_terse_tip(&tip, "Litany of Stillness tip");
+        // A zeal-spent (dead slab) cell still explains itself.
+        let tip = rite_tip(&from_slot(1, 0));
+        assert!(tip.contains("zeal 0/35 left."), "{tip:?}");
+        assert_terse_tip(&tip, "spent Measured Blow tip");
+    }
+
+    /// The SAME contract holds for every rite in the static table, not just
+    /// the fixtures: every compose lands in ASCII inside the budget. All
+    /// offenders are listed at once so wording trims take one round.
+    #[test]
+    fn every_static_rite_tip_is_ascii_and_terse() {
+        assert!(!data::rites::RITES.is_empty());
+        let mut worst = 0;
+        let mut bad: Vec<String> = Vec::new();
+        for rite in data::rites::RITES {
+            let tip = rite_tip(&card_for(rite, rite.zeal));
+            assert!(tip.is_ascii(), "{} must stay pure ASCII: {tip:?}", rite.name);
+            worst = worst.max(tip.len());
+            if tip.len() > TIP_LEN_BUDGET {
+                bad.push(format!("{} ({} chars)", rite.name, tip.len()));
+            }
+        }
+        assert!(
+            bad.is_empty(),
+            "{}/{} rites over the two-line budget ({TIP_LEN_BUDGET}, worst {worst}): {}",
+            bad.len(),
+            data::rites::RITES.len(),
+            bad.join("; ")
+        );
+    }
+
+    /// The concede tip reads the row's own snapshot context: campaign
+    /// first, then the net duel's documented `roster_count == 0` tell, then
+    /// practice. Each arm keeps its own stake honest.
+    #[test]
+    fn concede_tip_reads_the_snapshot_context() {
+        assert_eq!(concede_tip(true, 4), CONCEDE_TIP_CAMPAIGN);
+        // Even should the duel tell ever coincide with a campaign, the
+        // campaign wording wins (the ordering IS the pin).
+        assert_eq!(concede_tip(true, 0), CONCEDE_TIP_CAMPAIGN);
+        assert_eq!(concede_tip(false, 0), CONCEDE_TIP_DUEL);
+        assert_eq!(concede_tip(false, 3), CONCEDE_TIP_PRACTICE);
+        for tip in [CONCEDE_TIP_PRACTICE, CONCEDE_TIP_DUEL, CONCEDE_TIP_CAMPAIGN] {
+            assert_terse_tip(tip, "concede tip");
+        }
+        assert_terse_tip(SWITCH_TIP, "switch tip");
+        assert_terse_tip(RESOLVE_TIP, "resolve tip");
+        assert_terse_tip(TYPING_TIP, "typing tip");
+    }
+
+    /// The sprite-lore gate: champions carry their table lore onto the
+    /// portrait; bosses answer None (their lore is the Manuscript of Sins'
+    /// gated allegory -- `SINS_DEFEATED_KEY` -- and the battle snapshot
+    /// carries no mask), unknown names answer None.
+    #[test]
+    fn sprite_lore_is_champions_only() {
+        let audric = data::species_by_id(1).expect("Audric");
+        assert_eq!(species_lore_tip("Squire Audric"), Some(audric.lore));
+        let wrath = data::species_by_id(105).expect("Wrath");
+        assert!(!wrath.lore.is_empty(), "the table line exists but stays sealed");
+        assert_eq!(species_lore_tip(wrath.name), None);
+        assert_eq!(species_lore_tip("Champion #55"), None);
     }
 }

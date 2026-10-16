@@ -370,6 +370,23 @@ commit (168 keys total): 48 E4 pose cells keyed
 noted). Spend unchanged at $0.664. Not yet wired into stage_sprites/
 battle.rs - that wave-2 card lands next.
 
+### 4.14 E6 tooltip call sites (DONE 2026-10-15)
+
+Hover-help prose wired on the E3 scaffold (battle panels: resolve bar,
+typing line, champion-only sprite lore with boss allegory kept
+Manuscript-sealed; rite cells with per-rite Pow/Acc/Zeal + effect clauses;
+switch chips; phase-honest Concede arms via the roster_count==0 duel
+tell; roster gallery: devotion/grace axes, plate origin lore, composed
+virtue-vs-gauntlet matchups). Campfire boss portrait NOT wired:
+snapshot() phase-gates sins[] to Hagiography and CampaignView carries no
+defeat mask. Scaffold integration fix: TooltipText is now
+Cow<'static, str> (&'static-only forced Box::leak per battle rebuild for
+composed tips - caught pre-merge). ui_shots untouched (no observer Step
+plumbing; E3 World::trigger tests cover hover; tips are hover-only). +6
+shell tests (x2 bins): exact rite compositions, all-42-rite ASCII/132-char
+sweep, concede arm table, lore gates, mirror-card matchup strings. 97
+green under bevy-ui, 45 plain, --smoke exit 0, harness byte-identical.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

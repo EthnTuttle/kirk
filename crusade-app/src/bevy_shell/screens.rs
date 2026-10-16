@@ -1,6 +1,7 @@
 //! The rebuild dispatch system, shared node builders, and the non-battle
 //! screens (menu, roster, campaign rest, battle over).
 
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -19,7 +20,7 @@ use crusade_net::zaps;
 // this file — see the comment at `next_boss_species`).
 use crusade_app::client::CAMPAIGN_NODE_SPECIES;
 use crusade_core::data;
-use crusade_core::types::SpeciesBase;
+use crusade_core::types::{Sin, SpeciesBase, Typing, Virtue};
 
 use crate::battle;
 use crate::state::{
@@ -27,6 +28,7 @@ use crate::state::{
     NetBridge, NetCmd, NetDuelEnd, RenderedVersion, SnapshotVersion, UiRoot,
 };
 use crate::style;
+use crate::tooltip;
 
 /// "Support the Order" alms box (ZAP-MONETIZATION.md surface #1): a static,
 /// voluntary-donation lightning address. Purely cosmetic — the menu's
@@ -1201,6 +1203,95 @@ fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetS
     .id()
 }
 
+// ---------- Roster gallery hover tips ----------
+//
+// Same house rules as battle.rs's tips: ASCII, [`battle::TIP_LEN_BUDGET`]
+// chars (two lines at the 480px wrap), static tables or the card's own
+// view fields only, ONE tip per widget.
+
+/// The devotion row: what the per-instance Devotion block IS (the
+/// combat-training axis; crusade-core caps 63/measure, 130 in sum).
+const DEVOTION_TIP: &str =
+    "Devotion: strength honed by training and trial, listed resolve through alacrity -- at most 63 in one measure, 130 in sum.";
+
+/// The grace row: the given (never-trained) axis, 0..=15 per measure, in
+/// the same resolve-through-alacrity order as devotion above it.
+const GRACE_TIP: &str =
+    "Grace: heaven's allotment, given and never trained -- from 0 to 15 in each measure, in the same order as devotion.";
+
+/// The virtue label's hover tip: the card's virtue/sin typing read against
+/// the campaign gauntlet -- for each virtue, the sin it conquers (chart:
+/// 2x on `opposed_sin`) and the boss spawn bearing that sin. Composed from
+/// the static species/chart tables keyed off the card's `species_id`;
+/// None for unknown ids and sin-spawn (which never muster into a company).
+fn virtue_matchup_tip(species_id: u16) -> Option<Cow<'static, str>> {
+    let sp = data::species_by_id(species_id)?;
+    let Typing::Virtues(virtues) = sp.typing else {
+        return None;
+    };
+    let clauses: Vec<String> = virtues
+        .iter()
+        .flatten()
+        .map(|v| {
+            let sin = v.opposed_sin();
+            let boss = sin_boss(sin).map_or("that sin", |b| b.name);
+            format!("{} conquers {} ({})", virtue_name(*v), sin_name(sin), boss)
+        })
+        .collect();
+    if clauses.is_empty() {
+        return None;
+    }
+    Some(format!("In the gauntlet: {}.", clauses.join("; ")).into())
+}
+
+/// The sin-spawn bearing `sin` in the static table. Engine data pins
+/// exactly one boss per sin (species.rs tests prove the cover), so the
+/// fallback above "that sin" is unreachable -- a table drift must never
+/// panic the shell.
+fn sin_boss(sin: Sin) -> Option<&'static SpeciesBase> {
+    data::all_species()
+        .iter()
+        .find(|sp| sp.typing == Typing::Sin(sin))
+}
+
+/// Virtue display names -- the same short table client.rs keeps private
+/// (mirrored like the local `slugify`), so the shell never reaches across
+/// the client boundary for display words.
+fn virtue_name(v: Virtue) -> &'static str {
+    match v {
+        Virtue::Humility => "Humility",
+        Virtue::Charity => "Charity",
+        Virtue::Chastity => "Chastity",
+        Virtue::Diligence => "Diligence",
+        Virtue::Patience => "Patience",
+        Virtue::Temperance => "Temperance",
+        Virtue::Kindness => "Kindness",
+    }
+}
+
+/// Sin display names; same mirror discipline as [`virtue_name`].
+fn sin_name(s: Sin) -> &'static str {
+    match s {
+        Sin::Pride => "Pride",
+        Sin::Envy => "Envy",
+        Sin::Lust => "Lust",
+        Sin::Sloth => "Sloth",
+        Sin::Wrath => "Wrath",
+        Sin::Gluttony => "Gluttony",
+        Sin::Greed => "Greed",
+    }
+}
+
+/// The gallery plate's hover lore: the species' short lore line, champions
+/// ONLY -- same gate as battle.rs's portrait tip, because a boss's lore is
+/// the Manuscript of Sins' reveal-gated allegory and this screen carries
+/// no defeat mask. Roster stores hold champions, so the gate never bites
+/// in practice; it exists so a corrupt store can never leak the reward
+/// text through this binding either.
+fn plate_lore(sp: &SpeciesBase) -> Option<&'static str> {
+    (sp.id < 100).then_some(sp.lore)
+}
+
 /// The stats column of a gallery card (unconditional: every row here is
 /// plain text on the panel, image or no image).
 fn champion_card_stats(cmd: &mut Commands, card: &ChampionCard) -> Entity {
@@ -1227,31 +1318,43 @@ fn champion_card_stats(cmd: &mut Commands, card: &ChampionCard) -> Entity {
         ));
     }
     if !card.types_display.is_empty() {
-        kids.push(text_node(
+        let typing = text_node(
             cmd,
             card.types_display.join(" + "),
             style::small_font(),
             style::GOLD_DIM,
-        ));
+        );
+        // The virtue label carries the champion's matchups against the
+        // gauntlet's seven sin-bosses (composed from the static typing
+        // wheel, or skipped for a species the table cannot name).
+        if let Some(tip) = virtue_matchup_tip(card.species_id) {
+            tooltip::with_tooltip(&mut cmd.entity(typing), tip);
+        }
+        kids.push(typing);
     }
     // The fuller blocks: Devotion (trained) over Grace (given). Pre-
     // gallery documents deserialize these as empty strings; the rows then
-    // hide rather than render a hollow label.
+    // hide rather than render a hollow label. Each live row carries its
+    // one hover tip explaining the axis.
     if !card.devotion_display.is_empty() {
-        kids.push(text_node(
+        let row = text_node(
             cmd,
             format!("devotion: {}", card.devotion_display),
             style::small_font(),
             style::DIM,
-        ));
+        );
+        tooltip::with_tooltip(&mut cmd.entity(row), DEVOTION_TIP);
+        kids.push(row);
     }
     if !card.grace_display.is_empty() {
-        kids.push(text_node(
+        let row = text_node(
             cmd,
             format!("grace:    {}", card.grace_display),
             style::small_font(),
             style::DIM,
-        ));
+        );
+        tooltip::with_tooltip(&mut cmd.entity(row), GRACE_TIP);
+        kids.push(row);
     }
     for rite in card.rites.iter().take(4) {
         kids.push(text_node(
@@ -1299,22 +1402,23 @@ fn gallery_frame(
             },
         ))
         .id();
-    Some(
-        cmd.spawn((
-            Node {
-                width: Val::Px(PLATE),
-                height: Val::Px(PLATE),
-                border: UiRect::all(Val::Px(1.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            BackgroundColor(style::NAVY),
-            BorderColor::all(style::GOLD_DIM),
-        ))
-        .add_children(&[image])
-        .id(),
-    )
+    let mut frame = cmd.spawn((
+        Node {
+            width: Val::Px(PLATE),
+            height: Val::Px(PLATE),
+            border: UiRect::all(Val::Px(1.0)),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        BackgroundColor(style::NAVY),
+        BorderColor::all(style::GOLD_DIM),
+    ));
+    // The plate tells the champion's origin line on hover (bosses sealed).
+    if let Some(tip) = plate_lore(sp) {
+        tooltip::with_tooltip(&mut frame, tip);
+    }
+    Some(frame.add_children(&[image]).id())
 }
 
 /// Staged gallery-plate asset path for a static-table species
@@ -2253,6 +2357,100 @@ mod tests {
     }
 
     // ---------- Roster gallery ----------
+
+    /// A ChampionCard mirroring the recipe `client.rs::roster_cards` runs
+    /// on a stored instance (zeroed devotion/grace displays, typing in the
+    /// client's join style). Purely a fixture: the composer reads
+    /// `species_id` only, but its input must be a REAL card shape.
+    fn mirror_gallery_card(species_id: u16) -> ChampionCard {
+        let sp = data::species_by_id(species_id).expect("species in the static table");
+        let types_display = match sp.typing {
+            Typing::Virtues([a, b]) => {
+                let mut v = Vec::new();
+                if let Some(a) = a {
+                    v.push(virtue_name(a).to_string());
+                }
+                if let Some(b) = b {
+                    v.push(virtue_name(b).to_string());
+                }
+                vec![v.join("+")]
+            }
+            Typing::Sin(s) => vec![format!("Sin of {}", sin_name(s))],
+        };
+        ChampionCard {
+            id: format!("mirror-{species_id}"),
+            species_id,
+            species_name: sp.name.to_string(),
+            level: 25,
+            current_resolve: 80,
+            max_resolve: 80,
+            ailment: None,
+            types_display,
+            rites: Vec::new(),
+            devotion_display: "R0 V0 P0 G0 Ae0 Al0".to_string(),
+            grace_display: "R0 V0 P0 G0 Ae0 Al0".to_string(),
+        }
+    }
+
+    /// The virtue label's gauntlet matchup tip, composed from a mirror
+    /// roster card: exact text for a dual-virtue champion (Raimbaud's
+    /// Patience+Kindness) and a single-virtue one (Audric's Humility);
+    /// every champion is terse ASCII; a sin-spawn id and an unknown id
+    /// answer None (never mustered, never tipped).
+    #[test]
+    fn virtue_matchup_tip_names_the_gauntlet_bosses() {
+        let raimbaud = mirror_gallery_card(10);
+        assert_eq!(raimbaud.types_display, vec!["Patience+Kindness".to_string()]);
+        let tip = virtue_matchup_tip(raimbaud.species_id).expect("a champion has virtues");
+        assert_eq!(
+            tip.as_ref(),
+            "In the gauntlet: Patience conquers Wrath (Brute of Wrath); \
+             Kindness conquers Greed (Grasper of Greed)."
+        );
+        assert!(tip.is_ascii());
+        assert!(tip.len() <= battle::TIP_LEN_BUDGET);
+
+        let audric = mirror_gallery_card(1);
+        let tip = virtue_matchup_tip(audric.species_id).expect("Audric");
+        assert_eq!(
+            tip.as_ref(),
+            "In the gauntlet: Humility conquers Pride (Prince of Pride)."
+        );
+
+        for id in 1..=12u16 {
+            let card = mirror_gallery_card(id);
+            let tip = virtue_matchup_tip(card.species_id).expect("champion virtues");
+            assert!(tip.is_ascii(), "{id}");
+            assert!(
+                tip.len() <= battle::TIP_LEN_BUDGET,
+                "{id} over budget: {tip}"
+            );
+        }
+        assert!(virtue_matchup_tip(101).is_none(), "sin-spawn never muster");
+        assert!(virtue_matchup_tip(999).is_none(), "unknown ids stay untipped");
+    }
+
+    /// The roster's tooltip consts hold the house contract (ASCII, two
+    /// lines), and the plate lore gate mirrors the battle portrait's:
+    /// champions quote their table lore; a boss's stays Manuscript-sealed.
+    #[test]
+    fn roster_tips_hold_the_contract() {
+        for tip in [DEVOTION_TIP, GRACE_TIP] {
+            assert!(tip.is_ascii(), "{tip:?}");
+            assert!(!tip.is_empty(), "wired tips are never hollow");
+            assert!(tip.len() <= battle::TIP_LEN_BUDGET, "{tip:?}");
+        }
+        let audric = data::species_by_id(1).expect("Audric");
+        assert_eq!(plate_lore(audric), Some(audric.lore));
+        let pride = data::species_by_id(101).expect("Pride");
+        assert_eq!(plate_lore(pride), None);
+        // And every champion plate tip itself fits the box.
+        for id in 1..=12u16 {
+            let sp = data::species_by_id(id).expect("champion species");
+            let tip = plate_lore(sp).expect("champion lore");
+            assert!(tip.len() <= battle::TIP_LEN_BUDGET, "{}: {tip}", sp.name);
+        }
+    }
 
     /// The gallery plate recipe must resolve to exactly the staged files
     /// (`tools/artbake/stage_sprites.py` gallery pass: one un-quantized
