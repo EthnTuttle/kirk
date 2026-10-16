@@ -67,6 +67,14 @@ pub struct ChampionCard {
     /// Same recipe for the six Grace stats (IV-analogue, 0..=15 each).
     #[serde(default)]
     pub grace_display: String,
+    /// Gallery vesture pick: which painted plate the Company card shows —
+    /// 0 the canonical base, 1 the `alt-a` wardrobe read, 2 `alt-b`
+    /// (crusade-app client settings `roster.variant.<species_id>`; the
+    /// shell's plate path keys off it). Battle sprites are untouched: the
+    /// alt sets ship portraits only, never animation families. Same tail
+    /// discipline as the displays above: pre-variant documents load with 0.
+    #[serde(default)]
+    pub variant: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -309,6 +317,14 @@ pub enum ClientInput {
     /// Read-only; [`ClientInput::CloseToMenu`] is the way back, mirroring
     /// the roster.
     ViewHagiography,
+    /// Roster gallery: cycle one champion's vesture pick
+    /// (base -> alt-a -> alt-b -> base), persisted under
+    /// `roster.variant.<species_id>`. Gallery chrome only — battle art is
+    /// always the canonical base, so this mutates a setting, never a
+    /// battle or the roster body.
+    CycleVariant {
+        species_id: u16,
+    },
     /// Async bridge report (lobby session / duel lifecycle). Drives the
     /// synchronous lobby view-state; net handles never enter the client.
     LobbyNet(LobbyNet),
@@ -345,10 +361,12 @@ mod tests {
             serde_json::from_str(legacy).expect("a pre-gallery card document loads");
         assert_eq!(card.devotion_display, "");
         assert_eq!(card.grace_display, "");
+        assert_eq!(card.variant, 0, "pre-vesture documents read the base plate");
         // ...and a fully-populated card round-trips with the tail intact.
         let mut full = card;
         full.devotion_display = "R12 V8 P0 G3 Ae0 Al0".to_string();
         full.grace_display = "R15 V15 P15 G15 Ae15 Al15".to_string();
+        full.variant = 2;
         let json = serde_json::to_string(&full).expect("card serializes");
         let back: ChampionCard = serde_json::from_str(&json).expect("card reloads");
         assert_eq!(back, full);

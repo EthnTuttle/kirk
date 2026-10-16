@@ -1521,5 +1521,245 @@
   "src_dims": "1024x1024",
   "cost_usd": 0.0,
   "note": "alt wardrobe variant (b): sun-bleached bone summer cloak"
+ },
+ "nano-banana-2-1/audric-battle/gallery-alt-a": {
+  "gallery_bytes": 248282,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/audric-battle/gallery-alt-b": {
+  "gallery_bytes": 169182,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery-alt-a": {
+  "gallery_bytes": 239500,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery-alt-b": {
+  "gallery_bytes": 204640,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery-alt-a": {
+  "gallery_bytes": 263839,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery-alt-b": {
+  "gallery_bytes": 218677,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery-alt-a": {
+  "gallery_bytes": 243972,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery-alt-b": {
+  "gallery_bytes": 209079,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery-alt-a": {
+  "gallery_bytes": 245945,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery-alt-b": {
+  "gallery_bytes": 264576,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery-alt-a": {
+  "gallery_bytes": 285804,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery-alt-b": {
+  "gallery_bytes": 269332,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-altb-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6); plate derives from the pinned v2 master (v1 pipe-artifact foul)"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery-alt-a": {
+  "gallery_bytes": 256312,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery-alt-b": {
+  "gallery_bytes": 211251,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery-alt-a": {
+  "gallery_bytes": 271052,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery-alt-b": {
+  "gallery_bytes": 276577,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery-alt-a": {
+  "gallery_bytes": 222921,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery-alt-b": {
+  "gallery_bytes": 218602,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery-alt-a": {
+  "gallery_bytes": 251399,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery-alt-b": {
+  "gallery_bytes": 269837,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery-alt-a": {
+  "gallery_bytes": 259555,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery-alt-b": {
+  "gallery_bytes": 259352,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/friar-osbert/gallery-alt-a": {
+  "gallery_bytes": 232144,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-alta-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/friar-osbert/gallery-alt-b": {
+  "gallery_bytes": 214551,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-altb-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
  }
 }

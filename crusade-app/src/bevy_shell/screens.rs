@@ -992,11 +992,15 @@ const ROSTER_PAGE_SIZE: usize = 6;
 
 /// Card outer dimensions (border-box, bevy sizing): 600x194 holds a 176px
 /// plate beside a 396px stats column (padding 8, border 1, gap 10).
+/// (The vesture chip needs NO budget here: it is an absolute overlay
+/// anchored inside the plate frame — a side column proved impossible
+/// within 600px without wrapping the stats' rite rows.)
 const CARD_W: f32 = 600.0;
 const CARD_H: f32 = 194.0;
 /// The plate's outer frame: exactly the card's inner height (194 - 2
 /// border - 16 padding). The painted ground shows edge-to-edge inside the
-/// hairline.
+/// hairline. (The vesture pick never alters this plate geometry — same
+/// frame, same size; only the file inside it changes.)
 const PLATE: f32 = 176.0;
 /// The image leaves the plate's 1px border on every side.
 const PLATE_IMG: f32 = PLATE - 2.0;
@@ -1180,7 +1184,7 @@ fn on_roster_page_turn(
 /// other sprite seams).
 fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetServer>) -> Entity {
     let mut kids = Vec::new();
-    if let Some(plate) = gallery_frame(cmd, card.species_id, assets) {
+    if let Some(plate) = gallery_frame(cmd, card, assets) {
         kids.push(plate);
     }
     let text = champion_card_stats(cmd, card);
@@ -1201,6 +1205,56 @@ fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetS
     ))
     .add_children(&kids)
     .id()
+}
+
+// ---------- Roster vesture chip ----------
+
+/// The Vesture chip's hover tip: the gallery plate picker is pure Company
+/// chrome — the duel field never leaves the canonical arms (the alt sets
+/// ship no animation families; documented, intentional).
+const VESTURE_TIP: &str = "The vesture the gallery shows; battle keeps the canonical arms.";
+
+/// Inset of the chip from the plate frame's bottom-left corner.
+const VESTURE_INSET: f32 = 4.0;
+
+/// A per-card "Vesture" chip: the house chip recipe (navy fill, gold-dim
+/// hairline, small text, tight padding — battle.rs's command-row chips,
+/// mirrored here because that helper stays its file's private one) bound
+/// to [`ClientInput::CycleVariant`], so a click rings the client's
+/// persisted pick through the ordinary `InputQueue`/`process_inputs`
+/// pump — one input per click, the repaint bump comes free, and the
+/// browser build's store-persist hook fires on the same accepted-input
+/// path as every other button. Two rules: only champions carry alt plates
+/// (the client refuses anything else), so a non-champion row — corrupt
+/// store only — spawns no chip to refuse; and the chip rides ONLY aboard
+/// the plate frame itself (spawned as its child by [`gallery_frame`]),
+/// keeping headless cards unchanged text-only.
+fn vesture_chip(cmd: &mut Commands, card: &ChampionCard) -> Option<Entity> {
+    if card.species_id >= 100 {
+        return None;
+    }
+    let text = text_node(cmd, "Vesture".to_string(), style::small_font(), style::BONE);
+    let mut chip = cmd.spawn((
+        Button,
+        Node {
+            position_type: PositionType::Absolute,
+            left: Val::Px(VESTURE_INSET),
+            bottom: Val::Px(VESTURE_INSET),
+            padding: UiRect::axes(Val::Px(10.0), Val::Px(4.0)),
+            border: UiRect::all(Val::Px(1.0)),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        BackgroundColor(style::BUTTON),
+        BorderColor::all(style::GOLD_DIM),
+        BaseBackground(style::BUTTON),
+        ActionButton(ClientInput::CycleVariant {
+            species_id: card.species_id,
+        }),
+    ));
+    tooltip::with_tooltip(&mut chip, VESTURE_TIP);
+    Some(chip.add_children(&[text]).id())
 }
 
 // ---------- Roster gallery hover tips ----------
@@ -1381,20 +1435,27 @@ fn champion_card_stats(cmd: &mut Commands, card: &ChampionCard) -> Entity {
 /// holding the staged 512px portrait at 174px (`sprites/gallery/
 /// {id:03}-{slug}.png`, the un-quantized gallery class staged by
 /// `tools/artbake/stage_sprites.py`'s gallery pass from each cell's raw
-/// 1024 master). Spawned only when an asset server exists AND the id is a
-/// static-table species (whose plate the art lane always ships); a 404ing
-/// fetch (partial wasm deploy) draws nothing into the well over the card's
-/// unconditional text rows.
-fn gallery_frame(
-    cmd: &mut Commands,
-    species_id: u16,
-    assets: Option<&AssetServer>,
-) -> Option<Entity> {
-    let sp = data::species_by_id(species_id)?;
+/// 1024 master) — or, when the card's vesture pick is 1/2, that
+/// champion's `--alt-a`/`--alt-b` wardrobe plate (the E5 alt masters,
+/// staged to the same 512px class). Spawned only when an asset server
+/// exists AND the id is a static-table species (whose plates the art lane
+/// always ships); a 404ing fetch (partial wasm deploy) draws nothing into
+/// the well over the card's unconditional text rows. On native, a missing
+/// alt file falls back to the base plate; the browser build trusts the
+/// pick (checking the filesystem pre-load is not a wasm move).
+fn gallery_frame(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetServer>) -> Option<Entity> {
+    let sp = data::species_by_id(card.species_id)?;
     let assets = assets?;
+    let path = gallery_plate_path(sp, card.variant);
+    #[cfg(not(target_arch = "wasm32"))]
+    let path = if card.variant != 0 && !gallery_asset_exists(&path) {
+        gallery_sprite_path(sp)
+    } else {
+        path
+    };
     let image = cmd
         .spawn((
-            ImageNode::new(assets.load(gallery_sprite_path(sp))),
+            ImageNode::new(assets.load(path)),
             Node {
                 width: Val::Px(PLATE_IMG),
                 height: Val::Px(PLATE_IMG),
@@ -1402,23 +1463,38 @@ fn gallery_frame(
             },
         ))
         .id();
-    let mut frame = cmd.spawn((
-        Node {
-            width: Val::Px(PLATE),
-            height: Val::Px(PLATE),
-            border: UiRect::all(Val::Px(1.0)),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..default()
-        },
-        BackgroundColor(style::NAVY),
-        BorderColor::all(style::GOLD_DIM),
-    ));
-    // The plate tells the champion's origin line on hover (bosses sealed).
+    // The plate tells the champion's origin line on hover (bosses sealed
+    // — whichever vesture it wears, the origin story is one). The tip
+    // rides the IMAGE entity, not the frame: the frame also parents the
+    // vesture chip below, and house rule is ONE tip per hovered widget —
+    // pointer onto the chip (its topmost sibling) Out's the image and
+    // Over's the chip, so each surface shows its own words.
     if let Some(tip) = plate_lore(sp) {
-        tooltip::with_tooltip(&mut frame, tip);
+        tooltip::with_tooltip(&mut cmd.entity(image), tip);
     }
-    Some(frame.add_children(&[image]).id())
+    let frame = cmd
+        .spawn((
+            Node {
+                width: Val::Px(PLATE),
+                height: Val::Px(PLATE),
+                border: UiRect::all(Val::Px(1.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(style::NAVY),
+            BorderColor::all(style::GOLD_DIM),
+        ))
+        .add_children(&[image])
+        .id();
+    // The vesture chip rides the plate's bottom-left corner, absolute, as
+    // the frame's LAST child so it paints over the art's dark ground
+    // strip. Card geometry stays exactly the E1 recipe; headless cards
+    // (no asset server, no frame) stay unchanged text-only.
+    if let Some(chip) = vesture_chip(cmd, card) {
+        cmd.entity(frame).add_children(&[chip]);
+    }
+    Some(frame)
 }
 
 /// Staged gallery-plate asset path for a static-table species
@@ -1426,6 +1502,41 @@ fn gallery_frame(
 /// the battle sprites, from stage_sprites.py's gallery pass).
 fn gallery_sprite_path(sp: &SpeciesBase) -> String {
     format!("sprites/gallery/{:03}-{}.png", sp.id, slugify(sp.name))
+}
+
+/// The plate a given vesture pick shows: 0 (or any pick for a sin-spawn —
+/// they stage no alts) is the base plate; 1/2 the champion's `--alt-a` /
+/// `--alt-b` wardrobe plate. Out-of-ring values clamp onto the base, the
+/// same degrade the client's `variant_of` applies to a torn setting.
+fn gallery_plate_path(sp: &SpeciesBase, variant: u8) -> String {
+    if sp.id >= 100 {
+        return gallery_sprite_path(sp);
+    }
+    match variant {
+        1 => format!("{}--alt-a.png", gallery_sprite_path(sp).trim_end_matches(".png")),
+        2 => format!("{}--alt-b.png", gallery_sprite_path(sp).trim_end_matches(".png")),
+        _ => gallery_sprite_path(sp),
+    }
+}
+
+/// Native-only existence probe for the vesture fallback: does the staged
+/// plate sit under the shell's asset root? The root resolution mirrors
+/// bevy's `FileAssetReader` exactly (`BEVY_ASSET_ROOT`, then runtime
+/// `CARGO_MANIFEST_DIR`, then the executable's own directory) plus the
+/// default `assets` file path, so a partial deploy draws the base plate
+/// instead of an empty well.
+#[cfg(not(target_arch = "wasm32"))]
+fn gallery_asset_exists(asset_path: &str) -> bool {
+    let base = std::env::var("BEVY_ASSET_ROOT")
+        .or_else(|_| std::env::var("CARGO_MANIFEST_DIR"))
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|exe| exe.parent().map(std::path::Path::to_path_buf))
+                .unwrap_or_default()
+        });
+    base.join("assets").join(asset_path).is_file()
 }
 
 // ---------- Campaign rest ----------
@@ -2389,6 +2500,7 @@ mod tests {
             rites: Vec::new(),
             devotion_display: "R0 V0 P0 G0 Ae0 Al0".to_string(),
             grace_display: "R0 V0 P0 G0 Ae0 Al0".to_string(),
+            variant: 0,
         }
     }
 
@@ -2435,7 +2547,7 @@ mod tests {
     /// champions quote their table lore; a boss's stays Manuscript-sealed.
     #[test]
     fn roster_tips_hold_the_contract() {
-        for tip in [DEVOTION_TIP, GRACE_TIP] {
+        for tip in [DEVOTION_TIP, GRACE_TIP, VESTURE_TIP] {
             assert!(tip.is_ascii(), "{tip:?}");
             assert!(!tip.is_empty(), "wired tips are never hollow");
             assert!(tip.len() <= battle::TIP_LEN_BUDGET, "{tip:?}");
@@ -2482,6 +2594,56 @@ mod tests {
         for (sp, want) in data::all_species().iter().zip(expected.iter()) {
             assert_eq!(gallery_sprite_path(sp), *want, "species {}", sp.id);
         }
+    }
+
+    /// The vesture-plate ring, pinned against the staged `--alt-{a,b}`
+    /// files (E5 wardrobe reads, 512px gallery class): picks 1/2 swap the
+    /// plate file; 0, out-of-ring values, and every sin-spawn id read the
+    /// base plate (alts exist for the twelve champions only). The chip is
+    /// an absolute overlay, so the card geometry contract keeps the E1
+    /// numbers exactly (plate + stats + chrome = CARD_W).
+    #[test]
+    fn gallery_plate_paths_follow_the_vesture_ring() {
+        let bastien = data::species_by_id(3).expect("Bastien");
+        assert_eq!(
+            gallery_plate_path(bastien, 0),
+            "sprites/gallery/003-serjeant-bastien.png"
+        );
+        assert_eq!(
+            gallery_plate_path(bastien, 1),
+            "sprites/gallery/003-serjeant-bastien--alt-a.png"
+        );
+        assert_eq!(
+            gallery_plate_path(bastien, 2),
+            "sprites/gallery/003-serjeant-bastien--alt-b.png"
+        );
+        assert_eq!(
+            gallery_plate_path(bastien, 9),
+            "sprites/gallery/003-serjeant-bastien.png",
+            "out-of-ring values clamp to the base plate"
+        );
+        let pride = data::species_by_id(101).expect("Pride");
+        for variant in 0..=2u8 {
+            assert_eq!(
+                gallery_plate_path(pride, variant),
+                "sprites/gallery/101-prince-of-pride.png",
+                "sin-spawn keep one vesture (variant {variant})"
+            );
+        }
+        // Every champion's ring resolves to its own slugged alt pair.
+        for id in 1..=12u16 {
+            let sp = data::species_by_id(id).expect("champion species");
+            let base = gallery_sprite_path(sp);
+            assert_eq!(
+                gallery_plate_path(sp, 1),
+                format!("{}--alt-a.png", base.trim_end_matches(".png"))
+            );
+        }
+        assert_eq!(
+            PLATE + CARD_TEXT_W + 10.0 + 2.0 + 16.0,
+            CARD_W,
+            "E1 card geometry holds: plate + gap + stats fill the card exactly"
+        );
     }
 
     /// Pager math: six-card leaves; the window clamps an out-of-range page

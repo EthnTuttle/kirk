@@ -406,6 +406,27 @@ timing, replay suppression sweep, verdict gates); 51 plain / 111 featured
 green, check clean, smoke 0, harness twice byte-identical; battle.png
 proves Audric's windup opposite Aldwyn's flash mid-arc.
 
+### 4.16 Vesture picker + practice mirror-avoidance (DONE 2026-10-15)
+
+Company cards now carry a navy/gold "Vesture" chip (absolute overlay,
+bottom-left of the plate - a side column blew the 194px card budget;
+geometry pinned by test) cycling base -> alt-a -> alt-b per champion.
+24 alt gallery plates staged in-tree (LANCZOS from the committed E5
+masters; crusade-app/assets/sprites/gallery/NNN--alt-{a,b}.png);
+MANIFEST.json folded +24 keys (192 total; hrothwyn-b cites the pinned v2).
+Persistence: settings key roster.variant.<species_id> (u8 ring, automerge
+settings map, additive, wasm-safe, survives save/load; clamped, garbage
+reads base). ChampionCard tail field variant + ClientInput::CycleVariant
+(Roster-gated, sin-spawn ids refused). Battle keeps canon base art (alt
+sets ship no anim families - hover tip says so). ui_shots roster leg
+drives a CycleVariant on Bastien so roster.png proves the swap.
+Practice foe trio root-fix: theme [3,8,10] minus party-held species,
+backfilled 1..=12 in stable order (deterministic from party; +4 tests).
+The "Foe" tag stays as the net-duel backstop. Tests 45->51 plain, 97->111
+featured; wasm32 check clean; harness twice byte-identical (roster.png
+differs from goldens exactly as intended; battle* differ via the new
+Aldwyn-led trio; five screens untouched).
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

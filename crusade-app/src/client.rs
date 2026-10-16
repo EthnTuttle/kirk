@@ -69,6 +69,17 @@ const SHARD_ITEM: &str = "contrition-shard";
 /// ladder rating, so revealed entries survive reload and roster sync.
 pub const SINS_DEFEATED_KEY: &str = "campaign.sins_defeated";
 
+/// Settings-key PREFIX for a champion's gallery vesture pick: the full key
+/// is `roster.variant.<species_id>` and the value a decimal `u8` — 0 the
+/// canonical base plate, 1/2 the `alt-a`/`alt-b` wardrobe reads staged
+/// beside it (`sprites/gallery/{id:03}-{slug}--alt-{a,b}.png`). Pure
+/// gallery chrome persisted in the roster document's settings map exactly
+/// like the defeat mask and ladder rating (durable through save/sync);
+/// battle art never reads it. Absent or unparseable values read as 0.
+pub const VARIANT_KEY_PREFIX: &str = "roster.variant.";
+/// How many plates sit on the cycle ring: base + alt-a + alt-b.
+const VARIANT_COUNT: u8 = 3;
+
 /// Settings key for the player's persisted nostr secret (hex) — the
 /// Tournament of Virtue identity ("seal"). Minted on first lobby entry.
 pub const NET_SECRET_KEY: &str = "net.nostr.secret";
@@ -268,6 +279,10 @@ impl ClientGame {
                         c.grace.aegis,
                         c.grace.alacrity,
                     ]),
+                    // The gallery's per-champion vesture pick, read from
+                    // the persisted settings ring each rebuild (single
+                    // source of truth: the store — no client-side shadow).
+                    variant: self.variant_of(c.species_id),
                 }
             })
             .collect()
@@ -292,6 +307,41 @@ impl ClientGame {
             .ok()
             .flatten()
             .and_then(|s| s.parse::<u64>().ok())
+    }
+
+    /// A champion's persisted gallery vesture pick (0 base, 1 alt-a,
+    /// 2 alt-b) under [`VARIANT_KEY_PREFIX`] + the species id. An absent
+    /// or unparseable value degrades to the base plate — never an error —
+    /// mirroring [`Self::ladder_rating`]'s unranked degrade.
+    pub fn variant_of(&self, species_id: u16) -> u8 {
+        self.store
+            .setting(&format!("{VARIANT_KEY_PREFIX}{species_id}"))
+            .ok()
+            .flatten()
+            .and_then(|s| s.parse::<u8>().ok())
+            .unwrap_or(0)
+            .min(VARIANT_COUNT - 1)
+    }
+
+    /// Cycle the champion's gallery vesture pick base -> alt-a -> alt-b ->
+    /// base and persist the new ring position (the shell's input pump
+    /// bumps the snapshot on every accepted input, so the caller just
+    /// re-renders). Champions only: the alt sets are the twelve battle
+    /// champions' wardrobe reads; a sin-boss or unknown id has no alt
+    /// plates at all, so the ring refuses them rather than pointing a
+    /// future shell at files that will never exist.
+    pub fn cycle_variant(&mut self, species_id: u16) -> Result<(), AppError> {
+        let sp = data::species_by_id(species_id)
+            .ok_or_else(|| illegal(format!("unknown species {species_id}")))?;
+        if sp.id >= 100 {
+            return Err(illegal(format!(
+                "sin-spawn keep one vesture (species {species_id})"
+            )));
+        }
+        let next = (self.variant_of(species_id) + 1) % VARIANT_COUNT;
+        self.store
+            .set_setting(&format!("{VARIANT_KEY_PREFIX}{species_id}"), &next.to_string())?;
+        Ok(())
     }
 
     /// The persisted sin-boss defeat mask (bit i: the node-i boss of
@@ -366,6 +416,13 @@ impl ClientGame {
                     Ok(())
                 }
                 p => Err(illegal(format!("cannot open the hagiography from {p:?}"))),
+            },
+            ClientInput::CycleVariant { species_id } => match self.phase {
+                // Gallery chrome: only while the gallery is on screen. The
+                // store write rides the same persist hook as every accepted
+                // input (input.rs::persist_store), no migration needed.
+                Phase::Roster => self.cycle_variant(species_id),
+                p => Err(illegal(format!("cannot reconsider vesture from {p:?}"))),
             },
             ClientInput::StartPractice { level } => self.start_practice(level),
             ClientInput::StartCampaign => self.start_campaign(),
@@ -630,8 +687,13 @@ impl ClientGame {
         for (_, c) in roster.into_iter().take(PARTY_CAP) {
             party_a.push(field_reset(c, level)?);
         }
+        // Never mirror the party: the fixed theme team loses every species
+        // the player already fields (*that* Bastien sparring Bastien read
+        // as a bug even under the display-side "Foe" tag), backfilled from
+        // the champion pool in stable id order.
+        let party_species: Vec<u16> = party_a.iter().map(|c| c.species_id).collect();
         let mut party_b = Vec::new();
-        for &id in &PRACTICE_FOE_SPECIES {
+        for id in practice_foe_team(&party_species) {
             party_b.push(practice_champion(id, level)?);
         }
         let foes = party_b
@@ -974,6 +1036,33 @@ fn field_reset(mut c: ChampionInstance, level: u8) -> Result<ChampionInstance, A
     }
     c.current_resolve = data::compute_stats(&c, sp).max_resolve;
     Ok(c)
+}
+
+/// The practice foe trio with mirror-matches removed at the root: the
+/// fixed [`PRACTICE_FOE_SPECIES`] theme drops every id the player's party
+/// already fields, then backfills from the champion pool in stable id
+/// order until the trio is full. Deterministic — the selection derives
+/// from party contents alone, never from rng; theme survivors keep their
+/// relative order. The pool is the twelve battle champions and a party is
+/// capped at six, so at least six backfill candidates ALWAYS exist: a
+/// shortfall is impossible, and the expect below asserts exactly that
+/// invariant rather than handling it.
+fn practice_foe_team(party_species: &[u16]) -> [u16; 3] {
+    let mut team: Vec<u16> = PRACTICE_FOE_SPECIES
+        .iter()
+        .copied()
+        .filter(|id| !party_species.contains(id))
+        .collect();
+    for id in 1..=12u16 {
+        if team.len() == PRACTICE_FOE_SPECIES.len() {
+            break;
+        }
+        if !party_species.contains(&id) && !team.contains(&id) {
+            team.push(id);
+        }
+    }
+    team.try_into()
+        .expect("the 12-champion pool minus any 6-party always fills the practice trio")
 }
 
 /// Build a fresh practice-team champion: up to 4 rites taken from the most
@@ -1410,6 +1499,42 @@ fn render_event(b: &Battle, e: &BattleEvent, actives: &mut [usize; 2], local: u8
             }
         }
         unknown => format!("{unknown:?}"),
+    }
+}
+
+#[cfg(test)]
+mod practice_tests {
+    //! The practice foe trio's mirror-avoidance: pure table-driven
+    //! selection from the party's species ids (no rng anywhere).
+
+    use super::*;
+
+    #[test]
+    fn party_holding_the_whole_theme_yields_a_disjoint_trio() {
+        // A company fielding exactly Bastien, Aldwyn, Raimbaud (the theme
+        // ids) must never spar itself.
+        let team = practice_foe_team(&[3, 8, 10]);
+        assert_eq!(team.len(), 3);
+        for id in team {
+            assert!((1..=12).contains(&id), "foe {id} is a champion id");
+            assert!(![3, 8, 10].contains(&id), "foe {id} never mirrors");
+        }
+        // All three distinct, and the stable backfill order is 1, 2, 4.
+        assert_eq!(team, [1, 2, 4]);
+    }
+
+    #[test]
+    fn empty_party_keeps_the_pure_theme() {
+        assert_eq!(practice_foe_team(&[]), PRACTICE_FOE_SPECIES);
+    }
+
+    #[test]
+    fn partial_overlap_replaces_only_the_colliders() {
+        // Party fields Bastien only: Bastien leaves, Aldwyn and Raimbaud
+        // keep their theme order, and the smallest free pool id appends.
+        assert_eq!(practice_foe_team(&[3]), [8, 10, 1]);
+        // Duplicated party species change nothing; nor do surplus members.
+        assert_eq!(practice_foe_team(&[10, 10, 3, 5]), [8, 1, 2]);
     }
 }
 

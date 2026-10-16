@@ -291,3 +291,136 @@ fn fresh_events_are_take_drain_per_snapshot() {
     );
     assert!(snap2.log_tail.len() <= 8, "log tail is capped at ~8 lines");
 }
+
+/// The practice foe team's mirror-avoidance through the public input path:
+/// a company already fielding the whole theme (Bastien, Aldwyn, Raimbaud)
+/// must open against three champions OUTSIDE its party — the "Foe" display
+/// tag stays the net-duel backstop, not the practice table's excuse.
+#[test]
+fn practice_foes_never_mirror_the_party() {
+    let mut game = game_with_roster(&[
+        mkchamp(3, 15, &[1]),
+        mkchamp(8, 15, &[1]),
+        mkchamp(10, 15, &[1]),
+    ]);
+    game.handle(ClientInput::StartPractice { level: 15 })
+        .unwrap();
+    let snap = game.snapshot();
+    let facing = snap
+        .log_tail
+        .iter()
+        .find(|l| l.contains("facing"))
+        .expect("the opening line names the foes");
+    assert_eq!(
+        facing
+            .split("facing ")
+            .nth(1)
+            .expect("facing clause")
+            .trim_end_matches('.'),
+        "Squire Audric, Cleric Mabel, Hospitaller Ysolt",
+        "all-theme party: theme fully backfilled from the pool in id order"
+    );
+    let foe = snap.foe.expect("in-battle snapshot shows the foe");
+    assert_ne!(
+        foe.species_name, "Serjeant Bastien",
+        "never spar your own Bastien"
+    );
+
+    // Partial overlap: only the collider is replaced, theme order held.
+    let mut game = game_with_roster(&[mkchamp(3, 15, &[1])]);
+    game.handle(ClientInput::StartPractice { level: 15 })
+        .unwrap();
+    let facing = game
+        .snapshot()
+        .log_tail
+        .iter()
+        .find(|l| l.contains("facing"))
+        .expect("the opening line names the foes")
+        .clone();
+    assert!(
+        facing.contains("facing Brother Aldwyn, Chevalier Raimbaud, Squire Audric."),
+        "colliders-only replacement keeps theme order: {facing}"
+    );
+}
+
+/// The vesture ring: CycleVariant on the roster walks base -> alt-a ->
+/// alt-b -> base, persists under `roster.variant.<species_id>`, rides the
+/// roster card, and survives a document save/load round-trip.
+#[test]
+fn cycle_variant_rings_persists_and_survives_reload() {
+    let mut game = game_with_roster(&[mkchamp(3, 15, &[1])]);
+    game.handle(ClientInput::OpenRoster).unwrap();
+    assert_eq!(game.roster_cards()[0].variant, 0, "fresh card reads base");
+
+    for want in [1u8, 2, 0] {
+        game.handle(ClientInput::CycleVariant { species_id: 3 })
+            .unwrap();
+        assert_eq!(
+            game.store()
+                .setting("roster.variant.3")
+                .unwrap()
+                .expect("the pick persisted"),
+            want.to_string(),
+            "settings key carries ring position {want}"
+        );
+        assert_eq!(
+            game.roster_cards()[0].variant,
+            want,
+            "the card rides the ring position"
+        );
+    }
+
+    // Durable through the automerge document: save bytes, reload, reread.
+    let bytes = game.store().save_bytes().expect("document saves");
+    let store = RosterStore::load_bytes(&bytes).expect("document loads");
+    let reloaded = ClientGame::new(store);
+    assert_eq!(
+        reloaded.roster_cards()[0].variant,
+        0,
+        "0 was persisted last and reload agrees"
+    );
+    let mut reloaded = reloaded;
+    reloaded.handle(ClientInput::OpenRoster).unwrap();
+    reloaded
+        .handle(ClientInput::CycleVariant { species_id: 3 })
+        .unwrap();
+    let bytes = reloaded.store().save_bytes().expect("document saves");
+    let reloaded = ClientGame::new(RosterStore::load_bytes(&bytes).expect("document loads"));
+    assert_eq!(reloaded.roster_cards()[0].variant, 1);
+}
+
+/// The ring's guards: a phase that shows no gallery refuses, and ids with
+/// no alt plates (sin-spawn, unknowns) never write a setting row.
+#[test]
+fn cycle_variant_guards_phase_and_species() {
+    let mut game = game_with_roster(&[mkchamp(3, 15, &[1])]);
+    // Menu shows no gallery: the input is illegal there.
+    assert_illegal(game.handle(ClientInput::CycleVariant { species_id: 3 }));
+    game.handle(ClientInput::OpenRoster).unwrap();
+    for bad in [101u16, 999] {
+        assert_illegal(game.handle(ClientInput::CycleVariant { species_id: bad }));
+        assert!(
+            game.store()
+                .setting(&format!("roster.variant.{bad}"))
+                .unwrap()
+                .is_none(),
+            "a refused pick writes nothing for {bad}"
+        );
+    }
+    // A live battle also refuses (gallery chrome mutates no battle state).
+    game.handle(ClientInput::StartPractice { level: 15 })
+        .unwrap();
+    assert_illegal(game.handle(ClientInput::CycleVariant { species_id: 3 }));
+    // Corrupt-setting degrade: a hand-written garbage value reads as base.
+    game = game_with_roster(&[mkchamp(3, 15, &[1])]);
+    game.store()
+        .set_setting("roster.variant.3", "garbage")
+        .unwrap();
+    assert_eq!(game.roster_cards()[0].variant, 0);
+    game.store().set_setting("roster.variant.3", "9").unwrap();
+    assert_eq!(
+        game.roster_cards()[0].variant,
+        2,
+        "out-of-ring values clamp onto the ring"
+    );
+}

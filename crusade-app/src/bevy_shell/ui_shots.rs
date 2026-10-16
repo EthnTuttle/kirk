@@ -244,13 +244,27 @@ impl ShotDriver {
         steps.extend(capture("support"));
         steps.extend([Step::SupportPanel(false), Step::Settle(4)]);
         steps.extend([
-            Step::Push(vec![ClientInput::OpenRoster]),
+            // Vesture proof: ring ONE fixed card (Bastien, the practice
+            // theme's own serjeant) to its alt-a plate through the ordinary
+            // input path, so roster.png shows the wardrobe swap rendering.
+            // OpenRoster and the cycle ride ONE queued batch:
+            // process_inputs drains the queue in order inside a single
+            // frame, so the alt plate's fetch starts in the SAME rebuild
+            // as the six base plates -- no second repaint, maximal settle
+            // window, byte-stable across runs (fixed species id; the
+            // fixture store is in-memory). Battle legs never read the pick.
+            Step::Push(vec![
+                ClientInput::OpenRoster,
+                ClientInput::CycleVariant { species_id: 3 },
+            ]),
             Step::WaitPhase(Phase::Roster, WAIT_PHASE_CAP),
-            // The redesigned gallery page: six 512px painted plates must
+            // The redesigned gallery page: seven 512px painted plates must
             // resolve before the capture (page 1 only; the fixture roster
-            // is unchanged and fits the first leaf exactly). A touch wider
-            // settle than the old 32px icon row.
-            Step::Settle(14),
+            // is unchanged and fits the first leaf exactly) -- the alt
+            // fetch makes a seventh, so the settle grows from the old
+            // six-plate window. Races here produce DIFFERENT bytes between
+            // identical runs; the double-pass check below proves the margin.
+            Step::Settle(20),
         ]);
         steps.extend(capture("roster"));
         steps.extend([
