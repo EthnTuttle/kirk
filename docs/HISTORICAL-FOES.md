@@ -1,17 +1,15 @@
 # HISTORICAL FOES - design research for "The Road East"
 
-Status: research deliverable, 2026-10-15. No code, no art, no git; seeds
-later cards. Constraints honored: ASCII only; canon counts LOCKED
-(species.rs ids 1..=12 + 101..=107 = 19 rows); ADD-ONLY at ids 108+;
-combat characters are men; right-facing 128x128 sprites on the locked
-16-color palette; $0 art lane (nano-banana-2-1).
-
-Status update 2026-10-16: Q1 ANSWERED - PLAN.md section 1 amended with a
-scoped historical-figures carve-out (1095-1192 deceased combatants,
-HISTORICAL-FOES section 6 dignity rules binding). Art generation pass
-(HF-2) follows immediately. Q2 typing, Q3 register, Q4 rewards, Q5
-recruitment, Q6 Jerusalem prose-only, Q7 node-damage rules remain OPEN
-and gate the data/wiring cards (HF-1/HF-3/HF-4) - answer before those.
+Status: SHELVED research, 2026-10-15 -> 2026-10-16. Superseded before
+implementation: the owner redirected the foe lane to a FANTASY-REGISTER
+heresy-cult theater (invented demon-worship foes: no real names, peoples,
+or period kit; no historical-accuracy or adversary-dignity bindings
+needed, as no real group stands underneath). This document stays in the
+tree as the attested record - factions, arms/armor notes, and sources
+remain sound research should a historical lane ever return. Should it
+return, section 6 binds it in full; that bar was reaffirmed by the
+orchestrator at the pivot and does not move. Open questions below are
+moot while the lane stays fictional.
 
 
 ## 1. Era scope: 1095-1192 (recommended)

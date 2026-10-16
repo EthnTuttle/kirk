@@ -18,16 +18,15 @@ Tone rules (avoid heresy, glorify God):
   player-facing mechanics. Enemy units are vices/demons given fantastical form.
 - Sin-bosses are grotesque allegories (Spenser/Dante tradition), not real
   religions or peoples. Human foes are a separate lane from allegory.
-- Historical lane (owner-approved 2026-10-16): deceased combatant figures of
-  the 1095-1192 Crusades band (Kilij Arslan I, Nur ad-Din, Shirkuh, Saladin,
-  and their men) MAY be depicted as honorable, historically grounded
-  adversaries in "The Road East" (docs/HISTORICAL-FOES.md). Every such
-  depiction is governed by the binding dignity rules of HISTORICAL-FOES
-  section 6: worthy-adversary register, period exonyms only as attributed
-  quotation, no dehumanization tropes, honest codex entries marking attested
-  history against romance. No living persons, no figures outside 1095-1192,
-  and human foes are never sin-typed. This carve-out answers open question 1
-  of the research doc; the sin gauntlet itself is unchanged.
+- Foe lanes (owner direction 2026-10-16): allegory holds every enemy
+  theater. The projected historical lane ("The Road East",
+  docs/HISTORICAL-FOES.md - shelved research) is SUPERSEDED by a fictional
+  heresy lane: invented demon-cult foes with no real names, peoples, or
+  period claims, where neither the historical-accuracy canon nor any
+  adversary-dignity register applies - they are monsters, not men. Any
+  future depiction of actual historical figures or real-world peoples
+  still binds to HISTORICAL-FOES section 6 in full; that bar does not move,
+  whatever the lane.
 
 ## 2. IP Safety
 
