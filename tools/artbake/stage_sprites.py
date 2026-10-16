@@ -105,24 +105,34 @@ SCENES = [
     ("audric-prayer",),
 ]
 
-# Battle animation frames (cards D5 + D6): copied from the staging area
+# Battle animation frames (cards D5 + D6 + E4): copied from the staging area
 # art/anim-staging/<cell>/ to sprites/anim/{id:03}-{slug}/NN_<pose>.png
 # (stem minus the `_q128` tag), keyed by the same edge-flood pass as the
 # battle sprites. Only the poses the shell actually animates ship: `01_idle`
 # for every champion plus `04_idle2` where the sheet is the 4.5 batch grid
 # (card D5 idle loop), and the card D6 combat arc `07_strike`/`08_hit`
 # per-frame generations (4.3 hybrid decision: arcs are per-frame, never
-# sheet slices). `audric-battle` is the 4.3 PILOT grid (idle/step/strike/
-# hit/defend/pray — no idle2), so its loop is the single idle frame; its D6
-# arc frames are the same per-frame generations as every other champion
-# (07/08), NOT the pilot's 03/04 cells. Bosses (ids 101+) have no anim
-# sheets at all and stay on the static battle sprite; their hurt feedback
-# is a shell-side tint flash (battle.rs). step/pray/look/bow and the
-# pilot's combat family stay in art/anim-staging only; pray never
-# auto-plays.
-ANIM_POSES = ["01_idle", "04_idle2", "07_strike", "08_hit"]
+# sheet slices), extended by the card E4 frames `09_windup`/
+# `10_followthrough` (the three-beat attack arc: telegraph -> contact ->
+# settle) and `11_victory`/`12_defeat` (the battle-over verdict poses).
+# `audric-battle` is the 4.3 PILOT grid (idle/step/strike/hit/defend/pray —
+# no idle2), so its loop is the single idle frame; its D6/E4 frames are the
+# same per-frame generations as every other champion (07..12), NOT the
+# pilot's 03/04 cells. Bosses (ids 101+) have no anim sheets at all and
+# stay on the static battle sprite; their hurt feedback is a shell-side
+# tint flash (battle.rs). step/pray/look/bow and the pilot's combat family
+# stay in art/anim-staging only; pray never auto-plays.
+ANIM_POSES = [
+    "01_idle", "04_idle2",
+    "07_strike", "08_hit",
+    "09_windup", "10_followthrough", "11_victory", "12_defeat",
+]
 ANIM_POSES_BY_CELL = {
-    "audric-battle": ["01_idle", "07_strike", "08_hit"],
+    "audric-battle": [
+        "01_idle",
+        "07_strike", "08_hit",
+        "09_windup", "10_followthrough", "11_victory", "12_defeat",
+    ],
 }
 
 # Roster gallery pass (painted portrait plates): the un-quantized 1024x1024

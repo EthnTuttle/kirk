@@ -11,9 +11,12 @@
 //! with a "Foe " prefix — text only, never a sprite tint (palette canon).
 //!
 //! Portrait animation: the card D5 idle loop runs off the frame counter;
-//! the card D6 combat arc (strike/hit poses, boss white-flash) is stamped
-//! per rebuild from the snapshot's `fresh_events` and counts down in
-//! frames — presentation only, never game state, fully deterministic.
+//! the card D6/E4 combat arc (three-beat windup/strike/followthrough rite
+//! arcs, hit poses, boss white-flash) is stamped per rebuild from the
+//! snapshot's `fresh_events` and counts down in frames — presentation
+//! only, never game state, fully deterministic. Card E4 also stages the
+//! battle-over verdict poses (`11_victory`/`12_defeat`); the row builder
+//! lives here ([`verdict_row`]) for the battle-over screens to call.
 
 use std::borrow::Cow;
 use std::sync::Mutex;
@@ -99,9 +102,12 @@ fn battle_row(cmd: &mut Commands, snap: &ViewSnapshot, assets: Option<&AssetServ
     .id()
 }
 
-/// Compute one panel's card-D6 flourish: the plan for this side's engine
-/// events, with strike beats only when the displayed species has staged arc
-/// frames. Net-duel snapshots (see [`battle_row`]) suppress the arc.
+/// Compute one panel's cards-D6/E4 flourish: the plan for this side's
+/// engine events, with attack poses only when the displayed species has
+/// staged arc frames. Net-duel snapshots (see [`battle_row`]) suppress
+/// the arc — the E4 windup/followthrough beats ride the exact same
+/// `roster_count == 0` gate as the D6 strike, so a remote echo can never
+/// cross-wire a relic-graph swing to the wrong panel.
 fn arc_plan_for_panel(
     events: &[BattleEvent],
     side: u8,
@@ -419,11 +425,19 @@ fn champion_panel(
 /// on the same frame of the cycle.
 pub(crate) const IDLE_FRAME_TICKS: u64 = 90;
 
-/// Card D6: how long one turn's combat-arc flourish holds before the panel
-/// falls back to the idle loop (~0.75 s at vsync). The whole flourish —
-/// every beat of the exchange in event order — is sliced out of this one
-/// window, so slow multi-event turns never drag it out.
-pub(crate) const ARC_HOLD_TICKS: u16 = 45;
+/// Cards D6/E4: how long one turn's combat-arc flourish holds before the
+/// panel falls back to the idle loop. The whole flourish — every beat of
+/// the exchange in event order — is sliced out of this one window, so
+/// slow multi-event turns never drag it out.
+///
+/// E4 lengthened the D6 window (45 ticks) to 60 (~1.0 s at the windowed
+/// shell's vsync): a lone rite's three-beat arc (windup -> strike ->
+/// followthrough) reads 20/20/20 ticks, and a full cast-and-answer turn
+/// (three attack beats plus the answer's hit — four beats on each panel)
+/// still floors at 15 ticks per beat, the FLASH_TICKS cadence. Uniform
+/// slicing is deliberate: beat lengths are a pure function of the beat
+/// count, never of wall time, so ui-shots stays byte-deterministic.
+pub(crate) const ARC_HOLD_TICKS: u16 = 60;
 /// Bosses have no strike/hit frames (4.5 skipped them, 4.3 hybrid decision
 /// is champion-only per-frame); their hurt feedback is the classic JRPG
 /// white flash — deliberately shorter than a champion's pose window.
@@ -436,11 +450,19 @@ fn flash_tint() -> Color {
     Color::srgb(4.0, 4.0, 4.0)
 }
 
-/// One beat of a combat-arc flourish (card D6).
+/// One beat of a combat-arc flourish (cards D6 + E4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ArcPose {
-    /// The panel's champion mid-attack (`07_strike.png`).
+    /// The panel's champion drawing back before the blow
+    /// (`09_windup.png`) — the telegraph beat of the E4 attack arc.
+    /// Attacker-side only.
+    Windup,
+    /// The panel's champion mid-attack (`07_strike.png`) — the contact
+    /// beat, when the blow narratively lands.
     Strike,
+    /// The panel's champion's weight settling past the target
+    /// (`10_followthrough.png`) — the release beat. Attacker-side only.
+    Followthrough,
     /// The panel's combatant taking a hit (`08_hit.png` for champions,
     /// tint-flash alone for frame-less bosses).
     Hit,
@@ -449,19 +471,29 @@ pub(crate) enum ArcPose {
 /// Plan one panel's combat arc from a snapshot's `fresh_events` — the
 /// take-drain event batch of the input that just resolved, so the flourish
 /// fires exactly once per exchange, at the rebuild that first shows its
-/// outcome. Event order is kept and equal-length beats slice up
+/// outcome.
+///
+/// Card E4 arc shape: a staged rite-use expands to THREE back-to-back
+/// beats — windup (telegraph) -> strike (contact) -> followthrough
+/// (settle) — while a `Damage` event on THIS panel's side stays a single
+/// hit beat whose flash fires on the flourish's opening frame, exactly
+/// where its chronicle line lands (the defender's flash is NOT re-timed
+/// to the attacker's contact frame; windup/followthrough belong to the
+/// attacker alone). Event order is kept and equal-length beats slice up
 /// [`ARC_HOLD_TICKS`]; consecutive same-pose runs collapse (a MultiHit
 /// rite's N `Damage` events are ONE recoil, not a strobe).
 ///
 /// `caster_strikes`: champions with staged arc frames
-/// ([`champion_arc_paths`]) turn their own `RiteUsed` into a [`ArcPose::Strike`]
-/// beat; frame-less combatants (bosses, unknown species) never pose and get
-/// one brief flash beat iff they took damage. `side` is the ENGINE side
-/// (events carry engine sides; see [`battle_row`] for the me/foe mapping).
+/// ([`champion_arc_paths`]) turn their own `RiteUsed` into the three-beat
+/// arc; frame-less combatants (bosses, unknown species) never pose and
+/// get one brief flash beat iff they took damage. `side` is the ENGINE
+/// side (events carry engine sides; see [`battle_row`] for the me/foe
+/// mapping).
 ///
-/// Not wired: ailment chip (`AilmentChip`) never flashes — end-of-turn burn
-/// ticks firing an attack-recoil pose read as a new hit, so only direct
-/// `Damage` events count. All other event kinds are ignored by design.
+/// Not wired: ailment chip (`AilmentChip`) never flashes — end-of-turn
+/// burn ticks firing an attack-recoil pose read as a new hit, so only
+/// direct `Damage` events count. All other event kinds are ignored by
+/// design.
 pub(crate) fn arc_plan(
     events: &[BattleEvent],
     side: u8,
@@ -477,17 +509,29 @@ pub(crate) fn arc_plan(
             Vec::new()
         };
     }
+    // The E4 telegraph arc: one rite-use expands to three beats; damage
+    // stays one beat. Dedupe rides the EXPANDED stream, so a MultiHit's
+    // back-to-back damage events collapse to one recoil as in D6, while
+    // consecutive casts (W/S/F, W/S/F) never touch — no two adjacent
+    // beats can share a pose there.
+    const ATTACK_ARC: [ArcPose; 3] =
+        [ArcPose::Windup, ArcPose::Strike, ArcPose::Followthrough];
     let mut poses: Vec<ArcPose> = Vec::new();
     for e in events {
-        let pose = match e {
-            BattleEvent::RiteUsed { side: s, .. } if *s == side => Some(ArcPose::Strike),
-            BattleEvent::Damage { side: s, .. } if *s == side => Some(ArcPose::Hit),
-            _ => None,
-        };
-        if let Some(p) = pose {
-            if poses.last() != Some(&p) {
-                poses.push(p);
+        match e {
+            BattleEvent::RiteUsed { side: s, .. } if *s == side => {
+                for pose in ATTACK_ARC {
+                    if poses.last() != Some(&pose) {
+                        poses.push(pose);
+                    }
+                }
             }
+            BattleEvent::Damage { side: s, .. } if *s == side => {
+                if poses.last() != Some(&ArcPose::Hit) {
+                    poses.push(ArcPose::Hit);
+                }
+            }
+            _ => {}
         }
     }
     if poses.is_empty() {
@@ -508,29 +552,37 @@ pub(crate) fn anim_phase(tick: u64) -> u64 {
     (tick / IDLE_FRAME_TICKS) % 2
 }
 
-/// A battle portrait with staged frames (cards D5 + D6), resolved by
-/// [`champion_anim_paths`] / [`champion_arc_paths`] from
+/// A battle portrait with staged frames (cards D5, D6 and E4), resolved
+/// by [`champion_anim_paths`] / [`champion_arc_paths`] from
 /// `sprites/anim/{id:03}-{slug}/`. All handles are loaded at spawn, so the
 /// first swap never draws a blank panel while a fetch is in flight.
 ///
-/// Card D6 combat arc: `battle_screen` stamps `arc` at spawn from the
-/// snapshot's `fresh_events` (see [`arc_plan`]); [`advance_champion_anim`]
-/// plays the plan one frame at a time, then falls back to the D5 idle loop.
-/// The `Mutex` is the single point where per-frame arc mutation crosses the
-/// locked D5 wiring — `input::process_inputs`' query borrows `&ChampionAnim`
-/// immutably, and no other thread ever holds the lock. Pure frame-count
-/// countdown, never wall time, so ui-shots stays byte-deterministic.
+/// Combat arc: `battle_screen` stamps `arc` at spawn from the snapshot's
+/// `fresh_events` (see [`arc_plan`]); [`advance_champion_anim`] plays the
+/// plan one frame at a time (windup -> strike -> followthrough for the
+/// attacker, hit + flash for the defender), then falls back to the D5
+/// idle loop. The `Mutex` is the single point where per-frame arc
+/// mutation crosses the locked D5 wiring — `input::process_inputs`' query
+/// borrows `&ChampionAnim` immutably, and no other thread ever holds the
+/// lock. Pure frame-count countdown, never wall time, so ui-shots stays
+/// byte-deterministic.
 ///
 /// Static-sprite combatants (bosses — no frames by design — and any
 /// staged-table species without an anim set) spawn this marker too, with
-/// `idle` = their static sprite and every extra handle `None`: the idle
-/// loop degenerates to a no-swap, and a `Hit` beat with no `hit` handle
-/// degrades to the tint flash alone — the boss white-flash feedback.
+/// `idle` = their static sprite and every arc handle `None`: the idle
+/// loop degenerates to a no-swap, and every beat with its handle missing
+/// degrades to the idle frame — a `Hit` beat thus degrades to the tint
+/// flash alone (the boss white-flash feedback; never a broken texture).
+/// A champion's anim staging is all-or-nothing per species (the resolvers
+/// key off the static species table, not per-file probes), so a pose slot
+/// is `None` exactly for combatants that stage NO arc frames.
 #[derive(Component)]
 pub(crate) struct ChampionAnim {
     idle: Handle<Image>,
     idle2: Option<Handle<Image>>,
+    windup: Option<Handle<Image>>,
     strike: Option<Handle<Image>>,
+    followthrough: Option<Handle<Image>>,
     hit: Option<Handle<Image>>,
     /// Remaining flourish beats, front = current. Empty = idle loop.
     arc: Mutex<Vec<(ArcPose, u16)>>,
@@ -547,13 +599,14 @@ impl ChampionAnim {
     }
 }
 
-/// Advance every battle portrait exactly one app frame: card D6 arc beats
-/// first (pose swap + hit flash, ticking the plan down), then the card D5
-/// idle loop for anything at rest. Called from `input::process_inputs` —
-/// the one per-frame system every shell binary (windowed, `--smoke`,
+/// Advance every battle portrait exactly one app frame: cards D6/E4 arc
+/// beats first (pose swap, ticking the plan down; the hit-flash tint rides
+/// the `Hit` beat alone — flashes stay locked to the blow), then the card
+/// D5 idle loop for anything at rest. Called from `input::process_inputs`
+/// — the one per-frame system every shell binary (windowed, `--smoke`,
 /// ui-shots) already registers — which is what lets this run with zero
-/// changes to `main.rs`, `screens.rs`, or the harness. Mutation is guarded,
-/// so plateaus cost no change-detection work.
+/// changes to `main.rs`, `screens.rs`, or the harness. Mutation is
+/// guarded, so plateaus cost no change-detection work.
 pub(crate) fn advance_champion_anim(
     tick: &mut crate::state::AnimTick,
     anims: &mut Query<(&ChampionAnim, &mut ImageNode)>,
@@ -573,7 +626,9 @@ pub(crate) fn advance_champion_anim(
             match head {
                 Some((pose, _)) => {
                     let frame = match pose {
+                        ArcPose::Windup => anim.windup.as_ref(),
                         ArcPose::Strike => anim.strike.as_ref(),
+                        ArcPose::Followthrough => anim.followthrough.as_ref(),
                         ArcPose::Hit => anim.hit.as_ref(),
                     }
                     .unwrap_or(&anim.idle)
@@ -601,34 +656,177 @@ pub(crate) fn advance_champion_anim(
 /// his loop holds the single idle frame. Bosses and unknown names get
 /// `None` → the static [`champion_sprite_path`] render. Only idle/idle2
 /// auto-play: pray/step/look/bow never auto-play in battle, and the card
-/// D6 strike/hit arc frames resolve through [`champion_arc_paths`].
+/// D6/E4 arc frames resolve through [`champion_arc_paths`].
 fn champion_anim_paths(species_name: &str) -> Option<(String, Option<String>)> {
-    let sp = data::species::SPECIES
-        .iter()
-        .find(|sp| sp.name == species_name)?;
-    if !matches!(sp.id, 1..=12) {
-        return None;
-    }
-    let dir = format!("sprites/anim/{:03}-{}", sp.id, slugify(sp.name));
+    let (id, dir) = champion_anim_dir(species_name)?;
     let idle = format!("{dir}/01_idle.png");
-    let idle2 = (sp.id != 1).then(|| format!("{dir}/04_idle2.png"));
+    let idle2 = (id != 1).then(|| format!("{dir}/04_idle2.png"));
     Some((idle, idle2))
 }
 
-/// Combat-arc frame paths (card D6) — `(strike, hit)` from the per-frame
-/// D6 generations (`07_strike.png`, `08_hit.png`; the 4.3 hybrid decision
-/// generates arc frames per-frame, never as sheet slices — Audric's pilot
-/// 03/04 cells stay pilot history). Champions 1..=12 are staged; bosses
-/// and unknown names get `None` → no pose beats, flash alone on hit.
-fn champion_arc_paths(species_name: &str) -> Option<(String, String)> {
+/// Combat-arc frame paths (cards D6 + E4) for one species: the telegraph
+/// windup (`09_windup.png`), the contact strike (`07_strike.png`), the
+/// settle followthrough (`10_followthrough.png`) and the hurt frame
+/// (`08_hit.png`) — all per-frame generations, never sheet slices (4.3
+/// hybrid decision; Audric's pilot 03/04 cells stay pilot history).
+/// Champions 1..=12 are staged; bosses (ids 101+) and unknown names get
+/// `None` → no pose beats, flash alone on hit (boss canon: no 09..12
+/// assets exist for them).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ArcFrames {
+    windup: String,
+    strike: String,
+    followthrough: String,
+    hit: String,
+}
+
+impl ArcFrames {
+    fn for_id_dir(dir: String) -> Self {
+        ArcFrames {
+            windup: format!("{dir}/09_windup.png"),
+            strike: format!("{dir}/07_strike.png"),
+            followthrough: format!("{dir}/10_followthrough.png"),
+            hit: format!("{dir}/08_hit.png"),
+        }
+    }
+}
+
+/// One species' anim-frame set key under `sprites/anim/` — the species id
+/// (Audric's pilot sheet has no idle2 cell) plus the `{id:03}-{slug}`
+/// directory — or `None` for anything outside the 12 staged champions
+/// (bosses 101+, unknown names).
+fn champion_anim_dir(species_name: &str) -> Option<(u16, String)> {
     let sp = data::species::SPECIES
         .iter()
         .find(|sp| sp.name == species_name)?;
     if !matches!(sp.id, 1..=12) {
         return None;
     }
-    let dir = format!("sprites/anim/{:03}-{}", sp.id, slugify(sp.name));
-    Some((format!("{dir}/07_strike.png"), format!("{dir}/08_hit.png")))
+    Some((
+        sp.id,
+        format!("sprites/anim/{:03}-{}", sp.id, slugify(sp.name)),
+    ))
+}
+
+/// The arc frame set for one species; see [`champion_anim_dir`] for the
+/// champion-only gate.
+fn champion_arc_paths(species_name: &str) -> Option<ArcFrames> {
+    champion_anim_dir(species_name).map(|(_id, dir)| ArcFrames::for_id_dir(dir))
+}
+
+/// Battle-over verdict frame paths (card E4): `(11_victory.png,
+/// 12_defeat.png)` for IDs 1..=12. Bosses stage no 09..12 frames — canon
+/// keeps them on their static battle sprite — and unknown names resolve to
+/// `None`, both through the same species-table gate as the arc frames.
+fn champion_verdict_paths(species_name: &str) -> Option<(String, String)> {
+    let (_id, dir) = champion_anim_dir(species_name)?;
+    Some((format!("{dir}/11_victory.png"), format!("{dir}/12_defeat.png")))
+}
+
+/// The E4 verdict image a battle-over surface shows for one active
+/// champion: staged champions hold their victory/defeat frame by outcome;
+/// bosses and unknown-table species keep the plain battle sprite (canon:
+/// bosses are static on every surface — verdict rows never reference
+/// 09..12 for ids 101+); a wholly unknown name (the client's "Champion
+/// #N" defense) draws no portrait at all, never a 404 guess.
+fn verdict_image_path(view: &BattleChampionView, victor: bool) -> Option<String> {
+    match champion_verdict_paths(&view.species_name) {
+        Some((victory, defeat)) => Some(if victor { victory } else { defeat }),
+        None => champion_sprite_path(&view.species_name),
+    }
+}
+
+/// Card E4 verdict imagery for the battle-over surfaces, shared by both
+/// battle-over legs (`over_screen` practice/campaign and
+/// `net_over_screen`): the winner's active holds `11_victory`, the loser's
+/// active holds `12_defeat`, me-left/foe-right like the battle row.
+///
+/// `won` carries the local viewer's verdict (`Some(true)` = our banner,
+/// `Some(false)` = defeat); practice/campaign callers derive it as
+/// `snap.battle_result.map(|w| w == 0)`, net callers get it straight from
+/// `NetDuelEnd::Finished { won }`. `None` (the field merely fell quiet) —
+/// like a headless `assets` (`Option<&AssetServer>` `None` under
+/// MinimalPlugins) or a snapshot with no actives — draws nothing and
+/// asserts no assets. Mirror matches keep the battle panel's "Foe " tag
+/// so the two cards can never read identically.
+#[allow(dead_code)] // The call sites live in screens.rs' over screens (sibling lane).
+pub(crate) fn verdict_row(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    won: Option<bool>,
+    assets: Option<&AssetServer>,
+) -> Option<Entity> {
+    let won = won?;
+    let assets = assets?;
+    let me = snap.me.as_ref()?;
+    let foe = snap.foe.as_ref()?;
+    let mirror = mirror_match(me, foe);
+    let kids: Vec<Entity> = [
+        verdict_panel(cmd, me, won, false, assets),
+        verdict_panel(cmd, foe, !won, mirror, assets),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if kids.is_empty() {
+        return None;
+    }
+    Some(
+        cmd.spawn(Node {
+            width: Val::Percent(100.0),
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Start,
+            ..default()
+        })
+        .add_children(&kids)
+        .id(),
+    )
+}
+
+/// One verdict card of [`verdict_row`]: the held pose over the name line,
+/// framed gold for the victor, plain for the fallen. `None` when the
+/// species resolves to no image at all (unknown name).
+fn verdict_panel(
+    cmd: &mut Commands,
+    view: &BattleChampionView,
+    victor: bool,
+    mirror: bool,
+    assets: &AssetServer,
+) -> Option<Entity> {
+    let path = verdict_image_path(view, victor)?;
+    let image = cmd
+        .spawn((
+            ImageNode::new(assets.load(path)),
+            Node {
+                width: Val::Px(128.0),
+                height: Val::Px(128.0),
+                ..default()
+            },
+        ))
+        .id();
+    let name = text_node(
+        cmd,
+        name_line(view, mirror),
+        style::small_font(),
+        style::BONE,
+    );
+    let border = if victor { style::GOLD } else { style::PANEL_EDGE };
+    Some(
+        cmd.spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(8.0)),
+                border: UiRect::all(Val::Px(1.0)),
+                row_gap: Val::Px(4.0),
+                ..default()
+            },
+            BackgroundColor(style::PANEL),
+            BorderColor::all(border),
+        ))
+        .add_children(&[image, name])
+        .id(),
+    )
 }
 
 /// The 128x128 battle sprite above the name row — the section 2 seam-1
@@ -641,10 +839,11 @@ fn champion_arc_paths(species_name: &str) -> Option<(String, String)> {
 ///
 /// Card D5: champions with a staged anim set (`champion_anim_paths`) spawn
 /// the animated idle portrait instead — same node size, handles preloaded —
-/// while bosses and unknowns keep this static path unchanged. Card D6: the
-/// panel's fresh-events flourish (`arc`) is stamped at spawn either way —
-/// champions preload their strike/hit frames, frame-less statics degrade
-/// to the tint flash (`ChampionAnim` doc).
+/// while bosses and unknowns keep this static path unchanged. Cards D6/E4:
+/// the panel's fresh-events flourish (`arc`) is stamped at spawn either
+/// way — champions preload their full arc frame set (windup, strike,
+/// followthrough, hit), frame-less statics degrade every beat to the idle
+/// frame with the `Hit` tint flash kept (`ChampionAnim` doc).
 fn champion_sprite(
     cmd: &mut Commands,
     species_name: &str,
@@ -662,13 +861,25 @@ fn champion_sprite(
     let lore = species_lore_tip(species_name);
     if let Some((idle, idle2)) = champion_anim_paths(species_name) {
         let idle = assets.load(idle);
-        let (strike, hit) = champion_arc_paths(species_name)
-            .map(|(s, h)| (Some(assets.load(s)), Some(assets.load(h))))
-            .unwrap_or((None, None));
+        // Champion anim staging is all-or-nothing per species: the arc
+        // resolver's `Some` guarantees the whole 07..12 set was staged
+        // (`stage_sprites.py` errors out on a missing pose), so the
+        // handles here never guess at absent files.
+        let (windup, strike, followthrough, hit) = match champion_arc_paths(species_name) {
+            Some(f) => (
+                Some(assets.load(f.windup)),
+                Some(assets.load(f.strike)),
+                Some(assets.load(f.followthrough)),
+                Some(assets.load(f.hit)),
+            ),
+            None => (None, None, None, None),
+        };
         let anim = ChampionAnim {
             idle: idle.clone(),
             idle2: idle2.map(|pose| assets.load(pose)),
+            windup,
             strike,
+            followthrough,
             hit,
             arc: Mutex::new(arc),
         };
@@ -683,7 +894,9 @@ fn champion_sprite(
     let anim = ChampionAnim {
         idle: sprite.clone(),
         idle2: None,
+        windup: None,
         strike: None,
+        followthrough: None,
         hit: None,
         arc: Mutex::new(arc),
     };
@@ -1131,17 +1344,20 @@ mod tests {
         assert_eq!(anim_phase(7 * IDLE_FRAME_TICKS + 3), 1);
     }
 
-    /// The card-D6 arc resolver: every champion's staged per-frame strike/hit
-    /// pair resolves to its exact asset paths; bosses and unknown names get
-    /// `None` → pose-less, flash-only hurt feedback.
+    /// The cards-D6/E4 arc resolver: every champion's staged per-frame arc
+    /// set (windup / strike / followthrough / hit) resolves to its exact
+    /// asset paths; bosses and unknown names get `None` → pose-less,
+    /// flash-only hurt feedback.
     #[test]
     fn arc_paths_resolve_for_all_twelve_champions_only() {
         assert_eq!(
             champion_arc_paths("Squire Audric"),
-            Some((
-                "sprites/anim/001-squire-audric/07_strike.png".to_string(),
-                "sprites/anim/001-squire-audric/08_hit.png".to_string(),
-            ))
+            Some(ArcFrames {
+                windup: "sprites/anim/001-squire-audric/09_windup.png".to_string(),
+                strike: "sprites/anim/001-squire-audric/07_strike.png".to_string(),
+                followthrough: "sprites/anim/001-squire-audric/10_followthrough.png".to_string(),
+                hit: "sprites/anim/001-squire-audric/08_hit.png".to_string(),
+            })
         );
         for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
             assert!(
@@ -1162,6 +1378,70 @@ mod tests {
         assert_eq!(champion_arc_paths("Vigo the Carpathian"), None);
     }
 
+    /// The E4 battle-over resolvers: every champion holds its victory /
+    /// defeat frames at the verdict; bosses (ids 101+) stage no 09..12
+    /// frames and keep their static battle sprite on the verdict surfaces
+    /// (canon: static everywhere); an unknown name draws nothing — never
+    /// a 404 guess.
+    #[test]
+    fn verdict_poses_follow_the_champion_only_gate() {
+        assert_eq!(
+            champion_verdict_paths("Squire Audric"),
+            Some((
+                "sprites/anim/001-squire-audric/11_victory.png".to_string(),
+                "sprites/anim/001-squire-audric/12_defeat.png".to_string(),
+            ))
+        );
+        let view = |species: &str| BattleChampionView {
+            ours: true,
+            species_name: species.to_string(),
+            level: 25,
+            current_resolve: 80,
+            max_resolve: 80,
+            ailment: None,
+            types_display: Vec::new(),
+            stages: Vec::new(),
+            alive_reserves: 2,
+        };
+        for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
+            let (victory, defeat) =
+                champion_verdict_paths(sp.name).expect("champion verdict frames");
+            assert!(champion_arc_paths(sp.name).is_some());
+            assert_eq!(verdict_image_path(&view(sp.name), true), Some(victory));
+            assert_eq!(verdict_image_path(&view(sp.name), false), Some(defeat));
+        }
+        for sp in data::species::SPECIES.iter().filter(|sp| sp.id >= 100) {
+            assert_eq!(
+                champion_arc_paths(sp.name),
+                None,
+                "boss {} stays flash-only",
+                sp.name
+            );
+            assert_eq!(
+                champion_verdict_paths(sp.name),
+                None,
+                "boss {} stages no victory/defeat frames",
+                sp.name
+            );
+            for victor in [true, false] {
+                let path = verdict_image_path(&view(sp.name), victor)
+                    .expect("bosses keep the static battle sprite");
+                // The boss-verdict guard: no 09..12 reference can ever
+                // point at a boss panel.
+                assert!(path.starts_with("sprites/champions/"), "{path}");
+                assert!(
+                    !path.contains("anim/")
+                        && !path.contains("_victory")
+                        && !path.contains("_defeat"),
+                    "{path}"
+                );
+            }
+        }
+        assert_eq!(champion_verdict_paths("Champion #55"), None);
+        assert_eq!(verdict_image_path(&view("Champion #55"), true), None);
+        assert_eq!(verdict_image_path(&view("Vigo the Carpathian"), false), None);
+    }
+
     use crusade_core::types::Volatile;
 
     fn rite(side: u8) -> BattleEvent {
@@ -1179,7 +1459,9 @@ mod tests {
 
     /// A plain exchange — we cast, the foe is hurt, the foe answers, we are
     /// hurt — plans both panels' beats in event order, sliced from exactly
-    /// ARC_HOLD_TICKS: our panel plays strike-then-hit, theirs hit-then-strike.
+    /// ARC_HOLD_TICKS: our panel plays windup->strike->followthrough then
+    /// takes the counter's hit; theirs is hit, then their own three-beat
+    /// answer. Four beats per panel: an even 15-tick slice each.
     #[test]
     fn arc_plan_tracks_both_sides_of_an_exchange() {
         let events = vec![
@@ -1193,14 +1475,52 @@ mod tests {
         let theirs = arc_plan(&events, 1, true);
         assert_eq!(
             mine.iter().map(|b| b.0).collect::<Vec<_>>(),
-            vec![ArcPose::Strike, ArcPose::Hit]
+            vec![
+                ArcPose::Windup,
+                ArcPose::Strike,
+                ArcPose::Followthrough,
+                ArcPose::Hit
+            ]
         );
         assert_eq!(
             theirs.iter().map(|b| b.0).collect::<Vec<_>>(),
-            vec![ArcPose::Hit, ArcPose::Strike]
+            vec![
+                ArcPose::Hit,
+                ArcPose::Windup,
+                ArcPose::Strike,
+                ArcPose::Followthrough
+            ]
         );
         assert_eq!(mine.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
         assert_eq!(theirs.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
+        assert_eq!(
+            mine.iter().map(|b| b.1).collect::<Vec<_>>(),
+            vec![15, 15, 15, 15]
+        );
+    }
+
+    /// The E4 three-beat arc pinned exactly: one damaging rite reads
+    /// telegraph -> contact -> settle on the ATTACKER's panel, 20 ticks a
+    /// beat out of the intact 60-tick window, while the defender's plan is
+    /// the D6-unchanged single hit beat filling its window — the flash
+    /// fires on the flourish's very first frame (the moment the chronicle
+    /// line lands), never re-timed onto the attacker's contact frame.
+    /// Windup and followthrough belong to the attacker alone.
+    #[test]
+    fn arc_plan_expands_a_damaging_rite_into_three_beats() {
+        let events = vec![rite(0), dmg(1)];
+        assert_eq!(
+            arc_plan(&events, 0, true),
+            vec![
+                (ArcPose::Windup, 20),
+                (ArcPose::Strike, 20),
+                (ArcPose::Followthrough, 20),
+            ]
+        );
+        assert_eq!(
+            arc_plan(&events, 1, true),
+            vec![(ArcPose::Hit, ARC_HOLD_TICKS)]
+        );
     }
 
     /// A MultiHit rite's consecutive Damage events collapse into one recoil
@@ -1222,32 +1542,127 @@ mod tests {
         let theirs = arc_plan(&events, 1, true);
         assert_eq!(theirs, vec![(ArcPose::Hit, ARC_HOLD_TICKS)]);
         // Side 0 cast and took only chip damage: chip is not a hit beat
-        // (documented in arc_plan), so the strike stands alone.
-        assert_eq!(arc_plan(&events, 0, true), vec![(ArcPose::Strike, ARC_HOLD_TICKS)]);
+        // (documented in arc_plan), so the attack arc stands alone.
+        assert_eq!(
+            arc_plan(&events, 0, true),
+            vec![
+                (ArcPose::Windup, 20),
+                (ArcPose::Strike, 20),
+                (ArcPose::Followthrough, 20)
+            ]
+        );
         // Chip alone plans nothing.
         assert!(arc_plan(&[BattleEvent::AilmentChip { side: 0, amount: 5 }], 0, true).is_empty());
         // Uneven slicing keeps the exact hold: remainder rides beat one.
         let events = vec![rite(0), dmg(1), rite(1), dmg(0), rite(0), dmg(1)];
-        let three = arc_plan(&events, 0, true);
+        let seven = arc_plan(&events, 0, true);
         assert_eq!(
-            three.iter().map(|b| b.0).collect::<Vec<_>>(),
-            vec![ArcPose::Strike, ArcPose::Hit, ArcPose::Strike]
+            seven.iter().map(|b| b.0).collect::<Vec<_>>(),
+            vec![
+                ArcPose::Windup,
+                ArcPose::Strike,
+                ArcPose::Followthrough,
+                ArcPose::Hit,
+                ArcPose::Windup,
+                ArcPose::Strike,
+                ArcPose::Followthrough
+            ]
         );
-        assert_eq!(three.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
-        // Two cast/hit rounds = four alternating beats (no consecutive
-        // dupes, so no collapse): 45 / 4 = 11 beats + remainder 1 on beat 1.
+        assert_eq!(seven.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
+        // Two full cast-and-answer rounds: our E4 arcs expand (3+3) plus
+        // the two recoils we take — eight beats, no adjacent dupes to
+        // collapse — 60 / 8 = 7-tick beats + remainder 4 on beat one.
         let events = vec![rite(0), dmg(1), rite(1), dmg(0), rite(0), dmg(0)];
-        let four = arc_plan(&events, 0, true);
-        assert_eq!(four.iter().map(|b| b.1).collect::<Vec<_>>(), vec![12, 11, 11, 11]);
-        assert_eq!(four.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
+        let eight = arc_plan(&events, 0, true);
+        assert_eq!(
+            eight.iter().map(|b| b.1).collect::<Vec<_>>(),
+            vec![11, 7, 7, 7, 7, 7, 7, 7]
+        );
+        assert_eq!(eight.iter().map(|b| b.1).sum::<u16>(), ARC_HOLD_TICKS);
     }
 
-    /// Boss path (`caster_strikes == false`): no poses ever; any direct
-    /// damage collapses to exactly one FLASH_TICKS hit beat.
+    /// Net-duel replays: the bridge driver's documented `roster_count == 0`
+    /// tell (see [`battle_row`]) suppresses EVERY arc beat — the E4
+    /// windup/followthrough beats ride the same gate as the D6 strike, so a
+    /// remote echo never cross-wires a swing onto the wrong panel. With a
+    /// mustered company (practice/campaign) the same events fully expand.
+    #[test]
+    fn net_replay_snapshots_suppress_all_arc_beats() {
+        let events = vec![rite(0), dmg(1), rite(1), dmg(0)];
+        let view = |ours: bool| BattleChampionView {
+            ours,
+            species_name: "Serjeant Bastien".to_string(),
+            level: 25,
+            current_resolve: 80,
+            max_resolve: 80,
+            ailment: None,
+            types_display: vec!["Patience".to_string()],
+            stages: Vec::new(),
+            alive_reserves: 2,
+        };
+        let snap = |roster_count: usize| ViewSnapshot {
+            phase: crusade_app::Phase::InBattle,
+            roster_count,
+            me: Some(view(true)),
+            foe: Some(view(false)),
+            turn: 2,
+            my_rites: Vec::new(),
+            can_switch_to: Vec::new(),
+            log_tail: Vec::new(),
+            battle_result: None,
+            campaign: None,
+            lobby: None,
+            witnesses: Vec::new(),
+            sins: Vec::new(),
+            fresh_events: events.clone(),
+        };
+        // The net tell: both panels idle out — no strike, no windup, nothing.
+        let duel = snap(0);
+        assert!(arc_plan_for_panel(&events, 0, duel.me.as_ref(), &duel).is_empty());
+        assert!(arc_plan_for_panel(&events, 1, duel.foe.as_ref(), &duel).is_empty());
+        // Same events with a roster present: the full E4 expansion.
+        let practice = snap(3);
+        assert_eq!(
+            arc_plan_for_panel(&events, 0, practice.me.as_ref(), &practice)
+                .iter()
+                .map(|b| b.0)
+                .collect::<Vec<_>>(),
+            vec![
+                ArcPose::Windup,
+                ArcPose::Strike,
+                ArcPose::Followthrough,
+                ArcPose::Hit
+            ]
+        );
+        // ... but only for a panel whose species staged the frames: a boss
+        // panel under a rostered snapshot stays pose-less flash-only.
+        let boss_panel = BattleChampionView {
+            ours: false,
+            species_name: "Brute of Wrath".to_string(),
+            ..view(false)
+        };
+        assert_eq!(
+            arc_plan_for_panel(&events, 1, Some(&boss_panel), &practice),
+            vec![(ArcPose::Hit, FLASH_TICKS)]
+        );
+        // No displayed species -> nothing to attribute, no plan at all.
+        assert!(arc_plan_for_panel(&events, 0, None, &practice).is_empty());
+    }
+
+    /// Boss path (`caster_strikes == false`): no poses ever — windup,
+    /// strike and followthrough are attacker beats on staged arcs only —
+    /// and any direct damage collapses to exactly one FLASH_TICKS hit beat.
     #[test]
     fn arc_plan_bosses_flash_only() {
         let events = vec![rite(1), dmg(1), dmg(1)];
-        assert_eq!(arc_plan(&events, 1, false), vec![(ArcPose::Hit, FLASH_TICKS)]);
+        let plan = arc_plan(&events, 1, false);
+        assert_eq!(plan, vec![(ArcPose::Hit, FLASH_TICKS)]);
+        assert!(plan.iter().all(|(pose, _)| {
+            !matches!(
+                pose,
+                ArcPose::Windup | ArcPose::Strike | ArcPose::Followthrough
+            )
+        }));
         assert!(arc_plan(&[rite(1)], 1, false).is_empty());
         assert!(arc_plan(&[dmg(0)], 1, false).is_empty());
     }

@@ -387,6 +387,25 @@ shell tests (x2 bins): exact rite compositions, all-42-rite ASCII/132-char
 sweep, concede arm table, lore gates, mirror-card matchup strings. 97
 green under bevy-ui, 45 plain, --smoke exit 0, harness byte-identical.
 
+### 4.15 E4 playback wave: three-beat arcs (DONE 2026-10-15, $0.00 art reuse)
+
+The 48 E4 frames ship to assets (stage_sprites.py anim pass pose-list
+extended; 95 per-champion frames; idempotent reruns; MANIFEST keys were
+folded at 0941da4). Rite arcs are three beats - windup(telegraph) ->
+strike(contact) -> followthrough(settle) - with ARC_HOLD_TICKS 45 -> 60
+(20/20/20 lone cast, 15-tick floor at 4 beats/exchange; pure tick math,
+zero wall-clock, harness stays exact). Defender hit-flash stays locked to
+the flourish's opening frame (its chronicle line), attacker-only windup/
+followthrough; bosses flash-only by species gate; missing handles degrade
+to idle+flash, never a broken texture; net-duel roster_count==0 replay
+suppression covers the new beats. Verdict machinery battle::verdict_row
+built + tested (11_victory gold-frame / 12_defeat plain-fallen, bosses
+static, headless-safe) - its one-line screens.rs call sites land when the
+sibling roster lane releases the file. +3 battle anim tests (beat order/
+timing, replay suppression sweep, verdict gates); 51 plain / 111 featured
+green, check clean, smoke 0, harness twice byte-identical; battle.png
+proves Audric's windup opposite Aldwyn's flash mid-arc.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
