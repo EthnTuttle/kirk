@@ -46,6 +46,10 @@ pub fn rebuild_ui(
     mut rendered: ResMut<RenderedVersion>,
     // Shell-local menu support panel (alms box; no client state involved).
     support: Res<SupportPanel>,
+    // Shell-local roster gallery leaf (pager state; Optional -- see the
+    // RosterPage doc: the first real pager flip self-installs the default,
+    // so host binaries need no registration).
+    roster_page: Option<Res<RosterPage>>,
     roots: Query<Entity, With<UiRoot>>,
     // `None` under MinimalPlugins (the headless smoke run): every sprite
     // slot then collapses to the plain text rows it supplements.
@@ -92,7 +96,15 @@ pub fn rebuild_ui(
         },
         _ => match snap.phase {
             Phase::Menu => (menu_screen(&mut commands, ladder, assets, &support), true),
-            Phase::Roster => (roster_screen(&mut commands, &roster, assets), false),
+            Phase::Roster => (
+                roster_screen(
+                    &mut commands,
+                    &roster,
+                    assets,
+                    roster_page.as_deref().map_or(0, |p| p.page),
+                ),
+                false,
+            ),
             Phase::BattleSetup => (
                 vec![text_node(
                     &mut commands,
@@ -968,13 +980,103 @@ pub(crate) fn shell_http() -> NoHttp {
 
 // ---------- Roster ----------
 
+/// Gallery geometry: six cards per leaf as a 2-column x 3-row grid sized to
+/// the 1280x720 chrome exactly -- root screen padding 24^2, one 14px root
+/// gap, a ~44px header row (title + paging/Back buttons), and two 12px grid
+/// row gaps: 48 + 44 + 14 + 3*194 + 24 = 710 of 720. Card width leaves
+/// 48+2*600+12 = 1260 of 1280. The whole-tree rebuild renders one leaf at a
+/// time (see [`RosterPage`]); anything else would scroll past the viewport.
+const ROSTER_PAGE_SIZE: usize = 6;
+
+/// Card outer dimensions (border-box, bevy sizing): 600x194 holds a 176px
+/// plate beside a 396px stats column (padding 8, border 1, gap 10).
+const CARD_W: f32 = 600.0;
+const CARD_H: f32 = 194.0;
+/// The plate's outer frame: exactly the card's inner height (194 - 2
+/// border - 16 padding). The painted ground shows edge-to-edge inside the
+/// hairline.
+const PLATE: f32 = 176.0;
+/// The image leaves the plate's 1px border on every side.
+const PLATE_IMG: f32 = PLATE - 2.0;
+/// Stats column width: card inner width (600 - 2 - 16) minus plate + gap.
+const CARD_TEXT_W: f32 = 600.0 - 2.0 - 16.0 - PLATE - 10.0;
+/// Two columns plus the gap ride under the root's 24px side padding
+/// (48 + 1212 = 1260 of 1280).
+const GRID_W: f32 = 2.0 * CARD_W + 12.0;
+
+/// Gallery pagination math, kept pure so the boundary table is unit-pinned:
+/// (clamped page, page count, slice start, slice end).
+fn roster_page_window(card_count: usize, page: usize) -> (usize, usize, usize, usize) {
+    let pages = card_count.div_ceil(ROSTER_PAGE_SIZE).max(1);
+    let page = page.min(pages - 1);
+    let lo = page * ROSTER_PAGE_SIZE;
+    let hi = (lo + ROSTER_PAGE_SIZE).min(card_count);
+    (page, pages, lo, hi)
+}
+
+/// Shell-local roster gallery page. The exact SupportPanel pattern at
+/// pager size: read by the whole-tree rebuild, flipped ONLY by the pager
+/// observers below -- never a ClientInput, never game state. The resource
+/// is deliberately OPTIONAL for binaries: `rebuild_ui` takes
+/// `Option<Res<RosterPage>>` and both pager observers self-install the
+/// default through deferred commands on the first real flip, so neither
+/// main.rs nor the harness needed new wiring (the AnimTick precedent).
+#[derive(Resource, Default)]
+pub(crate) struct RosterPage {
+    pub page: usize,
+}
+
+/// A pager flip: -1 for the previous leaf, +1 for the next.
+#[derive(Component, Clone, Copy)]
+struct RosterPageTurn(i8);
+
 fn roster_screen(
     cmd: &mut Commands,
     cards: &[ChampionCard],
     assets: Option<&AssetServer>,
+    page_requested: usize,
 ) -> Vec<Entity> {
+    let (page, pages, lo, hi) = roster_page_window(cards.len(), page_requested);
     let title = text_node(cmd, "The Company".into(), style::head_font(), style::GOLD);
+    // The pager cluster rides the header row (shell-local Prev/Next around
+    // the leaf counter; Back stays a ClientInput like every other screen).
+    // Out-of-range ends are inert slabs, so a live flip can never run off
+    // the leaves: Prev exists only right of leaf 1, Next only left of the
+    // last leaf.
+    let mut pager_kids: Vec<Entity> = Vec::new();
+    if page > 0 {
+        pager_kids.push(roster_page_button(cmd, "< Prev", -1));
+    } else {
+        pager_kids.push(disabled_button(cmd, "< Prev".into()));
+    }
+    pager_kids.push(text_node(
+        cmd,
+        format!("Page {} of {}", page + 1, pages),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    if page + 1 < pages {
+        pager_kids.push(roster_page_button(cmd, "Next >", 1));
+    } else {
+        pager_kids.push(disabled_button(cmd, "Next >".into()));
+    }
+    let pager = cmd
+        .spawn(Node {
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(8.0),
+            ..default()
+        })
+        .add_children(&pager_kids)
+        .id();
     let back = action_button(cmd, "Back".into(), ClientInput::CloseToMenu);
+    let right = cmd
+        .spawn(Node {
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(12.0),
+            ..default()
+        })
+        .add_children(&[pager, back])
+        .id();
     let head = cmd
         .spawn(Node {
             width: Val::Percent(100.0),
@@ -982,14 +1084,27 @@ fn roster_screen(
             align_items: AlignItems::Center,
             ..default()
         })
-        .add_children(&[title, back])
+        .add_children(&[title, right])
         .id();
-    let card_entities: Vec<Entity> = cards
+    if cards.is_empty() {
+        // An empty company draws the note instead of a void grid.
+        return vec![
+            head,
+            text_node(
+                cmd,
+                "The chapel yard stands empty - muster your first champion.".into(),
+                style::body_font(),
+                style::DIM,
+            ),
+        ];
+    }
+    let card_entities: Vec<Entity> = cards[lo..hi]
         .iter()
         .map(|c| champion_card(cmd, c, assets))
         .collect();
     let grid = cmd
         .spawn(Node {
+            width: Val::Px(GRID_W),
             column_gap: Val::Px(12.0),
             row_gap: Val::Px(12.0),
             flex_wrap: FlexWrap::Wrap,
@@ -1000,23 +1115,109 @@ fn roster_screen(
     vec![head, grid]
 }
 
+/// A pager button: looks like every [`action_button`], but its click rides
+/// an entity observer, so paging can never reach the client (no
+/// ClientInput, no Phase -- the gallery itself is pure presentation).
+/// Like the menu alms box it carries no ActionButton, so `collect_clicks`
+/// never touches it (hover feedback follows that same convention).
+fn roster_page_button(cmd: &mut Commands, label: &str, turn: i8) -> Entity {
+    let text = text_node(cmd, label.to_string(), style::body_font(), style::BONE);
+    cmd.spawn((
+        Button,
+        style::button_node(),
+        BackgroundColor(style::BUTTON),
+        BorderColor::all(style::GOLD_DIM),
+        RosterPageTurn(turn),
+    ))
+    .add_children(&[text])
+    .observe(on_roster_page_turn)
+    .id()
+}
+
+/// The pager flip: bump the shell-local leaf and repaint. Bounds are
+/// structural (live buttons never spawn at the edges), so the arithmetic
+/// saturates; a still-slender guard clamps again at render. When no
+/// RosterPage resource exists (any host binary that never registered one),
+/// the first flip mints it.
+fn on_roster_page_turn(
+    click: On<Pointer<Click>>,
+    turns: Query<&RosterPageTurn>,
+    mut commands: Commands,
+    page: Option<ResMut<RosterPage>>,
+    mut version: ResMut<SnapshotVersion>,
+) {
+    let Ok(turn) = turns.get(click.entity) else {
+        return;
+    };
+    match page {
+        Some(mut page) => {
+            page.page = if turn.0 < 0 {
+                page.page.saturating_sub(1)
+            } else {
+                page.page.saturating_add(1)
+            };
+        }
+        None => {
+            commands.insert_resource(RosterPage {
+                page: if turn.0 < 0 { 0 } else { 1 },
+            });
+        }
+    }
+    version.0 = version.0.wrapping_add(1);
+}
+
+/// One company gallery card (~600x194): the painted 176px plate left in a
+/// gold-dim frame like a manuscript miniature, then the stats column right
+/// -- name and level, virtue/sin typing, resolve, the per-instance
+/// Devotion and Grace blocks, and the compact rite list (name with
+/// Pow/Acc/Zeal each, up to four). The plate image is the gallery class
+/// (un-quantized 512px master downscaled on GPU): it spawns only beside an
+/// asset server and a static-table species; a missing file draws nothing
+/// over the plate's navy ground and the text column is the card's
+/// unconditional floor either way (the same AssetServer discipline as the
+/// other sprite seams).
 fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetServer>) -> Entity {
     let mut kids = Vec::new();
-    if let Some(icon) = champion_icon(cmd, card.species_id, assets) {
-        kids.push(icon);
+    if let Some(plate) = gallery_frame(cmd, card.species_id, assets) {
+        kids.push(plate);
     }
-    kids.push(text_node(
-        cmd,
-        format!("{} - Lv {}", card.species_name, card.level),
-        style::body_font(),
-        style::BONE,
-    ));
-    kids.push(text_node(
-        cmd,
-        format!("resolve {}/{}", card.current_resolve, card.max_resolve),
-        style::small_font(),
-        style::GOLD,
-    ));
+    let text = champion_card_stats(cmd, card);
+    kids.push(text);
+    cmd.spawn((
+        Node {
+            width: Val::Px(CARD_W),
+            height: Val::Px(CARD_H),
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(10.0),
+            padding: UiRect::all(Val::Px(8.0)),
+            border: UiRect::all(Val::Px(1.0)),
+            ..default()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&kids)
+    .id()
+}
+
+/// The stats column of a gallery card (unconditional: every row here is
+/// plain text on the panel, image or no image).
+fn champion_card_stats(cmd: &mut Commands, card: &ChampionCard) -> Entity {
+    let mut kids = vec![
+        text_node(
+            cmd,
+            format!("{} - Lv {}", card.species_name, card.level),
+            style::body_font(),
+            style::BONE,
+        ),
+        text_node(
+            cmd,
+            format!("resolve {}/{}", card.current_resolve, card.max_resolve),
+            style::small_font(),
+            style::GOLD,
+        ),
+    ];
     if let Some(ailment) = card.ailment {
         kids.push(text_node(
             cmd,
@@ -1033,49 +1234,94 @@ fn champion_card(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetS
             style::GOLD_DIM,
         ));
     }
-    for rite in &card.rites {
+    // The fuller blocks: Devotion (trained) over Grace (given). Pre-
+    // gallery documents deserialize these as empty strings; the rows then
+    // hide rather than render a hollow label.
+    if !card.devotion_display.is_empty() {
+        kids.push(text_node(
+            cmd,
+            format!("devotion: {}", card.devotion_display),
+            style::small_font(),
+            style::DIM,
+        ));
+    }
+    if !card.grace_display.is_empty() {
+        kids.push(text_node(
+            cmd,
+            format!("grace:    {}", card.grace_display),
+            style::small_font(),
+            style::DIM,
+        ));
+    }
+    for rite in card.rites.iter().take(4) {
         kids.push(text_node(
             cmd,
             format!(
-                "- {} ({}, {} zeal)",
-                rite.name, rite.type_display, rite.zeal_max
+                "- {}  Pow{} Acc{} Z{}/{}",
+                rite.name, rite.power, rite.accuracy, rite.zeal_left, rite.zeal_max
             ),
             style::small_font(),
             style::DIM,
         ));
     }
-    let mut panel_entity = cmd.spawn((
-        Node {
-            max_width: Val::Px(280.0),
-            ..style::panel_node()
-        },
-        BackgroundColor(style::PANEL),
-        BorderColor::all(style::PANEL_EDGE),
-    ));
-    panel_entity.add_children(&kids).id()
+    cmd.spawn(Node {
+        flex_direction: FlexDirection::Column,
+        row_gap: Val::Px(1.0),
+        width: Val::Px(CARD_TEXT_W),
+        ..default()
+    })
+    .add_children(&kids)
+    .id()
 }
 
-/// The 32x32 roster icon at the top of a champion card — the section 2
-/// seam-2 `ImageNode`, keyed by the card's own `species_id`
-/// (`sprites/icons/{id:03}.png`, auto-derived from the battle sprite by
-/// `tools/artbake/stage_sprites.py`). Spawned only when an asset server
-/// exists AND the id is a static-table species (whose icon the art lane
-/// always ships); a 404ing icon (partial wasm deploy) draws nothing over
-/// the card's unconditional text rows.
-fn champion_icon(cmd: &mut Commands, species_id: u16, assets: Option<&AssetServer>) -> Option<Entity> {
-    data::species_by_id(species_id)?;
+/// The card's 176px gallery plate: a navy well with a gold-dim hairline
+/// holding the staged 512px portrait at 174px (`sprites/gallery/
+/// {id:03}-{slug}.png`, the un-quantized gallery class staged by
+/// `tools/artbake/stage_sprites.py`'s gallery pass from each cell's raw
+/// 1024 master). Spawned only when an asset server exists AND the id is a
+/// static-table species (whose plate the art lane always ships); a 404ing
+/// fetch (partial wasm deploy) draws nothing into the well over the card's
+/// unconditional text rows.
+fn gallery_frame(
+    cmd: &mut Commands,
+    species_id: u16,
+    assets: Option<&AssetServer>,
+) -> Option<Entity> {
+    let sp = data::species_by_id(species_id)?;
     let assets = assets?;
-    Some(
-        cmd.spawn((
-            ImageNode::new(assets.load(format!("sprites/icons/{species_id:03}.png"))),
+    let image = cmd
+        .spawn((
+            ImageNode::new(assets.load(gallery_sprite_path(sp))),
             Node {
-                width: Val::Px(32.0),
-                height: Val::Px(32.0),
+                width: Val::Px(PLATE_IMG),
+                height: Val::Px(PLATE_IMG),
                 ..default()
             },
         ))
+        .id();
+    Some(
+        cmd.spawn((
+            Node {
+                width: Val::Px(PLATE),
+                height: Val::Px(PLATE),
+                border: UiRect::all(Val::Px(1.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(style::NAVY),
+            BorderColor::all(style::GOLD_DIM),
+        ))
+        .add_children(&[image])
         .id(),
     )
+}
+
+/// Staged gallery-plate asset path for a static-table species
+/// (`sprites/gallery/{id:03}-{slug}.png` -- the same NNN-slug keying as
+/// the battle sprites, from stage_sprites.py's gallery pass).
+fn gallery_sprite_path(sp: &SpeciesBase) -> String {
+    format!("sprites/gallery/{:03}-{}.png", sp.id, slugify(sp.name))
 }
 
 // ---------- Campaign rest ----------
@@ -2004,6 +2250,57 @@ mod tests {
             let sp = next_boss_species(node as u8).expect("gauntlet node has a boss");
             assert_eq!(boss_sprite_path(sp), *want, "node {node}");
         }
+    }
+
+    // ---------- Roster gallery ----------
+
+    /// The gallery plate recipe must resolve to exactly the staged files
+    /// (`tools/artbake/stage_sprites.py` gallery pass: one un-quantized
+    /// 512px plate per static-table species), in species-table order.
+    #[test]
+    fn gallery_paths_match_staged_slugs() {
+        let expected = [
+            "sprites/gallery/001-squire-audric.png",
+            "sprites/gallery/002-cleric-mabel.png",
+            "sprites/gallery/003-serjeant-bastien.png",
+            "sprites/gallery/004-hospitaller-ysolt.png",
+            "sprites/gallery/005-wayfarer-aelis.png",
+            "sprites/gallery/006-canoness-hrothwyn.png",
+            "sprites/gallery/007-vexillor-anchetil.png",
+            "sprites/gallery/008-brother-aldwyn.png",
+            "sprites/gallery/009-cantor-sabina.png",
+            "sprites/gallery/010-chevalier-raimbaud.png",
+            "sprites/gallery/011-vigil-knight-wymar.png",
+            "sprites/gallery/012-friar-osbert.png",
+            "sprites/gallery/101-prince-of-pride.png",
+            "sprites/gallery/102-wretch-of-envy.png",
+            "sprites/gallery/103-fiend-of-lust.png",
+            "sprites/gallery/104-sleeper-of-sloth.png",
+            "sprites/gallery/105-brute-of-wrath.png",
+            "sprites/gallery/106-glutton-maw.png",
+            "sprites/gallery/107-grasper-of-greed.png",
+        ];
+        assert_eq!(expected.len(), data::all_species().len());
+        for (sp, want) in data::all_species().iter().zip(expected.iter()) {
+            assert_eq!(gallery_sprite_path(sp), *want, "species {}", sp.id);
+        }
+    }
+
+    /// Pager math: six-card leaves; the window clamps an out-of-range page
+    /// back onto the last leaf, and an empty company reads one leaf of
+    /// nothing (never a page 0-of-0).
+    #[test]
+    fn roster_paging_windows_are_six_card_leaves() {
+        assert_eq!(roster_page_window(0, 0), (0, 1, 0, 0));
+        assert_eq!(roster_page_window(6, 0), (0, 1, 0, 6));
+        assert_eq!(roster_page_window(7, 0), (0, 2, 0, 6));
+        assert_eq!(roster_page_window(7, 1), (1, 2, 6, 7));
+        // The design case: a full twenty-card company, four leaves.
+        assert_eq!(roster_page_window(20, 0), (0, 4, 0, 6));
+        assert_eq!(roster_page_window(20, 3), (3, 4, 18, 20));
+        // Stale/overshooting leaf requests clamp onto the last leaf.
+        assert_eq!(roster_page_window(20, 9), (3, 4, 18, 20));
+        assert_eq!(roster_page_window(3, 4), (0, 1, 0, 3));
     }
 
     // ---------- Support-panel codes & invoice parsing ----------

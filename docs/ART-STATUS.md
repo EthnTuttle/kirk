@@ -330,6 +330,26 @@ art/roster-staging/.ledger-e5.jsonl (25 entries incl. the foul + fix);
 MANIFEST.json fold deferred until the tools/artbake lane is quiescent.
 Assets are NOT yet staged into the game: selection UI is a future card.
 
+### 4.12 E1 Company page gallery redesign (DONE 2026-10-15, $0.00)
+
+Roster screen rebuilt around a new GALLERY art class: un-quantized 512px
+plates at crusade-app/assets/sprites/gallery/NNN-slug.png (LANCZOS from the
+surviving nano-banana 1024 masters, no palette remap, no flood-key --
+painted grounds kept). Identity proven by re-quantizing each master to q128
+byte-identical with the shipped battle sprites. 19 species-keyed plates
+(audric-prayer stays a menu scene). Spend $0.00 -- masters reused, zero
+API calls. stage_sprites.py gains a `gallery` pass (MANIFEST keys
+"nano-banana-2-1/<cell>/gallery", idempotent, skips clean master-less).
+Cards run 600x194 (framed 176px plate + full stat block: devotion/grace
+training rows via new serde-tail ChampionCard fields, rite list with
+Pow/Acc/Zeal) in a 2x3 grid paging 6/page via a shell-local RosterPage
+resource (self-installing observer, no main.rs change). ui-shots roster
+leg settle widened to 14 (six plates must resolve; this rode the tooltip
+commit 17fe210 prematurely -- noted for the record). +5 tests (gallery
+path/slug pinning, pager windowing, pre-gallery save compat), 45 plain /
+81 featured green, harness twice byte-identical, roster.png reads
+reverent and fits 1260/710 of the frame exactly.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

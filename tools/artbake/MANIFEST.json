@@ -707,5 +707,195 @@
   "subject": "friar-osbert-hit",
   "src_dims": "1024x1024",
   "cost_usd": 0.0
+ },
+ "nano-banana-2-1/audric-battle/gallery": {
+  "gallery_bytes": 219429,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-battle-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "audric-battle",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery": {
+  "gallery_bytes": 244083,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cleric-mabel-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cleric-mabel",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery": {
+  "gallery_bytes": 269484,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-serjeant-bastien-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "serjeant-bastien",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery": {
+  "gallery_bytes": 235632,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-hospitaller-ysolt-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "hospitaller-ysolt",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery": {
+  "gallery_bytes": 223935,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wayfarer-aelis-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wayfarer-aelis",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery": {
+  "gallery_bytes": 253010,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-canoness-hrothwyn-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "canoness-hrothwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery": {
+  "gallery_bytes": 257894,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vexillor-anchetil-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vexillor-anchetil",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery": {
+  "gallery_bytes": 260673,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brother-aldwyn-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brother-aldwyn",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery": {
+  "gallery_bytes": 235938,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "cantor-sabina",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery": {
+  "gallery_bytes": 236391,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "chevalier-raimbaud",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery": {
+  "gallery_bytes": 252270,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vigil-knight-wymar-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "vigil-knight-wymar",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/friar-osbert/gallery": {
+  "gallery_bytes": 248334,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-friar-osbert-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "friar-osbert",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/prince-of-pride/gallery": {
+  "gallery_bytes": 311245,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-prince-of-pride-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "prince-of-pride",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/wretch-of-envy/gallery": {
+  "gallery_bytes": 200816,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wretch-of-envy-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "wretch-of-envy",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/fiend-of-lust/gallery": {
+  "gallery_bytes": 336869,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-fiend-of-lust-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "fiend-of-lust",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/sleeper-of-sloth/gallery": {
+  "gallery_bytes": 281615,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "sleeper-of-sloth",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/brute-of-wrath/gallery": {
+  "gallery_bytes": 318691,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brute-of-wrath-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "brute-of-wrath",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/glutton-maw/gallery": {
+  "gallery_bytes": 309975,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-glutton-maw-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "glutton-maw",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
+ },
+ "nano-banana-2-1/grasper-of-greed/gallery": {
+  "gallery_bytes": 254064,
+  "gallery_dims": "512x512",
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-grasper-of-greed-v1",
+  "model": "ppq:nano-banana-2-1",
+  "subject": "grasper-of-greed",
+  "src_dims": "1024x1024",
+  "cost_usd": 0.0,
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
  }
 }

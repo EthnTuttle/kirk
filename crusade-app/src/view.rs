@@ -56,6 +56,17 @@ pub struct ChampionCard {
     pub ailment: Option<Ailment>,
     pub types_display: Vec<String>,
     pub rites: Vec<RiteCard>,
+    /// Company-page (gallery) card: the six per-instance Devotion stats
+    /// pre-rendered in class order (resolve, valour, piety, guard, aegis,
+    /// alacrity) as "R0 V0 P0 G0 Ae0 Al0". Serde tail discipline: appended
+    /// after every pre-existing field with a default, so documents written
+    /// before the gallery page still load (the stats row then reads all
+    /// zeros — rebuilt verbatim on the next save by any new client).
+    #[serde(default)]
+    pub devotion_display: String,
+    /// Same recipe for the six Grace stats (IV-analogue, 0..=15 each).
+    #[serde(default)]
+    pub grace_display: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -311,5 +322,35 @@ mod tests {
     fn ladder_line_marks_a_rating_self_kept_and_absent_as_unranked() {
         assert_eq!(ladder_line(Some(1200)), "Ladder: 1200 (self-kept)");
         assert_eq!(ladder_line(None), "Ladder: unranked");
+    }
+
+    /// Serde tail discipline: a ChampionCard document written BEFORE the
+    /// gallery-page fields existed must still load, with the new displays
+    /// defaulting to empty strings (never a parse failure, never a field
+    /// reordered — the wire tail only ever grows).
+    #[test]
+    fn champion_card_pre_gallery_json_still_loads() {
+        let legacy = r#"{
+            "id": "00000000-0000-4000-8000-000000000001",
+            "species_id": 1,
+            "species_name": "Squire Audric",
+            "level": 25,
+            "current_resolve": 61,
+            "max_resolve": 61,
+            "ailment": null,
+            "types_display": ["Humility"],
+            "rites": []
+        }"#;
+        let card: ChampionCard =
+            serde_json::from_str(legacy).expect("a pre-gallery card document loads");
+        assert_eq!(card.devotion_display, "");
+        assert_eq!(card.grace_display, "");
+        // ...and a fully-populated card round-trips with the tail intact.
+        let mut full = card;
+        full.devotion_display = "R12 V8 P0 G3 Ae0 Al0".to_string();
+        full.grace_display = "R15 V15 P15 G15 Ae15 Al15".to_string();
+        let json = serde_json::to_string(&full).expect("card serializes");
+        let back: ChampionCard = serde_json::from_str(&json).expect("card reloads");
+        assert_eq!(back, full);
     }
 }

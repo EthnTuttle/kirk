@@ -23,9 +23,31 @@ Rerunnable/idempotent: outputs are pure functions of the staging cells and
 are only rewritten when their bytes would change, so repeat runs do not
 churn mtimes for bevy's (or trunk's) change detection.
 
+The GALLERY pass (roster-screen portrait plates) ships the same subjects
+as un-quantized painted masters: the 1024x1024 raw each q128 cell was
+quantized from, downscaled LANCZOS to 512x512 with NO palette remap and NO
+ink keying (the painted grounds are not exact-match ink; a plate keeps its
+painted ground like a manuscript miniature -- the pixel look stays on the
+battle/anim/icon surfaces). Per-cell outputs land at
+assets/sprites/gallery/{id:03}-{slug}.png and are ledgered in
+tools/artbake/MANIFEST.json under "nano-banana-2-1/<cell>/gallery" keys
+(rerun after a re-bake writes the new entry; plain reruns are idempotent,
+both the PNGs and the manifest).
+
+Master resolution order per cell: art/roster-staging/<lane>/<cell>/raw.png
+first, then --masters/<cell>/raw.png. Masters are NOT in git (ART-STATUS
+section 2): on a fresh box re-attach them idempotently at $0.00 from the
+ppq lane via each cell's client_request_id (retries attach to finished
+generations, never double-bill), then re-run with --masters pointing at
+the portfolio lane dir. A box with no masters anywhere SKIPS the gallery
+pass with a note (sprite staging itself never blocks); a masters dir that
+lacks an individual cell's raw.png is a hard error like any missing cell.
+
 Options:
   --lane NAME     staging lane under art/roster-staging/ (default:
                   nano-banana-2-1, the locked production lane).
+  --masters DIR   fallback masters dir for the gallery pass (typically the
+                  ppq portfolio lane: .../portfolio/<lane>).
   --no-key-bg     keep the flat ink-navy background tile. DEFAULT is keyed:
                   edge-connected flood fill over pixels EXACTLY matching the
                   palette ink #0B0E1B becomes transparent. Interior ink
@@ -39,6 +61,8 @@ Options:
 """
 
 import argparse
+import io
+import json
 import os
 import sys
 from collections import deque
@@ -101,6 +125,12 @@ ANIM_POSES_BY_CELL = {
     "audric-battle": ["01_idle", "07_strike", "08_hit"],
 }
 
+# Roster gallery pass (painted portrait plates): the un-quantized 1024x1024
+# raw masters downscaled to this canvas with LANCZOS and NO palette remap,
+# keyed "nano-banana-2-1/<cell>/gallery" in MANIFEST.json (see the module
+# docstring for master resolution / regeneration).
+GALLERY = 512
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -114,6 +144,12 @@ def parse_args(argv):
                    help="override the assets root (default: <repo>/crusade-app/assets)")
     p.add_argument("--anim-staging", default=None,
                    help="override the anim staging root (default: <repo>/art/anim-staging)")
+    p.add_argument("--masters", default=None,
+                   help="fallback gallery masters dir with <cell>/raw.png (default: in-staging "
+                        "raws only; on a fresh box this is the ppq portfolio lane, e.g. "
+                        ".../portfolio/<lane>, after the idempotent raw re-attach)")
+    p.add_argument("--manifest", default=None,
+                   help="ledger for the gallery pass (default: <repo>/tools/artbake/MANIFEST.json)")
     p.add_argument("--key-bg", dest="key_bg", action="store_true", default=True,
                    help="key the edge-connected ink-navy background to transparency (default)")
     p.add_argument("--no-key-bg", dest="key_bg", action="store_false",
@@ -125,6 +161,8 @@ def parse_args(argv):
         args.assets = os.path.join(REPO_ROOT, "crusade-app", "assets")
     if args.anim_staging is None:
         args.anim_staging = os.path.join(REPO_ROOT, "art", "anim-staging")
+    if args.manifest is None:
+        args.manifest = os.path.join(REPO_ROOT, "tools", "artbake", "MANIFEST.json")
     return args
 
 
@@ -167,8 +205,6 @@ def key_edge_connected_ink(img):
 def write_png_if_changed(img, path):
     """Idempotent write: encode in memory, skip the disk write when the
     existing file is already byte-identical."""
-    import io
-
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     data = buf.getvalue()
@@ -192,6 +228,125 @@ def load_canvas(src):
         print(f"stage_sprites: {src} is {img.size}, expected {CANVAS}x{CANVAS}", file=sys.stderr)
         sys.exit(1)
     return img
+
+
+def find_gallery_master(args, cell):
+    """The cell's un-quantized raw master: in-staging raw.png first, then
+    the --masters fallback dir. Returns None when neither exists."""
+    for base in (args.staging, args.masters):
+        if base is None:
+            continue
+        src = os.path.join(base, cell, "raw.png")
+        if os.path.isfile(src):
+            return src
+    return None
+
+
+def upsert_manifest(manifest_path, updates):
+    """Keyed manifest update (the ledger discipline of the ppq scripts):
+    apply {key: entry} over MANIFEST.json and write back ONLY when the
+    encoded bytes would change, so reruns do not churn the file. Ported
+    shapes match the existing cell entries (cost/dims/id fields), with the
+    pass name in the key (".../gallery") like the "*-sheet" cells."""
+    if not updates:
+        return False
+    data = {}
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    changed = False
+    for key, entry in updates.items():
+        if data.get(key) != entry:
+            data[key] = entry
+            changed = True
+    if not changed:
+        return False
+    buf = json.dumps(data, indent=1) + "\n"
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as fh:
+            if fh.read() == buf:
+                return False
+    os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+    with open(manifest_path, "w", encoding="utf-8") as fh:
+        fh.write(buf)
+    return True
+
+
+def stage_gallery(args, written, kept):
+    """The roster gallery pass: one un-quantized 512x512 portrait plate per
+    species, LANCZOS-downscaled from the cell's raw 1024 master (NEVER
+    palette-remapped, NEVER ink-keyed -- the painted ground is the point of
+    this class). Skips wholesale with a note on a master-less box; a
+    partially-filled masters dir is a hard error like any missing cell.
+    Returns (rc, written, kept, plates_expected)."""
+    # No masters anywhere = a fresh box without a ppq re-attach: the pixel
+    # surfaces stay complete, so skip (never fail). `--masters` given but
+    # absent is a typo the operator wants to know about.
+    found = [cell for _id, _slug, cell in SUBJECTS
+             if find_gallery_master(args, cell)]
+    if not found:
+        if args.masters is not None and not os.path.isdir(args.masters):
+            print(f"stage_sprites: masters dir not found: {args.masters}",
+                  file=sys.stderr)
+            return 1, written, kept, 0
+        print("stage_sprites: no gallery masters found (in-staging raws absent"
+              + (f", {args.masters} has none" if args.masters else "")
+              + ") -- skipping the gallery pass; re-attach masters per"
+                " docs/ART-STATUS.md section 2, then re-run", file=sys.stderr)
+        return 0, written, kept, 0
+    lane = os.path.basename(args.staging.rstrip(os.sep))
+    base_entries = {}
+    if os.path.exists(args.manifest):
+        with open(args.manifest, "r", encoding="utf-8") as fh:
+            base_entries = json.load(fh)
+    updates = {}
+    staged = 0
+    for species_id, slug, cell in SUBJECTS:
+        src = find_gallery_master(args, cell)
+        if src is None:
+            print(f"stage_sprites: MISSING gallery master for cell {cell} "
+                  f"(looked in staging and --masters)", file=sys.stderr)
+            sys.exit(1)
+        raw = Image.open(src)
+        src_dims = f"{raw.size[0]}x{raw.size[1]}"
+        w, h = raw.size
+        if w != h:
+            s = min(w, h)
+            l, t = (w - s) // 2, (h - s) // 2
+            raw = raw.crop((l, t, l + s, t + s))
+        plate = raw.convert("RGBA").resize((GALLERY, GALLERY), Image.Resampling.LANCZOS)
+        out = os.path.join(
+            args.assets, "sprites", "gallery", f"{species_id:03d}-{slug}.png"
+        )
+        buf = io.BytesIO()
+        plate.save(buf, format="PNG", optimize=True)
+        if write_png_if_changed(plate, out):
+            written += 1
+        else:
+            kept += 1
+        # Ledger entry mirrors the parent cell's id/model/cost (identity
+        # inherited from the same generation; re-quantizing the master must
+        # reproduce the staged q128 byte-for-byte -- verified 2026-10-15).
+        parent = base_entries.get(f"{lane}/{cell}", {})
+        updates[f"{lane}/{cell}/gallery"] = {
+            "gallery_bytes": len(buf.getvalue()),
+            "gallery_dims": f"{GALLERY}x{GALLERY}",
+            "client_request_id": parent.get("client_request_id", "unknown"),
+            "model": parent.get("model", f"ppq:{lane}"),
+            "subject": cell,
+            "src_dims": src_dims,
+            "cost_usd": 0.0,
+            "note": ("un-quantized portrait plate: LANCZOS downscale of the "
+                     "cell raw master, no palette remap, no ink keying; "
+                     "identity pinned to the parent cell's q128"),
+        }
+        staged += 1
+        print(f"  {species_id:>4} {slug:22} {cell:22} {'':>8}  "
+              f"{os.path.relpath(out, args.assets)} ({src_dims} -> {GALLERY})")
+    if upsert_manifest(args.manifest, updates):
+        print(f"stage_sprites: MANIFEST.json ledger updated "
+              f"({len(updates)} gallery entries)")
+    return 0 if staged == len(SUBJECTS) else 1, written, kept, staged
 
 
 def main(argv):
@@ -271,9 +426,16 @@ def main(argv):
         print(f"  {species_id:>4} {slug:22} {cell:22} {'':>8}  "
               f"anim/{species_id:03d}-{slug}/{{{', '.join(outs)}}}")
 
+    # Gallery pass: 512x512 un-quantized portrait plates for the roster
+    # screen (skips with a note on any box without the raw masters).
+    gallery_rc, written, kept, plates = stage_gallery(args, written, kept)
+    if gallery_rc:
+        return gallery_rc
+
     n = len(SUBJECTS)
-    total = 2 * n + len(SCENES) + anim_frames
-    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s) + {anim_frames} anim frames, "
+    total = 2 * n + len(SCENES) + anim_frames + plates
+    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s) + {anim_frames} anim frames"
+          f" + {plates} gallery plates, "
           f"{written} files written, "
           f"{kept} unchanged, {total} files expected under "
           f"{os.path.relpath(args.assets, REPO_ROOT)}/sprites/")

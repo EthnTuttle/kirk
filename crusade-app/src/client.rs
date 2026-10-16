@@ -249,6 +249,25 @@ impl ClientGame {
                     ailment: c.ailment,
                     types_display: sp.map_or_else(Vec::new, |s| typing_display(s.typing)),
                     rites: rite_cards(&c),
+                    // The gallery page's fuller stats: per-instance Devotion
+                    // (training) and Grace (temperament) blocks, pre-rendered
+                    // in the class's canonical stat order.
+                    devotion_display: training_display([
+                        c.devotion.resolve,
+                        c.devotion.valour,
+                        c.devotion.piety,
+                        c.devotion.guard,
+                        c.devotion.aegis,
+                        c.devotion.alacrity,
+                    ]),
+                    grace_display: training_display([
+                        c.grace.resolve,
+                        c.grace.valour,
+                        c.grace.piety,
+                        c.grace.guard,
+                        c.grace.aegis,
+                        c.grace.alacrity,
+                    ]),
                 }
             })
             .collect()
@@ -1076,6 +1095,17 @@ pub(crate) fn species_name(c: &ChampionInstance) -> String {
     )
 }
 
+/// The gallery-card stat line shared by Devotion and Grace renders: six
+/// per-instance values in the class's canonical order (resolve, valour,
+/// piety, guard, aegis, alacrity), compactly abbreviated (Ae/Al
+/// distinguish aegis/alacrity). Pure ASCII, fixed labels.
+fn training_display(values: [u8; 6]) -> String {
+    format!(
+        "R{} V{} P{} G{} Ae{} Al{}",
+        values[0], values[1], values[2], values[3], values[4], values[5]
+    )
+}
+
 /// Render one side's active champion. `local` is the side the UI controls:
 /// it gets `ours: true`. Practice/campaign pass MY_SIDE; the net driver
 /// passes its own side (a joiner sees the duel from side 1).
@@ -1623,6 +1653,57 @@ mod lobby_tests {
         assert!(game
             .handle(ClientInput::LobbyNet(LobbyNet::DuelFinished { won: true }))
             .is_err());
+    }
+}
+
+#[cfg(test)]
+mod roster_gallery_tests {
+    //! The company gallery page's fuller card fields: per-instance Devotion
+    //! and Grace blocks must arrive pre-rendered on every roster card
+    //! (serde tail discipline for the fields themselves is pinned over in
+    //! view.rs; here we pin the population recipe).
+
+    use super::*;
+
+    /// Same fixture shape as the shell's starter band: one level-25 Audric
+    /// with zeroed Devotion/Grace (an untrained fresh champion).
+    fn fixture_store() -> RosterStore {
+        let mut store = RosterStore::new();
+        store
+            .add_champion(&practice_champion(1, 25).expect("fixture champion"))
+            .expect("fixture store accepts the champion");
+        store
+    }
+
+    #[test]
+    fn roster_cards_carry_devotion_and_grace_displays() {
+        let game = ClientGame::new(fixture_store());
+        let cards = game.roster_cards();
+        assert_eq!(cards.len(), 1);
+        let card = &cards[0];
+        assert_eq!(
+            card.devotion_display, "R0 V0 P0 G0 Ae0 Al0",
+            "an untrained champion's devotion block renders all-zero"
+        );
+        assert_eq!(
+            card.grace_display, "R0 V0 P0 G0 Ae0 Al0",
+            "the fixture champion carries no rolled grace"
+        );
+        // The pre-existing rows are untouched by the gallery fields.
+        assert_eq!(card.species_name, "Squire Audric");
+        assert_eq!(card.level, 25);
+        assert!(!card.rites.is_empty());
+        for line in [&card.devotion_display, &card.grace_display] {
+            assert!(line.is_ascii(), "gallery lines stay ASCII: {line}");
+        }
+    }
+
+    #[test]
+    fn training_display_uses_class_order_and_caps_labels() {
+        // Class order: resolve, valour, piety, guard, aegis, alacrity; the
+        // Ae/Al spellings keep aegis and alacrity distinct at card width.
+        let line = training_display([1, 2, 3, 4, 5, 6]);
+        assert_eq!(line, "R1 V2 P3 G4 Ae5 Al6");
     }
 }
 
