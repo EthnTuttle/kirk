@@ -288,6 +288,21 @@ battle_row). +4 arc tests; --smoke exit 0; ui-shots full pass twice all 9
 PNGs byte-identical; battle.png deterministically catches turn 2 mid-arc.
 Project spend unchanged at $0.664.
 
+### 4.9 E2 QA round: battle screen fit + mirror tag (DONE 2026-10-15)
+
+Real-browser QA findings fixed in battle.rs only. (A) Battle screen no
+longer overflows 1280x720: rites render in a fixed 2x2 grid of compact
+two-line cells (live button / dead slab split unchanged), the chronicle is
+a battle-local panel capped at 8 freshest-last lines (client LOG_TAIL
+already delivers <=8), switch targets + Concede are one compact chip row,
+champ-card padding/gap tightened 14/6 -> 10/4. Measured content extent:
+battle.png bottom y=685 of 719 (was 719, clipped — row-2 rites truncated,
+command row invisible); battle-over 545, battle-over-net 657, campaign 643,
+all unchanged. (B) Mirror matches (same species both sides) tag the foe
+panel's name line "Foe {Name} - Lv {N}"; ours stays plain, no sprite tint.
++1 bin test -> 74 green under bevy-ui, 42 plain; --smoke exit 0; D5/D6 arc
+machinery 0 diff lines; harness 3-byte-identical passes, no leg edits.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

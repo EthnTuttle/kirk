@@ -3,6 +3,13 @@
 //! rites from `my_rites`, switches from `can_switch_to`, Concede. The
 //! forced-switch phase draws the same screen under a modal overlay.
 //!
+//! Layout budget (1280x720): the lower region is engineered to always fit —
+//! rites in a FIXED two-column grid of compact cells, switches as one chip
+//! row, the chronicle height-capped at [`CHRONICLE_PANEL_LINES`] lines, and
+//! panel paddings/gaps tightened from `style::panel_node`'s roomier recipe.
+//! Mirror matches (both actives the same species) tag the foe's name line
+//! with a "Foe " prefix — text only, never a sprite tint (palette canon).
+//!
 //! Portrait animation: the card D5 idle loop runs off the frame counter;
 //! the card D6 combat arc (strike/hit poses, boss white-flash) is stamped
 //! per rebuild from the snapshot's `fresh_events` and counts down in
@@ -17,8 +24,8 @@ use crusade_core::data;
 use crusade_core::engine::BattleEvent;
 use crusade_core::types::Ailment;
 
-use crate::screens::{action_button, log_panel, panel, text_node};
-use crate::state::{switch_target_idx, switch_target_name};
+use crate::screens::{action_button, panel, text_node};
+use crate::state::{switch_target_idx, switch_target_name, ActionButton, BaseBackground};
 use crate::style;
 
 /// Full in-battle layout for [`Phase::InBattle`].
@@ -29,10 +36,10 @@ pub(crate) fn battle_screen(
 ) -> Vec<Entity> {
     let mut kids = vec![
         battle_row(cmd, snap, assets),
-        log_panel(cmd, "Chronicle", &snap.log_tail),
+        chronicle_panel(cmd, &snap.log_tail),
     ];
     if !snap.my_rites.is_empty() {
-        kids.push(rite_row(cmd, &snap.my_rites));
+        kids.push(rite_grid(cmd, &snap.my_rites));
     }
     kids.push(command_row(cmd, snap));
     kids
@@ -63,15 +70,22 @@ fn battle_row(cmd: &mut Commands, snap: &ViewSnapshot, assets: Option<&AssetServ
     // (practice, campaign) attribute exactly.
     let me_plan = arc_plan_for_panel(&snap.fresh_events, 0, snap.me.as_ref(), snap);
     let foe_plan = arc_plan_for_panel(&snap.fresh_events, 1, snap.foe.as_ref(), snap);
+    // Mirror matches (practice/campaign CAN field the same species both
+    // sides): tag the foe panel's name line so the two cards never read
+    // identically. Name only — palette canon bars sprite tints.
+    let mirror = match (snap.me.as_ref(), snap.foe.as_ref()) {
+        (Some(me), Some(foe)) => mirror_match(me, foe),
+        _ => false,
+    };
     let me = snap
         .me
         .as_ref()
-        .map(|v| champion_panel(cmd, v, assets, me_plan))
+        .map(|v| champion_panel(cmd, v, assets, me_plan, false))
         .unwrap_or_else(|| text_node(cmd, "...".into(), style::body_font(), style::DIM));
     let foe = snap
         .foe
         .as_ref()
-        .map(|v| champion_panel(cmd, v, assets, foe_plan))
+        .map(|v| champion_panel(cmd, v, assets, foe_plan, mirror))
         .unwrap_or_else(|| text_node(cmd, "...".into(), style::body_font(), style::DIM));
     cmd.spawn(Node {
         width: Val::Percent(100.0),
@@ -105,13 +119,34 @@ fn arc_plan_for_panel(
     )
 }
 
+/// True when both actives are the same species (a practice/campaign mirror
+/// match): the Foe panel's name line then takes a "Foe " tag.
+fn mirror_match(me: &BattleChampionView, foe: &BattleChampionView) -> bool {
+    me.species_name == foe.species_name
+}
+
+/// One panel's name row: "{Species} - Lv {N}"; a mirror-match foe is
+/// prefixed "Foe " so the two cards can never read identically. Text only —
+/// the sprite is never tinted (palette canon), and the chronicle's lines
+/// stay exactly as the client rendered them.
+fn name_line(view: &BattleChampionView, mirror: bool) -> String {
+    if mirror {
+        format!("Foe {} - Lv {}", view.species_name, view.level)
+    } else {
+        format!("{} - Lv {}", view.species_name, view.level)
+    }
+}
+
 /// One side's champion card: portrait sprite (when the art lane has the
-/// species), then gold edge for ours, ember for the foe.
+/// species), then gold edge for ours, ember for the foe. `mirror` marks the
+/// foe half of a same-species pairing ([`name_line`]). The card's node
+/// recipe is `style::panel_node` tightened for the 720px battle budget.
 fn champion_panel(
     cmd: &mut Commands,
     view: &BattleChampionView,
     assets: Option<&AssetServer>,
     arc: Vec<(ArcPose, u16)>,
+    mirror: bool,
 ) -> Entity {
     let border = if view.ours {
         style::GOLD_DIM
@@ -124,7 +159,7 @@ fn champion_panel(
     }
     kids.push(text_node(
         cmd,
-        format!("{} - Lv {}", view.species_name, view.level),
+        name_line(view, mirror),
         style::head_font(),
         style::BONE,
     ));
@@ -155,7 +190,13 @@ fn champion_panel(
         style::DIM,
     ));
     let mut card = cmd.spawn((
-        style::panel_node(),
+        Node {
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::all(Val::Px(10.0)),
+            border: UiRect::all(Val::Px(1.0)),
+            row_gap: Val::Px(4.0),
+            ..default()
+        },
         BackgroundColor(style::PANEL),
         BorderColor::all(border),
     ));
@@ -548,34 +589,104 @@ fn stage_badge_row(cmd: &mut Commands, stages: &[(String, i8)]) -> Entity {
     .id()
 }
 
-/// Up to four rite buttons; exhausted rites render as cold, dead slabs.
-fn rite_row(cmd: &mut Commands, rites: &[RiteCard]) -> Entity {
+/// The chronicle's line cap on the battle screen. The client's `LOG_TAIL`
+/// already delivers at most 8; this view-side clamp keeps the screen's
+/// height budget independent of the caller — the tail is freshest-LAST, so
+/// a longer slice elides its oldest lines and keeps the newest.
+const CHRONICLE_PANEL_LINES: usize = 8;
+
+/// The battle chronicle: title + the newest [`CHRONICLE_PANEL_LINES`]
+/// lines in a height-capped, tightened dark panel. `screens::log_panel`
+/// stays as-is for the centered (menu-flow) screens, whose roomier layout
+/// budget is not the battle screen's.
+fn chronicle_panel(cmd: &mut Commands, lines: &[String]) -> Entity {
+    let mut kids = vec![text_node(
+        cmd,
+        "Chronicle".into(),
+        style::small_font(),
+        style::GOLD_DIM,
+    )];
+    let elided = lines.len().saturating_sub(CHRONICLE_PANEL_LINES);
+    for line in &lines[elided..] {
+        kids.push(text_node(cmd, line.clone(), style::small_font(), style::BONE));
+    }
+    cmd.spawn((
+        Node {
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::axes(Val::Px(12.0), Val::Px(8.0)),
+            border: UiRect::all(Val::Px(1.0)),
+            row_gap: Val::Px(3.0),
+            ..default()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::PANEL_EDGE),
+    ))
+    .add_children(&kids)
+    .id()
+}
+
+/// Up to four rite buttons in a FIXED two-column grid: compact two-line
+/// cells (name over the stat strip), so a full kit always costs exactly
+/// two short rows — the old wrap-anywhere row let wide labels stack a
+/// third row and pushed the command row clean off a 720px viewport.
+/// Exhausted rites render as cold, dead slabs, as before.
+fn rite_grid(cmd: &mut Commands, rites: &[RiteCard]) -> Entity {
     let buttons: Vec<Entity> = rites
         .iter()
         .map(|rite| {
-            let label = rite_label(rite);
-            if rite.usable {
-                action_button(cmd, label, ClientInput::PickRite { slot: rite.slot })
-            } else {
-                crate::screens::disabled_button(cmd, label)
-            }
+            let (name, meta) = rite_lines(rite);
+            rite_cell(cmd, name, meta, rite)
         })
         .collect();
     cmd.spawn(Node {
-        column_gap: Val::Px(10.0),
-        row_gap: Val::Px(8.0),
-        flex_wrap: FlexWrap::Wrap,
+        display: Display::Grid,
+        grid_template_columns: vec![RepeatedGridTrack::flex(2, 1.0)],
+        column_gap: Val::Px(8.0),
+        row_gap: Val::Px(6.0),
         ..default()
     })
     .add_children(&buttons)
     .id()
 }
 
-fn rite_label(rite: &RiteCard) -> String {
-    if rite.power > 0 {
+/// One rite cell of [`rite_grid`]: live compact button when usable, inert
+/// slab (no `Button`, no queued input) when the zeal is spent — the exact
+/// live/dead split `action_button`/`disabled_button` had, shrunk.
+fn rite_cell(cmd: &mut Commands, name: String, meta: String, rite: &RiteCard) -> Entity {
+    let ink = if rite.usable { style::BONE } else { style::DIM };
+    let name_node = text_node(cmd, name, style::body_font(), ink);
+    let meta_node = text_node(cmd, meta, style::small_font(), ink);
+    let node = Node {
+        flex_direction: FlexDirection::Column,
+        padding: UiRect::axes(Val::Px(12.0), Val::Px(6.0)),
+        border: UiRect::all(Val::Px(1.0)),
+        row_gap: Val::Px(2.0),
+        ..default()
+    };
+    let mut cell = cmd.spawn(node);
+    if rite.usable {
+        cell.insert((
+            Button,
+            BackgroundColor(style::BUTTON),
+            BorderColor::all(style::GOLD_DIM),
+            BaseBackground(style::BUTTON),
+            ActionButton(ClientInput::PickRite { slot: rite.slot }),
+        ));
+    } else {
+        cell.insert((
+            BackgroundColor(style::BUTTON_DISABLED),
+            BorderColor::all(style::PANEL_EDGE),
+        ));
+    }
+    cell.add_children(&[name_node, meta_node]).id()
+}
+
+/// The rite cell's two lines: the name, then the stat strip (Pow shown
+/// only for rites that have it — same composition the old label had).
+fn rite_lines(rite: &RiteCard) -> (String, String) {
+    let meta = if rite.power > 0 {
         format!(
-            "{}\n{} {} | Pow {} | Acc {} | Zeal {}/{}",
-            rite.name,
+            "{} {} | Pow {} | Acc {} | Zeal {}/{}",
             rite.type_display,
             rite.category_display,
             rite.power,
@@ -585,24 +696,22 @@ fn rite_label(rite: &RiteCard) -> String {
         )
     } else {
         format!(
-            "{}\n{} {} | Acc {} | Zeal {}/{}",
-            rite.name,
-            rite.type_display,
-            rite.category_display,
-            rite.accuracy,
-            rite.zeal_left,
-            rite.zeal_max
+            "{} {} | Acc {} | Zeal {}/{}",
+            rite.type_display, rite.category_display, rite.accuracy, rite.zeal_left, rite.zeal_max
         )
-    }
+    };
+    (rite.name.clone(), meta)
 }
 
-/// Voluntary switches plus the walk-away concede.
+/// Voluntary switches plus the walk-away concede: ONE row of compact chips
+/// (small text, tight padding) so the row cannot force a second line of
+/// full-size buttons at the shipped 1280x720 budget.
 fn command_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
     let mut kids: Vec<Entity> = snap
         .can_switch_to
         .iter()
         .map(|target| {
-            action_button(
+            chip_button(
                 cmd,
                 format!("Send {}", switch_target_name(target)),
                 ClientInput::PickSwitch {
@@ -611,14 +720,36 @@ fn command_row(cmd: &mut Commands, snap: &ViewSnapshot) -> Entity {
             )
         })
         .collect();
-    kids.push(action_button(cmd, "Concede".into(), ClientInput::Concede));
+    kids.push(chip_button(cmd, "Concede".into(), ClientInput::Concede));
     cmd.spawn(Node {
-        column_gap: Val::Px(10.0),
-        row_gap: Val::Px(8.0),
+        column_gap: Val::Px(8.0),
+        row_gap: Val::Px(4.0),
         flex_wrap: FlexWrap::Wrap,
         ..default()
     })
     .add_children(&kids)
+    .id()
+}
+
+/// A compact clickable chip: the [`ActionButton`]/hover-tint wiring of
+/// `screens::action_button` with small text and tight padding.
+fn chip_button(cmd: &mut Commands, label: String, input: ClientInput) -> Entity {
+    let text = text_node(cmd, label, style::small_font(), style::BONE);
+    cmd.spawn((
+        Button,
+        Node {
+            padding: UiRect::axes(Val::Px(10.0), Val::Px(4.0)),
+            border: UiRect::all(Val::Px(1.0)),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        BackgroundColor(style::BUTTON),
+        BorderColor::all(style::GOLD_DIM),
+        BaseBackground(style::BUTTON),
+        ActionButton(input),
+    ))
+    .add_children(&[text])
     .id()
 }
 
@@ -889,6 +1020,38 @@ mod tests {
         assert_eq!(arc_plan(&events, 1, false), vec![(ArcPose::Hit, FLASH_TICKS)]);
         assert!(arc_plan(&[rite(1)], 1, false).is_empty());
         assert!(arc_plan(&[dmg(0)], 1, false).is_empty());
+    }
+
+    /// Mirror-match naming: when both sides' actives are the same species
+    /// (practice/campaign CAN field e.g. Serjeant Bastien vs Serjeant
+    /// Bastien), the Foe panel's name line gains a "Foe " prefix while ours
+    /// stays plain; a distinct matchup leaves both lines untouched.
+    #[test]
+    fn mirror_match_prefixes_the_foe_name_line_only() {
+        let view = |ours: bool, species: &str| BattleChampionView {
+            ours,
+            species_name: species.to_string(),
+            level: 25,
+            current_resolve: 80,
+            max_resolve: 80,
+            ailment: None,
+            types_display: vec!["Patience".to_string()],
+            stages: Vec::new(),
+            alive_reserves: 2,
+        };
+        let mine = view(true, "Serjeant Bastien");
+        let mirror_foe = view(false, "Serjeant Bastien");
+        let other_foe = view(false, "Squire Audric");
+        // Mirror: the foe line is tagged, ours is not.
+        assert!(mirror_match(&mine, &mirror_foe));
+        assert_eq!(
+            name_line(&mirror_foe, true),
+            "Foe Serjeant Bastien - Lv 25"
+        );
+        assert_eq!(name_line(&mine, false), "Serjeant Bastien - Lv 25");
+        // Distinct species: no tag anywhere.
+        assert!(!mirror_match(&mine, &other_foe));
+        assert_eq!(name_line(&other_foe, false), "Squire Audric - Lv 25");
     }
 
     #[test]
