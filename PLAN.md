@@ -17,7 +17,17 @@ Tone rules (avoid heresy, glorify God):
 - The Cross and Crusades are honoured; no mockery, no syncretism, no occult
   player-facing mechanics. Enemy units are vices/demons given fantastical form.
 - Sin-bosses are grotesque allegories (Spenser/Dante tradition), not real
-  religions or peoples. No depictions of actual historical figures.
+  religions or peoples. Human foes are a separate lane from allegory.
+- Historical lane (owner-approved 2026-10-16): deceased combatant figures of
+  the 1095-1192 Crusades band (Kilij Arslan I, Nur ad-Din, Shirkuh, Saladin,
+  and their men) MAY be depicted as honorable, historically grounded
+  adversaries in "The Road East" (docs/HISTORICAL-FOES.md). Every such
+  depiction is governed by the binding dignity rules of HISTORICAL-FOES
+  section 6: worthy-adversary register, period exonyms only as attributed
+  quotation, no dehumanization tropes, honest codex entries marking attested
+  history against romance. No living persons, no figures outside 1095-1192,
+  and human foes are never sin-typed. This carve-out answers open question 1
+  of the research doc; the sin gauntlet itself is unchanged.
 
 ## 2. IP Safety
 

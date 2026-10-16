@@ -6,6 +6,14 @@ later cards. Constraints honored: ASCII only; canon counts LOCKED
 combat characters are men; right-facing 128x128 sprites on the locked
 16-color palette; $0 art lane (nano-banana-2-1).
 
+Status update 2026-10-16: Q1 ANSWERED - PLAN.md section 1 amended with a
+scoped historical-figures carve-out (1095-1192 deceased combatants,
+HISTORICAL-FOES section 6 dignity rules binding). Art generation pass
+(HF-2) follows immediately. Q2 typing, Q3 register, Q4 rewards, Q5
+recruitment, Q6 Jerusalem prose-only, Q7 node-damage rules remain OPEN
+and gate the data/wiring cards (HF-1/HF-3/HF-4) - answer before those.
+
+
 ## 1. Era scope: 1095-1192 (recommended)
 
 Band: Council of Clermont (1095) to the Truce of Jaffa (Sept 1192) - the
