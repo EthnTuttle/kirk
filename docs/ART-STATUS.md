@@ -318,6 +318,18 @@ events are pure ECS — no winit needed): hover swap/reap roundtrip + layout
 pin contract. Call-site wave next (battle stats/rites/chips, roster stats)
 once sibling E1 lands.
 
+### 4.11 E5 alt-portrait variants (DONE 2026-10-15, $0.00)
+
+12/12 battle champions x 2 wardrobe/palette variants under
+art/roster-staging/nano-banana-2-1/<subject>/ as alt-{a,b}-master.png
+(1024) + alt-{a,b}_q128.png (128 canon-quantized). Same identity/face per
+subject; variant concepts span winter-cloak, penitent-robe, campaign-worn,
+ceremonial. 23/24 v1 eyeball-pass; 1 identity foul (canoness-hrothwyn alt-b
+pipe artifact) fixed via pinned v2 retry. Ledger:
+art/roster-staging/.ledger-e5.jsonl (25 entries incl. the foul + fix);
+MANIFEST.json fold deferred until the tools/artbake lane is quiescent.
+Assets are NOT yet staged into the game: selection UI is a future card.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
