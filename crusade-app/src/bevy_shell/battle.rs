@@ -749,7 +749,6 @@ fn verdict_image_path(view: &BattleChampionView, victor: bool) -> Option<String>
 /// MinimalPlugins) or a snapshot with no actives — draws nothing and
 /// asserts no assets. Mirror matches keep the battle panel's "Foe " tag
 /// so the two cards can never read identically.
-#[allow(dead_code)] // The call sites live in screens.rs' over screens (sibling lane).
 pub(crate) fn verdict_row(
     cmd: &mut Commands,
     snap: &ViewSnapshot,
@@ -816,9 +815,9 @@ fn verdict_panel(
             Node {
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(8.0)),
+                padding: UiRect::all(Val::Px(5.0)),
                 border: UiRect::all(Val::Px(1.0)),
-                row_gap: Val::Px(4.0),
+                row_gap: Val::Px(3.0),
                 ..default()
             },
             BackgroundColor(style::PANEL),

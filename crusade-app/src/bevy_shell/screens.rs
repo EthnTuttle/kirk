@@ -87,7 +87,7 @@ pub fn rebuild_ui(
                     _ => None,
                 };
                 (
-                    net_over_screen(&mut commands, &duel, won, alms.as_ref()),
+                    net_over_screen(&mut commands, &duel, won, alms.as_ref(), assets),
                     true,
                 )
             }
@@ -121,7 +121,7 @@ pub fn rebuild_ui(
                 (battle::forced_switch_screen(&mut commands, &snap, assets), false)
             }
             Phase::CampaignRest => (rest_screen(&mut commands, &snap, assets), true),
-            Phase::BattleOver => (over_screen(&mut commands, &snap), true),
+            Phase::BattleOver => (over_screen(&mut commands, &snap, assets), true),
             Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
             Phase::Hagiography => (hagiography_screen(&mut commands, &snap, assets), false),
         },
@@ -1679,13 +1679,21 @@ fn slugify(name: &str) -> String {
 
 // ---------- Battle over ----------
 
-fn over_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+fn over_screen(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
     let (banner, color) = match snap.battle_result {
         Some(0) => ("Victory - Deo Gratias", style::GOLD),
         Some(_) => ("Defeat - Pray and Regroup", style::HP_RED),
         None => ("The field falls quiet.", style::BONE),
     };
     let mut kids = vec![text_node(cmd, banner.into(), style::title_font(), color)];
+    // The verdict holds: victor's pose framed in gold, the fallen plain.
+    if let Some(row) = battle::verdict_row(cmd, snap, snap.battle_result.map(|w| w == 0), assets) {
+        kids.push(row);
+    }
     if let Some(c) = snap.campaign {
         kids.push(text_node(
             cmd,
@@ -1855,6 +1863,7 @@ fn net_over_screen(
     snap: &ViewSnapshot,
     won: Option<bool>,
     alms: Option<&AlmsState>,
+    assets: Option<&AssetServer>,
 ) -> Vec<Entity> {
     let (banner, color) = match won {
         Some(true) => ("Victory - Deo Gratias", style::GOLD),
@@ -1874,8 +1883,19 @@ fn net_over_screen(
             style::small_font(),
             style::DIM,
         ),
-        log_panel(cmd, "Last rites of the duel", &snap.log_tail),
+        log_panel(
+            cmd,
+            "Last rites of the duel",
+            // 4 freshest lines: the net surface also carries banner + seal +
+            // verdict poses + attestation + alms; chronicles longer than
+            // this overflowed 720px (measured: banner clipped, Amen flush).
+            &snap.log_tail[snap.log_tail.len().saturating_sub(4)..],
+        ),
     ];
+    // The verdict holds: victor's pose framed in gold, the fallen plain.
+    if let Some(row) = battle::verdict_row(cmd, snap, won, assets) {
+        kids.push(row);
+    }
     if let Some(alms) = alms {
         // (B3b, a) the one-time attestation publish's receipt.
         if let Some(post) = alms.attestation {

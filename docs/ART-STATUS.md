@@ -400,8 +400,9 @@ followthrough; bosses flash-only by species gate; missing handles degrade
 to idle+flash, never a broken texture; net-duel roster_count==0 replay
 suppression covers the new beats. Verdict machinery battle::verdict_row
 built + tested (11_victory gold-frame / 12_defeat plain-fallen, bosses
-static, headless-safe) - its one-line screens.rs call sites land when the
-sibling roster lane releases the file. +3 battle anim tests (beat order/
+static, headless-safe) - call sites wired in the follow-up commit: both over-screens show the
+verdict row; the net surface's chronicle caps at 4 freshest lines
+(measured overflow: banner clipped + Amen flush at the full 8). +3 battle anim tests (beat order/
 timing, replay suppression sweep, verdict gates); 51 plain / 111 featured
 green, check clean, smoke 0, harness twice byte-identical; battle.png
 proves Audric's windup opposite Aldwyn's flash mid-arc.
