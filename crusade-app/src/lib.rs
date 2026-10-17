@@ -28,6 +28,7 @@
 //! practice, campaign, and net duels unchanged.
 
 pub mod client;
+pub mod conversion;
 pub mod lobby;
 pub mod persist;
 pub mod policy;

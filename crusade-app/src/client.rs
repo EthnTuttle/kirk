@@ -22,11 +22,13 @@ use crusade_core::types::{
 use crusade_data::RosterStore;
 use nostr::Keys;
 
+use crate::conversion as conv;
 use crate::policy::greedy_action;
 use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
-    BattleChampionView, CampaignView, ChampionCard, ClientInput, LobbyNet, LobbyStage, LobbyView,
-    Phase, RiteCard, SinCard, ViewSnapshot, WitnessCard,
+    BattleChampionView, CampaignView, ChampionCard, ClientInput, ConversionView, FoeCard,
+    LobbyNet, LobbyStage, LobbyView, Phase, RiteCard, SinCard, TestimonyCard, ViewSnapshot,
+    WitnessCard,
 };
 use crate::AppError;
 
@@ -62,6 +64,22 @@ const CAMPAIGN_SEED: [u8; 32] = [0xC9; 32];
 /// PvE rewards paid to the shared inventory (writes to the store, unlike
 /// anything else mid-battle).
 const SHARD_ITEM: &str = "contrition-shard";
+
+/// A yielded convertible adversary awaiting the player's Call decision
+/// (CONVERSION.md, M7b). Caller piety/level and the chance are captured at
+/// battle end: the caller is the standing MY_SIDE champion (v1
+/// simplification — v1 does not attribute the final blow to a striker, so
+/// `caller_used_virtue_kill` is always false and the caller is the field's
+/// survivor; fervor items are not yet wired, so fervor_bonus is 0).
+#[derive(Debug, Clone)]
+struct PendingCall {
+    species_id: u16,
+    foe_level: u8,
+    /// The contested-roll chance (3..=85), captured at battle end off
+    /// `data::conversion_chance` so the choice screen shows exactly the
+    /// odds the sealed draw resolves against.
+    chance_pct: u8,
+}
 /// Settings key for the persisted sin-boss defeat mask: bit i (node i of
 /// [`CAMPAIGN_NODE_SPECIES`]) is set the moment that boss's node is
 /// cleared, beside the shard bounty. This is the Hagiography's Manuscript
@@ -139,6 +157,11 @@ pub struct ClientGame {
     nostr_keys: Option<Keys>,
     /// Human-readable log lines, capped at `LOG_CAP`.
     log: Vec<String>,
+    /// Yielded convertible adversaries awaiting a Call decision, head
+    /// first; non-empty exactly while [`Phase::ConversionChoice`] is up.
+    /// Not persisted — the queue lives at most one frame-pair past its
+    /// battle (same lifetime discipline as `battle`).
+    pending_calls: Vec<PendingCall>,
     /// Raw events since the last snapshot. `RefCell` so `snapshot(&self)`
     /// can drain them (take-drain semantics for animation queues).
     fresh_events: RefCell<Vec<BattleEvent>>,
@@ -154,6 +177,7 @@ impl ClientGame {
             lobby: None,
             nostr_keys: None,
             log: Vec::new(),
+            pending_calls: Vec::new(),
             fresh_events: RefCell::new(Vec::new()),
         }
     }
@@ -204,6 +228,34 @@ impl ClientGame {
                 sin_cards(self.sins_defeated_mask())
             } else {
                 Vec::new()
+            },
+            // Two more codex books on the same phase gate: the Roll of
+            // Worthy Adversaries (foes_defeated mask) and the Testimonies
+            // of the Baptized (converts_baptized mask), both u32-keyed.
+            foes: if self.phase == Phase::Hagiography {
+                foe_cards(self.foes_defeated_mask())
+            } else {
+                Vec::new()
+            },
+            testimonies: if self.phase == Phase::Hagiography {
+                testimony_cards(self.converts_baptized_mask())
+            } else {
+                Vec::new()
+            },
+            // The live Call rides only while its choice is pending.
+            conversion: if self.phase == Phase::ConversionChoice {
+                self.pending_calls.first().map(|pc| ConversionView {
+                    species_id: pc.species_id,
+                    species_name: data::species_by_id(pc.species_id)
+                        .map_or_else(|| format!("Adversary #{}", pc.species_id), |s| {
+                            s.name.to_string()
+                        }),
+                    foe_level: pc.foe_level,
+                    chance_pct: pc.chance_pct,
+                    pending: self.pending_calls.len() as u8,
+                })
+            } else {
+                None
             },
             fresh_events,
         };
@@ -258,7 +310,17 @@ impl ClientGame {
                         data::compute_stats(&c, s).max_resolve
                     }),
                     ailment: c.ailment,
-                    types_display: sp.map_or_else(Vec::new, |s| typing_display(s.typing)),
+                    // A baptized convert reads Humility in the gallery
+                    // (CONVERSION 4's typing shift, v1 collapses "the
+                    // virtue that felled him" to Humility). Display-level
+                    // only: typing lives on the static species table, so
+                    // battle mechanics stay Valor until crusade-core grows
+                    // an instance typing field.
+                    types_display: if c.converted {
+                        vec!["Humility".to_string()]
+                    } else {
+                        sp.map_or_else(Vec::new, |s| typing_display(s.typing))
+                    },
                     rites: rite_cards(&c),
                     // The gallery page's fuller stats: per-instance Devotion
                     // (training) and Grace (temperament) blocks, pre-rendered
@@ -358,6 +420,39 @@ impl ClientGame {
             .unwrap_or(0)
     }
 
+    /// The persisted adversary defeat mask (`campaign.foes_defeated`, u32 —
+    /// 14 foe ids exceed a u8; HF 6.5). Bit packing: [`conv::foe_bit`].
+    /// Absent/unparseable degrades to 0 — a sealed Roll — never an error,
+    /// mirroring [`Self::sins_defeated_mask`].
+    fn foes_defeated_mask(&self) -> u32 {
+        self.store
+            .setting(conv::FOES_DEFEATED_KEY)
+            .ok()
+            .flatten()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(0)
+    }
+
+    /// The persisted baptism mask (`campaign.converts_baptized`, u32; bits
+    /// 0..=9 only). Same degrade-to-sealed discipline.
+    fn converts_baptized_mask(&self) -> u32 {
+        self.store
+            .setting(conv::CONVERTS_BAPTIZED_KEY)
+            .ok()
+            .flatten()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(0)
+    }
+
+    /// A convert's baptismal name as persisted under
+    /// `roster.baptismal.<id>`; absent = unbaptized/unrenamed.
+    pub fn baptismal_name_of(&self, roster_id: &str) -> Option<String> {
+        self.store
+            .setting(&format!("{}{roster_id}", conv::BAPTISMAL_KEY_PREFIX))
+            .ok()
+            .flatten()
+    }
+
     /// The relay list the bridge connects the lobby to: the store's
     /// `net.relays` override (comma/whitespace-separated `wss://` URLs), or
     /// [`DEFAULT_LOBBY_RELAYS`] when unset or unusable.
@@ -448,11 +543,20 @@ impl ClientGame {
                 Phase::BattleOver => {
                     self.battle = None;
                     self.campaign = None;
+                    self.pending_calls.clear();
                     self.fresh_events.borrow_mut().clear();
                     self.phase = Phase::Menu;
                     Ok(())
                 }
                 p => Err(illegal(format!("no result to acknowledge from {p:?}"))),
+            },
+            ClientInput::CallToRepentance => match self.phase {
+                Phase::ConversionChoice => self.resolve_call(true),
+                p => Err(illegal(format!("no yielded foe to call from {p:?}"))),
+            },
+            ClientInput::ReleaseSoul => match self.phase {
+                Phase::ConversionChoice => self.resolve_call(false),
+                p => Err(illegal(format!("no yielded foe to release from {p:?}"))),
             },
             ClientInput::EnterLobby => match self.phase {
                 Phase::Menu | Phase::Roster => self.enter_lobby(),
@@ -849,13 +953,24 @@ impl ClientGame {
     /// Route a finished battle: practice duels go straight to BattleOver;
     /// campaign nodes pay out shards, rest the survivors, and either open a
     /// CampaignRest (next node pending) or end the run (clear / wipe).
+    /// Either way, a WON battle first records yielded historical
+    /// adversaries in the codex mask and queues any Calls to Repentance
+    /// (M7b) — a non-empty queue takes the phase to ConversionChoice
+    /// before BattleOver.
     fn on_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
+        if winner == MY_SIDE {
+            self.scan_defeated_foes()?;
+        }
         let Some((node, defeated, shards)) = self
             .campaign
             .as_ref()
             .map(|c| (c.node, c.defeated, c.shards_earned))
         else {
-            self.phase = Phase::BattleOver;
+            self.phase = if self.pending_calls.is_empty() {
+                Phase::BattleOver
+            } else {
+                Phase::ConversionChoice
+            };
             return Ok(());
         };
         let boss = data::species_by_id(CAMPAIGN_NODE_SPECIES[usize::from(node.min(6))])
@@ -923,12 +1038,163 @@ impl ClientGame {
         if done {
             lines.push("Pride itself is broken - the gauntlet is cleared!".to_string());
             self.push_log(lines);
-            self.phase = Phase::BattleOver;
+            self.phase = if self.pending_calls.is_empty() {
+                Phase::BattleOver
+            } else {
+                Phase::ConversionChoice
+            };
         } else {
             self.battle = None;
             self.push_log(lines);
-            self.phase = Phase::CampaignRest;
+            self.phase = if self.pending_calls.is_empty() {
+                Phase::CampaignRest
+            } else {
+                Phase::ConversionChoice
+            };
         }
+        Ok(())
+    }
+
+    /// After a won battle: walk the yielded foe party, set the
+    /// `campaign.foes_defeated` codex bits (HF 6.5), and queue one Call
+    /// decision per defeated CONVERTIBLE adversary (108..=117; commanders
+    /// are recorded but never called — CONVERSION 2). The caller's part of
+    /// the contested roll is captured here from the standing MY_SIDE
+    /// champion: v1 does not attribute the final blow, so the virtue-kill
+    /// bonus is forfeited (false) and fervor items are unwired (0).
+    fn scan_defeated_foes(&mut self) -> Result<(), AppError> {
+        let Some(b) = self.battle.as_ref() else {
+            return Ok(());
+        };
+        let caller = b.sides[usize::from(MY_SIDE)].active();
+        let caller_sp = data::species_by_id(caller.species_id)
+            .ok_or_else(|| illegal(format!("unknown species {}", caller.species_id)))?;
+        let caller_stats = data::compute_stats(caller, caller_sp);
+        let caller_piety = caller_stats.piety;
+        let caller_level = caller.level;
+        // Copy the foe facts out before any store write (the battle borrow
+        // ends here).
+        let foes: Vec<(u16, u8)> = b.sides[usize::from(FOE_SIDE)]
+            .party
+            .iter()
+            .map(|c| (c.species_id, c.level))
+            .collect();
+        let mut mask = self.foes_defeated_mask();
+        for (species_id, level) in foes {
+            let Some(bit) = conv::foe_bit(species_id) else {
+                continue;
+            };
+            mask |= 1u32 << bit;
+            if !conv::CONVERTIBLE_IDS.contains(&species_id) {
+                continue;
+            }
+            let sp = data::species_by_id(species_id).expect("static table covers adversaries");
+            let chance = data::conversion_chance(
+                caller_piety,
+                caller_level,
+                false, // final-blow virtue attribution: not tracked in v1
+                0,     // fervor items: not wired in v1
+                sp,
+                level,
+            )
+            .expect("convertible ids carry obstinacy (3..=85)");
+            self.pending_calls.push(PendingCall {
+                species_id,
+                foe_level: level,
+                chance_pct: chance,
+            });
+        }
+        if mask != self.foes_defeated_mask() {
+            self.store
+                .set_setting(conv::FOES_DEFEATED_KEY, &mask.to_string())?;
+        }
+        Ok(())
+    }
+
+    /// ConversionChoice: settle the head pending Call. `call == true`
+    /// issues the Call (one sealed contested roll; success baptizes,
+    /// failure is the Mercy release); `call == false` is the direct
+    /// release. Either way the head leaves the queue and the last
+    /// resolution returns the phase to BattleOver.
+    fn resolve_call(&mut self, call: bool) -> Result<(), AppError> {
+        let Some(pc) = self.pending_calls.first().cloned() else {
+            return Err(illegal("no yielded foe awaits a choice"));
+        };
+        let sp = data::species_by_id(pc.species_id).expect("pending ids live in the static table");
+        if !call {
+            // Release without the Call: Mercy outright (CONVERSION's
+            // client-flow note — no roll spent).
+            let carried = self
+                .store
+                .add_item(conv::MERCY_SHARD_ITEM, conv::MERCY_BOUNTY)?;
+            self.push_log(vec![format!(
+                "The company released the {} without the Call; his soul was commended unto God, and he departed the field. The Order gained {} mercy shard(s) (carried: {carried}).",
+                sp.name,
+                conv::MERCY_BOUNTY
+            )]);
+        } else {
+            // The Call: count it (hagiography statistic + the draw salt's
+            // moving part), then the sealed deterministic draw.
+            let issued = self
+                .store
+                .setting(conv::CALLS_ISSUED_KEY)
+                .ok()
+                .flatten()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(0)
+                .saturating_add(1);
+            self.store
+                .set_setting(conv::CALLS_ISSUED_KEY, &issued.to_string())?;
+            let salt = (u64::from(self.foes_defeated_mask()) << 32) | u64::from(issued);
+            let roll = conv::conversion_roll(salt);
+            if conv::decide_call(pc.chance_pct, roll) {
+                self.baptize(&pc, sp.name)?;
+            } else {
+                let carried = self
+                    .store
+                    .add_item(conv::MERCY_SHARD_ITEM, conv::MERCY_BOUNTY)?;
+                self.push_log(vec![format!(
+                    "The {} heard the Call and would not turn. The company commended his soul unto God, and he departed the field. The Order gained {} mercy shard(s) (carried: {carried}).",
+                    sp.name,
+                    conv::MERCY_BOUNTY
+                )]);
+            }
+        }
+        self.pending_calls.remove(0);
+        if self.pending_calls.is_empty() {
+            self.phase = Phase::BattleOver;
+        }
+        Ok(())
+    }
+
+    /// Baptism (CONVERSION 4): the foe repents and joins the roster as a
+    /// NEW instance of his own species (his kit and arms are his trade),
+    /// flagged `converted` with his origin recorded. His typing displays
+    /// as Humility in the gallery (v1 simplification of "the virtue that
+    /// felled him" — the charity that spared him); mechanical typing stays
+    /// the species' Valor until crusade-core grows instance typing. His
+    /// baptismal name is seeded from the archetype table into
+    /// `roster.baptismal.<id>` — the future rename path rides that key.
+    fn baptize(&mut self, pc: &PendingCall, species_name: &str) -> Result<(), AppError> {
+        let level = pc.foe_level.clamp(1, MAX_LEVEL);
+        let mut convert = practice_champion(pc.species_id, level)?;
+        convert.converted = true;
+        convert.converted_from = Some(pc.species_id);
+        let id = self.store.add_champion(&convert)?;
+        let name =
+            conv::baptismal_name(pc.species_id).expect("convertible ids carry baptismal names");
+        self.store
+            .set_setting(&format!("{}{id}", conv::BAPTISMAL_KEY_PREFIX), name)?;
+        let carried = self
+            .store
+            .add_item(conv::FIRSTFRUITS_SHARD_ITEM, conv::FIRSTFRUITS_BOUNTY)?;
+        let mask = self.converts_baptized_mask() | (1u32 << (pc.species_id - 108));
+        self.store
+            .set_setting(conv::CONVERTS_BAPTIZED_KEY, &mask.to_string())?;
+        self.push_log(vec![format!(
+            "\"I will follow the Christ,\" the {species_name} said, and was baptized {name}. He joined the company at level {level}. The Order gained {} firstfruits shard(s) (carried: {carried}).",
+            conv::FIRSTFRUITS_BOUNTY
+        )]);
         Ok(())
     }
 
@@ -1174,6 +1440,51 @@ fn sin_cards(defeated_mask: u8) -> Vec<SinCard> {
                     String::new()
                 },
                 defeated: revealed,
+            }
+        })
+        .collect()
+}
+
+/// The Roll of Worthy Adversaries as renderable cards (HF 6.5): one row
+/// per field archetype then commander, in id order, gated on the persisted
+/// `campaign.foes_defeated` mask. Same recipe as [`sin_cards`]: the row
+/// always names the man, but a sealed row carries EMPTY lore so the reward
+/// text never leaves the client before it is earned.
+fn foe_cards(defeated_mask: u32) -> Vec<FoeCard> {
+    conv::CONVERTIBLE_IDS
+        .chain(conv::COMMANDER_IDS)
+        .map(|id| {
+            let sp = data::species_by_id(id).expect("static species table covers all adversaries");
+            let revealed = defeated_mask & (1u32 << conv::foe_bit(id).expect("adversaries earn a bit")) != 0;
+            FoeCard {
+                species_id: id,
+                name: sp.name.to_string(),
+                lore: if revealed { sp.lore.to_string() } else { String::new() },
+                defeated: revealed,
+            }
+        })
+        .collect()
+}
+
+/// The Testimonies of the Baptized as renderable cards (CONVERSION 4): one
+/// row per convertible archetype, gated on the persisted
+/// `campaign.converts_baptized` mask; sealed rows carry EMPTY testimony.
+fn testimony_cards(converts_mask: u32) -> Vec<TestimonyCard> {
+    conv::CONVERTIBLE_IDS
+        .map(|id| {
+            let sp = data::species_by_id(id).expect("static species table covers all adversaries");
+            let baptized = converts_mask & (1u32 << (id - 108)) != 0;
+            TestimonyCard {
+                species_id: id,
+                name: sp.name.to_string(),
+                testimony: if baptized {
+                    conv::testimony(id)
+                        .expect("convertible ids carry testimonies")
+                        .to_string()
+                } else {
+                    String::new()
+                },
+                baptized,
             }
         })
         .collect()
@@ -1781,6 +2092,349 @@ mod lobby_tests {
         assert!(game
             .handle(ClientInput::LobbyNet(LobbyNet::DuelFinished { won: true }))
             .is_err());
+    }
+}
+
+#[cfg(test)]
+mod conversion_tests {
+    //! The M7b Call to Repentance flow end-to-end at the client level:
+    //! a won battle over a convertible adversary (ids 108..=117) opens the
+    //! ConversionChoice phase; the Call's sealed draw decides baptism
+    //! (Firstfruits) or refusal (Mercy); the Release button takes Mercy
+    //! directly. Plus the two codex bitmasks and the Hagiography books.
+
+    use super::*;
+
+    /// One-champion roster fixture (same shape as the other test mods).
+    fn fixture_store() -> RosterStore {
+        let mut store = RosterStore::new();
+        store
+            .add_champion(&practice_champion(1, 20).expect("fixture champion"))
+            .expect("fixture store accepts the champion");
+        store
+    }
+
+    /// Fabricate a WON battle against the given adversary species: the
+    /// client gets a foe party already yielded, and the end-of-battle
+    /// router runs. This stands in for whatever battle mode fields
+    /// historical adversaries (none ships yet — M7b lands the flow first,
+    /// headless-tested).
+    fn beat_adversaries(game: &mut ClientGame, foe_ids: &[u16], foe_level: u8) {
+        let me = practice_champion(1, 20).expect("fixture champion");
+        let foes: Vec<ChampionInstance> = foe_ids
+            .iter()
+            .map(|&s| practice_champion(s, foe_level).expect("fixture foe"))
+            .collect();
+        let mut b = Battle::new(vec![me], foes, PRACTICE_SEED).expect("fixture battle");
+        for f in &mut b.sides[usize::from(FOE_SIDE)].party {
+            f.current_resolve = 0;
+        }
+        b.winner = Some(MY_SIDE);
+        game.battle = Some(b);
+        game.phase = Phase::InBattle;
+        game.on_battle_end(MY_SIDE).expect("won battle routes");
+    }
+
+    /// The salt a Call decision will use: per resolve_call,
+    /// `(foes_defeated_mask << 32) | calls_issued(after increment)`.
+    fn decision_salt(foes_mask: u32, calls_issued: u32) -> u64 {
+        (u64::from(foes_mask) << 32) | u64::from(calls_issued)
+    }
+
+    /// The (species, chance, roll) each convertible archetype would meet on
+    /// a fresh document (foes mask = only that archetype's bit yet, first
+    /// Call issued). The caller is the fixture's level-20 champion.
+    fn call_table() -> Vec<(u16, u8, u8)> {
+        let me = practice_champion(1, 20).expect("caller");
+        let sp = data::species_by_id(1).expect("caller species");
+        let piety = data::compute_stats(&me, sp).piety;
+        conv::CONVERTIBLE_IDS
+            .map(|id| {
+                let foe = data::species_by_id(id).expect("adversary");
+                let chance = data::conversion_chance(piety, 20, false, 0, foe, 20)
+                    .expect("convertible");
+                let salt = decision_salt(1u32 << (id - 108), 1);
+                (id, chance, conv::conversion_roll(salt))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn won_battle_over_convertible_foe_opens_the_choice_and_seals_the_foe_bit() {
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[108], 20);
+        assert_eq!(game.phase(), Phase::ConversionChoice);
+        let snap = game.snapshot();
+        let call = snap.conversion.as_ref().expect("a live call rides the snapshot");
+        assert_eq!(call.species_id, 108);
+        assert_eq!(call.species_name, "Turcoman Bowrider");
+        assert_eq!(call.foe_level, 20);
+        assert!((3..=85).contains(&call.chance_pct));
+        assert_eq!(call.pending, 1);
+        // The foe's codex bit was set at battle end (before any choice).
+        assert_eq!(
+            game.store().setting(conv::FOES_DEFEATED_KEY).unwrap().as_deref(),
+            Some("1") // bit 0 = archetype 108
+        );
+        // And a commander earns his Roll bit with no Call queued.
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[123], 20);
+        assert_eq!(game.phase(), Phase::BattleOver, "commanders are never called");
+        assert_eq!(
+            game.store().setting(conv::FOES_DEFEATED_KEY).unwrap().as_deref(),
+            Some("32768") // bit 15 = commander 123
+        );
+    }
+
+    /// Harness pick: the static tables must offer at least one archetype
+    /// whose sealed draw succeeds and one whose draw fails, so both branch
+    /// ends are exercised by the flow tests below. (The draws are fixed —
+    /// this asserts the tables keep both reachable.)
+    #[test]
+    fn the_call_table_offers_both_outcomes() {
+        let table = call_table();
+        let mut any_pass = false;
+        let mut any_fail = false;
+        for &(_, chance, roll) in &table {
+            if conv::decide_call(chance, roll) {
+                any_pass = true;
+            } else {
+                any_fail = true;
+            }
+        }
+        assert!(any_pass && any_fail, "table: {table:?}");
+    }
+
+    /// Baptism (success path, seeded construction): the convert joins the
+    /// roster flagged `converted` with origin recorded; his baptismal name
+    /// is persisted; the converts bit flips; Firstfruits land.
+    #[test]
+    fn successful_call_baptizes_into_the_roster() {
+        let &(id, _, _) = call_table()
+            .iter()
+            .find(|&&(id, chance, roll)| conv::decide_call(chance, roll))
+            .expect("table offers a passing draw (see the harness test)");
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[id], 20);
+        assert_eq!(game.phase(), Phase::ConversionChoice);
+
+        game.handle(ClientInput::CallToRepentance)
+            .expect("the call is legal from the choice phase");
+        assert_eq!(game.phase(), Phase::BattleOver, "the drained queue returns the over screen");
+
+        let converts = game
+            .store()
+            .setting(conv::CONVERTS_BAPTIZED_KEY)
+            .unwrap()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(0);
+        assert_eq!(converts, 1u32 << (id - 108), "the converts bit flips");
+        assert_eq!(
+            game.store().setting(conv::CALLS_ISSUED_KEY).unwrap().as_deref(),
+            Some("1")
+        );
+        let mut inv: Vec<(String, u64)> = game.store().inventory().unwrap();
+        inv.sort();
+        assert_eq!(
+            inv,
+            vec![(conv::FIRSTFRUITS_SHARD_ITEM.to_string(), conv::FIRSTFRUITS_BOUNTY as u64)],
+            "Firstfruits, not Mercy"
+        );
+        // The roster grew by the convert: species kept, flags set, level kept.
+        let roster = game.store().list_champions().unwrap();
+        let (rid, convert) = roster
+            .iter()
+            .find(|(_, c)| c.species_id == id)
+            .expect("the convert joined the roster");
+        assert!(convert.converted);
+        assert_eq!(convert.converted_from, Some(id));
+        assert_eq!(convert.level, 20);
+        assert_eq!(
+            game.baptismal_name_of(rid).as_deref(),
+            conv::baptismal_name(id),
+            "the baptismal name is seeded"
+        );
+        // Serde round-trip through the roster store: flags, origin, name
+        // and masks all survive a document reload.
+        let bytes = game.store().save_bytes().expect("document saves");
+        let reloaded = RosterStore::load_bytes(&bytes).expect("document loads");
+        let (_, back) = reloaded
+            .list_champions()
+            .unwrap()
+            .into_iter()
+            .find(|(_, c)| c.species_id == id)
+            .expect("the convert survives reload");
+        assert_eq!(&back, convert);
+        assert_eq!(
+            reloaded.setting(conv::FOES_DEFEATED_KEY).unwrap().as_deref(),
+            game.store().setting(conv::FOES_DEFEATED_KEY).unwrap().as_deref()
+        );
+        assert_eq!(
+            reloaded.setting(conv::CONVERTS_BAPTIZED_KEY).unwrap().as_deref(),
+            game.store().setting(conv::CONVERTS_BAPTIZED_KEY).unwrap().as_deref()
+        );
+        assert_eq!(
+            reloaded
+                .setting(&format!("{}{rid}", conv::BAPTISMAL_KEY_PREFIX))
+                .unwrap()
+                .as_deref(),
+            conv::baptismal_name(id)
+        );
+    }
+
+    /// Refusal path (seeded construction): the Call fails on the draw —
+    /// Mercy shards, no convert, no converts bit.
+    #[test]
+    fn refused_call_releases_the_soul_with_mercy() {
+        let &(id, _, _) = call_table()
+            .iter()
+            .find(|&&(id, chance, roll)| !conv::decide_call(chance, roll))
+            .expect("table offers a failing draw (see the harness test)");
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[id], 20);
+        game.handle(ClientInput::CallToRepentance)
+            .expect("the call is legal");
+        assert_eq!(game.phase(), Phase::BattleOver);
+        let inv = game.store().inventory().unwrap();
+        assert_eq!(
+            inv,
+            vec![(conv::MERCY_SHARD_ITEM.to_string(), conv::MERCY_BOUNTY as u64)],
+            "failure pays Mercy"
+        );
+        assert!(game
+            .store()
+            .setting(conv::CONVERTS_BAPTIZED_KEY)
+            .unwrap()
+            .is_none(), "no baptism: no bit written");
+        assert_eq!(
+            game.store().list_champions().unwrap().len(),
+            1,
+            "the roster holds only the fixture champion"
+        );
+    }
+
+    /// Release path: no Call, no roll — Mercy directly, and no
+    /// calls-issued count moves.
+    #[test]
+    fn releasing_without_a_call_pays_mercy_without_a_roll() {
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[110], 20);
+        assert_eq!(game.phase(), Phase::ConversionChoice);
+        game.handle(ClientInput::ReleaseSoul).expect("release is legal");
+        assert_eq!(game.phase(), Phase::BattleOver);
+        let inv = game.store().inventory().unwrap();
+        assert_eq!(
+            inv,
+            vec![(conv::MERCY_SHARD_ITEM.to_string(), conv::MERCY_BOUNTY as u64)]
+        );
+        assert!(game
+            .store()
+            .setting(conv::CALLS_ISSUED_KEY)
+            .unwrap()
+            .is_none(), "a released soul is never counted as called");
+        assert_eq!(game.store().list_champions().unwrap().len(), 1);
+        // Both Call inputs are dead ends outside the choice phase.
+        assert!(game.handle(ClientInput::CallToRepentance).is_err());
+        assert!(game.handle(ClientInput::ReleaseSoul).is_err());
+        game.handle(ClientInput::AcknowledgeResult)
+            .expect("the over screen closes as ever");
+        assert_eq!(game.phase(), Phase::Menu);
+    }
+
+    /// Multiple yielded converts queue in order and drain one decision at
+    /// a time into BattleOver.
+    #[test]
+    fn several_yielded_foes_queue_in_order() {
+        let mut game = ClientGame::new(fixture_store());
+        beat_adversaries(&mut game, &[108, 113], 20);
+        for (n, id) in [(2, 108), (1, 113)] {
+            let call = game
+                .snapshot()
+                .conversion
+                .expect("a live call rides the snapshot");
+            assert_eq!(call.species_id, id);
+            assert_eq!(call.pending, n);
+            game.handle(ClientInput::ReleaseSoul).expect("release is legal");
+        }
+        assert_eq!(game.phase(), Phase::BattleOver);
+        assert!(game.snapshot().conversion.is_none());
+        let inv = game.store().inventory().unwrap();
+        assert_eq!(
+            inv,
+            vec![(conv::MERCY_SHARD_ITEM.to_string(), 2 * conv::MERCY_BOUNTY as u64)]
+        );
+        // Both archetypes' Roll bits are set; no converts.
+        assert_eq!(
+            game.store().setting(conv::FOES_DEFEATED_KEY).unwrap().as_deref(),
+            Some("33") // bits 0 and 5 (ids 108 and 113)
+        );
+    }
+
+    /// The two books: Roll rows always name the man, sealed rows carry no
+    /// lore; Testimony rows seal until the baptism bit; phase-gated like
+    /// the other books. Mirrors the Manuscript-of-Sins assertions.
+    #[test]
+    fn roll_and_testimonies_gate_by_phase_and_masks() {
+        let mut game = ClientGame::new(RosterStore::new());
+        assert!(game.snapshot().foes.is_empty());
+        assert!(game.snapshot().testimonies.is_empty());
+
+        game.handle(ClientInput::ViewHagiography)
+            .expect("the menu opens the hagiography");
+        let snap = game.snapshot();
+        assert_eq!(snap.foes.len(), 14, "ten archetypes + four commanders");
+        let order: Vec<u16> = snap.foes.iter().map(|c| c.species_id).collect();
+        assert_eq!(order, (108..=117).chain(120..=123).collect::<Vec<u16>>());
+        for card in &snap.foes {
+            assert!(!card.defeated && card.lore.is_empty());
+            assert!(!card.name.is_empty() && card.name.is_ascii(), "{}", card.name);
+        }
+        assert_eq!(snap.testimonies.len(), 10);
+        for card in &snap.testimonies {
+            assert!(!card.baptized && card.testimony.is_empty());
+        }
+
+        // Defeat Saladin (bit 15) and Bedouin Outrider (bit 5): exactly
+        // those rows reveal, verbatim lore off the static table.
+        game.store()
+            .set_setting(conv::FOES_DEFEATED_KEY, &((1u32 << 15) | (1u32 << 5)).to_string())
+            .expect("defeat mask writable");
+        // And a baptism of the Outrider: his testimony alone unseals.
+        game.store()
+            .set_setting(conv::CONVERTS_BAPTIZED_KEY, &(1u32 << 5).to_string())
+            .expect("converts mask writable");
+        let snap = game.snapshot();
+        for card in &snap.foes {
+            let want = matches!(card.species_id, 113 | 123);
+            assert_eq!(card.defeated, want, "{}", card.name);
+            if want {
+                assert_eq!(
+                    card.lore,
+                    data::species_by_id(card.species_id).expect("adversary").lore,
+                    "revealed lore is the species table's, verbatim"
+                );
+            } else {
+                assert!(card.lore.is_empty(), "{} stays sealed", card.name);
+            }
+        }
+        for card in &snap.testimonies {
+            let want = card.species_id == 113;
+            assert_eq!(card.baptized, want, "{}", card.name);
+            assert_eq!(
+                card.testimony,
+                if want { conv::testimony(113).unwrap().to_string() } else { String::new() },
+            );
+        }
+
+        // The books survive a document reload (masks ride the store).
+        let bytes = game.store().save_bytes().expect("document saves");
+        let mut reloaded = ClientGame::new(RosterStore::load_bytes(&bytes).expect("loads"));
+        reloaded
+            .handle(ClientInput::ViewHagiography)
+            .expect("the reloaded menu opens the hagiography");
+        let resnap = reloaded.snapshot();
+        assert_eq!(resnap.foes, snap.foes);
+        assert_eq!(resnap.testimonies, snap.testimonies);
     }
 }
 

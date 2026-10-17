@@ -1,1766 +1,239 @@
 {
  "gpt-image-1.5/audric-battle": {
-  "raw_bytes": 1150834,
-  "q64_bytes": 696,
-  "q128_bytes": 1786,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-audric-battle-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "audric-battle",
+  "q128_bytes": 1786,
+  "q64_bytes": 696,
+  "raw_bytes": 1150834,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "audric-battle"
  },
  "gpt-image-1.5/audric-prayer": {
-  "raw_bytes": 1324811,
-  "q64_bytes": 1154,
-  "q128_bytes": 3060,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-audric-prayer-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "audric-prayer",
+  "q128_bytes": 3060,
+  "q64_bytes": 1154,
+  "raw_bytes": 1324811,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "audric-prayer"
  },
  "gpt-image-1.5/brother-aldwyn": {
-  "raw_bytes": 1428984,
-  "q64_bytes": 980,
-  "q128_bytes": 2743,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-brother-aldwyn-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "brother-aldwyn",
+  "q128_bytes": 2743,
+  "q64_bytes": 980,
+  "raw_bytes": 1428984,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "brother-aldwyn"
  },
  "gpt-image-1.5/brute-of-wrath": {
-  "raw_bytes": 1712725,
-  "q64_bytes": 1254,
-  "q128_bytes": 3939,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-brute-of-wrath-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "brute-of-wrath",
+  "q128_bytes": 3939,
+  "q64_bytes": 1254,
+  "raw_bytes": 1712725,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "brute-of-wrath"
  },
  "gpt-image-1.5/canoness-hrothwyn": {
-  "raw_bytes": 1423097,
-  "q64_bytes": 1021,
-  "q128_bytes": 2845,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-canoness-hrothwyn-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "canoness-hrothwyn",
+  "q128_bytes": 2845,
+  "q64_bytes": 1021,
+  "raw_bytes": 1423097,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "canoness-hrothwyn"
  },
  "gpt-image-1.5/cantor-sabina": {
-  "raw_bytes": 1312672,
-  "q64_bytes": 1034,
-  "q128_bytes": 2713,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-cantor-sabina-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "cantor-sabina",
+  "q128_bytes": 2713,
+  "q64_bytes": 1034,
+  "raw_bytes": 1312672,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "cantor-sabina"
  },
  "gpt-image-1.5/chevalier-raimbaud": {
-  "raw_bytes": 1448023,
-  "q64_bytes": 1120,
-  "q128_bytes": 3175,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-chevalier-raimbaud-v2",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "chevalier-raimbaud",
+  "q128_bytes": 3175,
+  "q64_bytes": 1120,
+  "raw_bytes": 1448023,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "chevalier-raimbaud"
  },
  "gpt-image-1.5/cleric-mabel": {
-  "raw_bytes": 1338534,
-  "q64_bytes": 1058,
-  "q128_bytes": 2924,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-cleric-mabel-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "cleric-mabel",
+  "q128_bytes": 2924,
+  "q64_bytes": 1058,
+  "raw_bytes": 1338534,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "cleric-mabel"
  },
  "gpt-image-1.5/fiend-of-lust": {
-  "raw_bytes": 1631545,
-  "q64_bytes": 1302,
-  "q128_bytes": 4002,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-fiend-of-lust-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "fiend-of-lust",
+  "q128_bytes": 4002,
+  "q64_bytes": 1302,
+  "raw_bytes": 1631545,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "fiend-of-lust"
  },
  "gpt-image-1.5/friar-osbert": {
-  "raw_bytes": 1361354,
-  "q64_bytes": 912,
-  "q128_bytes": 2661,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-friar-osbert-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "friar-osbert",
+  "q128_bytes": 2661,
+  "q64_bytes": 912,
+  "raw_bytes": 1361354,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "friar-osbert"
  },
  "gpt-image-1.5/glutton-maw": {
-  "raw_bytes": 1634166,
-  "q64_bytes": 1290,
-  "q128_bytes": 3865,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-glutton-maw-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "glutton-maw",
+  "q128_bytes": 3865,
+  "q64_bytes": 1290,
+  "raw_bytes": 1634166,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "glutton-maw"
  },
  "gpt-image-1.5/grasper-of-greed": {
-  "raw_bytes": 1612356,
-  "q64_bytes": 1149,
-  "q128_bytes": 3654,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-grasper-of-greed-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "grasper-of-greed",
+  "q128_bytes": 3654,
+  "q64_bytes": 1149,
+  "raw_bytes": 1612356,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "grasper-of-greed"
  },
  "gpt-image-1.5/hospitaller-ysolt": {
-  "raw_bytes": 1346062,
-  "q64_bytes": 860,
-  "q128_bytes": 2392,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-hospitaller-ysolt-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "hospitaller-ysolt",
+  "q128_bytes": 2392,
+  "q64_bytes": 860,
+  "raw_bytes": 1346062,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "hospitaller-ysolt"
  },
  "gpt-image-1.5/prince-of-pride": {
-  "raw_bytes": 1707549,
-  "q64_bytes": 1392,
-  "q128_bytes": 4293,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-prince-of-pride-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "prince-of-pride",
+  "q128_bytes": 4293,
+  "q64_bytes": 1392,
+  "raw_bytes": 1707549,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "prince-of-pride"
  },
  "gpt-image-1.5/serjeant-bastien": {
-  "raw_bytes": 1352677,
-  "q64_bytes": 739,
-  "q128_bytes": 2074,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-serjeant-bastien-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "serjeant-bastien",
+  "q128_bytes": 2074,
+  "q64_bytes": 739,
+  "raw_bytes": 1352677,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "serjeant-bastien"
  },
  "gpt-image-1.5/sleeper-of-sloth": {
-  "raw_bytes": 1980511,
-  "q64_bytes": 1255,
-  "q128_bytes": 4218,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-sleeper-of-sloth-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "sleeper-of-sloth",
+  "q128_bytes": 4218,
+  "q64_bytes": 1255,
+  "raw_bytes": 1980511,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "sleeper-of-sloth"
  },
  "gpt-image-1.5/vexillor-anchetil": {
-  "raw_bytes": 1358591,
-  "q64_bytes": 739,
-  "q128_bytes": 2017,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-vexillor-anchetil-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "vexillor-anchetil",
+  "q128_bytes": 2017,
+  "q64_bytes": 739,
+  "raw_bytes": 1358591,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "vexillor-anchetil"
  },
  "gpt-image-1.5/vigil-knight-wymar": {
-  "raw_bytes": 1448546,
-  "q64_bytes": 908,
-  "q128_bytes": 2708,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-vigil-knight-wymar-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "vigil-knight-wymar",
+  "q128_bytes": 2708,
+  "q64_bytes": 908,
+  "raw_bytes": 1448546,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "vigil-knight-wymar"
  },
  "gpt-image-1.5/wayfarer-aelis": {
-  "raw_bytes": 1433051,
-  "q64_bytes": 945,
-  "q128_bytes": 2731,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-wayfarer-aelis-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "wayfarer-aelis",
+  "q128_bytes": 2731,
+  "q64_bytes": 945,
+  "raw_bytes": 1433051,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "wayfarer-aelis"
  },
  "gpt-image-1.5/wretch-of-envy": {
-  "raw_bytes": 1520128,
-  "q64_bytes": 1304,
-  "q128_bytes": 3972,
   "client_request_id": "kirk-portfolio-gpt-image-1.5-wretch-of-envy-v1",
+  "cost_usd": 0.023,
   "model": "ppq:gpt-image-1.5",
-  "subject": "wretch-of-envy",
+  "q128_bytes": 3972,
+  "q64_bytes": 1304,
+  "raw_bytes": 1520128,
   "src_dims": "1254x1254",
-  "cost_usd": 0.023
+  "subject": "wretch-of-envy"
  },
- "nano-banana-2-1/audric-battle": {
-  "raw_bytes": 956078,
-  "q64_bytes": 680,
-  "q128_bytes": 1749,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-battle-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-prayer": {
-  "raw_bytes": 1027155,
-  "q64_bytes": 897,
-  "q128_bytes": 2167,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-prayer-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-prayer",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn": {
-  "raw_bytes": 1040967,
-  "q64_bytes": 1006,
-  "q128_bytes": 2816,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-brother-aldwyn-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brute-of-wrath": {
-  "raw_bytes": 1189193,
-  "q64_bytes": 1156,
-  "q128_bytes": 3468,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-brute-of-wrath-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brute-of-wrath",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn": {
-  "raw_bytes": 1039005,
-  "q64_bytes": 980,
-  "q128_bytes": 2597,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-canoness-hrothwyn-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina": {
-  "raw_bytes": 985369,
-  "q64_bytes": 723,
-  "q128_bytes": 1758,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud": {
-  "raw_bytes": 901454,
-  "q64_bytes": 852,
-  "q128_bytes": 2321,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-romilda": {
-  "raw_bytes": 911738,
-  "q64_bytes": 899,
-  "q128_bytes": 2332,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-romilda-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-romilda",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "status": "superseded",
-  "note": "canon gender rule pass 2026-10-14: species renamed Chevalier Raimbaud (male); cell regenerates as nano-banana-2-1/chevalier-raimbaud with id ...-v2"
- },
- "nano-banana-2-1/cleric-mabel": {
-  "raw_bytes": 983343,
-  "q64_bytes": 1064,
-  "q128_bytes": 2817,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-cleric-mabel-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/fiend-of-lust": {
-  "raw_bytes": 1337287,
-  "q64_bytes": 974,
-  "q128_bytes": 3041,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-fiend-of-lust-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "fiend-of-lust",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert": {
-  "raw_bytes": 1030459,
-  "q64_bytes": 949,
-  "q128_bytes": 2594,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-friar-osbert-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/glutton-maw": {
-  "raw_bytes": 1152978,
-  "q64_bytes": 1168,
-  "q128_bytes": 3420,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-glutton-maw-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "glutton-maw",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/grasper-of-greed": {
-  "raw_bytes": 1030950,
-  "q64_bytes": 819,
-  "q128_bytes": 2525,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-grasper-of-greed-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "grasper-of-greed",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt": {
-  "raw_bytes": 993246,
-  "q64_bytes": 767,
-  "q128_bytes": 1993,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-hospitaller-ysolt-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/prince-of-pride": {
-  "raw_bytes": 1214437,
-  "q64_bytes": 1049,
-  "q128_bytes": 3000,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-prince-of-pride-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "prince-of-pride",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien": {
-  "raw_bytes": 1076721,
-  "q64_bytes": 997,
-  "q128_bytes": 2863,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-serjeant-bastien-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil": {
-  "raw_bytes": 1047164,
-  "q64_bytes": 728,
-  "q128_bytes": 1803,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-vexillor-anchetil-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar": {
-  "raw_bytes": 1039428,
-  "q64_bytes": 810,
-  "q128_bytes": 2392,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-vigil-knight-wymar-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis": {
-  "raw_bytes": 960645,
-  "q64_bytes": 846,
-  "q128_bytes": 2200,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-wayfarer-aelis-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wretch-of-envy": {
-  "raw_bytes": 895832,
-  "q64_bytes": 803,
-  "q128_bytes": 2151,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-wretch-of-envy-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wretch-of-envy",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/sleeper-of-sloth": {
-  "raw_bytes": 969580,
-  "q64_bytes": 1061,
-  "q128_bytes": 3144,
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "sleeper-of-sloth",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-sheet": {
-  "raw_bytes": 1149871,
-  "client_request_id": "kirk-anim-pilot-audric-battle-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "pilot reuse from card 4.3 (idle/step/strike/hit/defend/pray grid); no new API call"
- },
- "nano-banana-2-1/brother-aldwyn-sheet": {
-  "raw_bytes": 1036467,
-  "client_request_id": "kirk-anim-sheet-brother-aldwyn-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "retried v2 (v1 top-row sprites spilled into bottom-row cells)"
- },
- "nano-banana-2-1/canoness-hrothwyn-sheet": {
-  "raw_bytes": 1031893,
-  "client_request_id": "kirk-anim-sheet-canoness-hrothwyn-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "minor: raised psalter corner kisses top edge in idle/step cells (prop tip only, head/body intact)"
- },
- "nano-banana-2-1/cantor-sabina-sheet": {
-  "raw_bytes": 961379,
-  "client_request_id": "kirk-anim-sheet-cantor-sabina-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-sheet": {
-  "raw_bytes": 1144846,
-  "client_request_id": "kirk-anim-sheet-chevalier-raimbaud-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "retried v2 (v1 heads clipped at window top)"
- },
- "nano-banana-2-1/cleric-mabel-sheet": {
-  "raw_bytes": 963244,
-  "client_request_id": "kirk-anim-sheet-cleric-mabel-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-sheet": {
-  "raw_bytes": 1100512,
-  "client_request_id": "kirk-anim-sheet-friar-osbert-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-sheet": {
-  "raw_bytes": 981904,
-  "client_request_id": "kirk-anim-sheet-hospitaller-ysolt-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-sheet": {
-  "raw_bytes": 1056683,
-  "client_request_id": "kirk-anim-sheet-serjeant-bastien-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-sheet": {
-  "raw_bytes": 1035948,
-  "client_request_id": "kirk-anim-sheet-vexillor-anchetil-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "retried v2 (v1 dcx 17.0; banner shouldered in step cell)"
- },
- "nano-banana-2-1/vigil-knight-wymar-sheet": {
-  "raw_bytes": 1061791,
-  "client_request_id": "kirk-anim-sheet-vigil-knight-wymar-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "retried v2 (v1 dcx 16.2/dcy 9.0); residual dcy 10.3 = bow-vs-standing pairs (bow-bend intrinsic; standing family <=7.7)"
- },
- "nano-banana-2-1/wayfarer-aelis-sheet": {
-  "raw_bytes": 999433,
-  "client_request_id": "kirk-anim-sheet-wayfarer-aelis-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-sheet",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "retried v2 (v1 dcy 15.5 row-baseline break); residual dcy 9.5 = bow-vs-standing pairs + mild row scale wobble; staging fine after eyeball"
- },
- "nano-banana-2-1/audric-battle-strike": {
-  "raw_bytes": 897015,
-  "client_request_id": "kirk-anim-frame-audric-battle-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-hit": {
-  "raw_bytes": 865001,
-  "client_request_id": "kirk-anim-frame-audric-battle-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-strike": {
-  "raw_bytes": 879418,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-hit": {
-  "raw_bytes": 917155,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-strike": {
-  "raw_bytes": 955221,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-hit": {
-  "raw_bytes": 810636,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-strike": {
-  "raw_bytes": 912880,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-hit": {
-  "raw_bytes": 911897,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-strike": {
-  "raw_bytes": 907247,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-hit": {
-  "raw_bytes": 842002,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-strike": {
-  "raw_bytes": 990212,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-hit": {
-  "raw_bytes": 779352,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-strike": {
-  "raw_bytes": 876844,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-hit": {
-  "raw_bytes": 912275,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-strike": {
-  "raw_bytes": 934574,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-hit": {
-  "raw_bytes": 917539,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-strike": {
-  "raw_bytes": 908756,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-hit": {
-  "raw_bytes": 902761,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-strike": {
-  "raw_bytes": 966805,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-hit": {
-  "raw_bytes": 888267,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar-strike": {
-  "raw_bytes": 918006,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-strike-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)"
- },
- "nano-banana-2-1/vigil-knight-wymar-hit": {
-  "raw_bytes": 911668,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)"
- },
- "nano-banana-2-1/friar-osbert-strike": {
-  "raw_bytes": 951877,
-  "client_request_id": "kirk-anim-frame-friar-osbert-strike-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-strike",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-hit": {
-  "raw_bytes": 923115,
-  "client_request_id": "kirk-anim-frame-friar-osbert-hit-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-hit",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle/gallery": {
-  "gallery_bytes": 219429,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-battle-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/cleric-mabel/gallery": {
-  "gallery_bytes": 244083,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-cleric-mabel-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/serjeant-bastien/gallery": {
-  "gallery_bytes": 269484,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-serjeant-bastien-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/hospitaller-ysolt/gallery": {
-  "gallery_bytes": 235632,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-hospitaller-ysolt-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/wayfarer-aelis/gallery": {
-  "gallery_bytes": 223935,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-wayfarer-aelis-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/canoness-hrothwyn/gallery": {
-  "gallery_bytes": 253010,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-canoness-hrothwyn-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/vexillor-anchetil/gallery": {
-  "gallery_bytes": 257894,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-vexillor-anchetil-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/brother-aldwyn/gallery": {
-  "gallery_bytes": 260673,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-brother-aldwyn-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/cantor-sabina/gallery": {
-  "gallery_bytes": 235938,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/chevalier-raimbaud/gallery": {
-  "gallery_bytes": 236391,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/vigil-knight-wymar/gallery": {
-  "gallery_bytes": 252270,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-vigil-knight-wymar-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/friar-osbert/gallery": {
-  "gallery_bytes": 248334,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-friar-osbert-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/prince-of-pride/gallery": {
-  "gallery_bytes": 311245,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-prince-of-pride-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "prince-of-pride",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/wretch-of-envy/gallery": {
-  "gallery_bytes": 200816,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-wretch-of-envy-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wretch-of-envy",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/fiend-of-lust/gallery": {
-  "gallery_bytes": 336869,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-fiend-of-lust-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "fiend-of-lust",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/sleeper-of-sloth/gallery": {
-  "gallery_bytes": 281615,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "sleeper-of-sloth",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/brute-of-wrath/gallery": {
-  "gallery_bytes": 318691,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-brute-of-wrath-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brute-of-wrath",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/glutton-maw/gallery": {
-  "gallery_bytes": 309975,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-glutton-maw-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "glutton-maw",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/grasper-of-greed/gallery": {
-  "gallery_bytes": 254064,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-portfolio-nano-banana-2-1-grasper-of-greed-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "grasper-of-greed",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128"
- },
- "nano-banana-2-1/audric-battle-defeat": {
-  "q128_bytes": 1803,
-  "client_request_id": "kirk-anim-frame-audric-battle-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-followthrough": {
-  "q128_bytes": 1480,
-  "client_request_id": "kirk-anim-frame-audric-battle-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-victory": {
-  "q128_bytes": 1644,
-  "client_request_id": "kirk-anim-frame-audric-battle-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-windup": {
-  "q128_bytes": 1426,
-  "client_request_id": "kirk-anim-frame-audric-battle-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-defeat": {
-  "q128_bytes": 2286,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-followthrough": {
-  "q128_bytes": 2962,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-victory": {
-  "q128_bytes": 2924,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/brother-aldwyn-windup": {
-  "q128_bytes": 2752,
-  "client_request_id": "kirk-anim-frame-brother-aldwyn-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-defeat": {
-  "q128_bytes": 2379,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-followthrough": {
-  "q128_bytes": 2392,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-victory": {
-  "q128_bytes": 2045,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/canoness-hrothwyn-windup": {
-  "q128_bytes": 2788,
-  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-defeat": {
-  "q128_bytes": 2168,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-followthrough": {
-  "q128_bytes": 2217,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-victory": {
-  "q128_bytes": 1849,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cantor-sabina-windup": {
-  "q128_bytes": 2309,
-  "client_request_id": "kirk-anim-frame-cantor-sabina-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-defeat": {
-  "q128_bytes": 3041,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-followthrough": {
-  "q128_bytes": 3067,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-victory": {
-  "q128_bytes": 3014,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/chevalier-raimbaud-windup": {
-  "q128_bytes": 2163,
-  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-defeat": {
-  "q128_bytes": 2097,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-followthrough": {
-  "q128_bytes": 2532,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-victory": {
-  "q128_bytes": 2338,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/cleric-mabel-windup": {
-  "q128_bytes": 2099,
-  "client_request_id": "kirk-anim-frame-cleric-mabel-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-defeat": {
-  "q128_bytes": 1542,
-  "client_request_id": "kirk-anim-frame-friar-osbert-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-followthrough": {
-  "q128_bytes": 2371,
-  "client_request_id": "kirk-anim-frame-friar-osbert-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-victory": {
-  "q128_bytes": 2303,
-  "client_request_id": "kirk-anim-frame-friar-osbert-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/friar-osbert-windup": {
-  "q128_bytes": 2021,
-  "client_request_id": "kirk-anim-frame-friar-osbert-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-defeat": {
-  "q128_bytes": 2233,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-followthrough": {
-  "q128_bytes": 2280,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-victory": {
-  "q128_bytes": 1937,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/hospitaller-ysolt-windup": {
-  "q128_bytes": 1944,
-  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-defeat": {
-  "q128_bytes": 1898,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-followthrough": {
-  "q128_bytes": 1536,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-victory": {
-  "q128_bytes": 1818,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/serjeant-bastien-windup": {
-  "q128_bytes": 1518,
-  "client_request_id": "kirk-anim-frame-serjeant-bastien-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-defeat": {
-  "q128_bytes": 2162,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-followthrough": {
-  "q128_bytes": 1858,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-victory": {
-  "q128_bytes": 1785,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vexillor-anchetil-windup": {
-  "q128_bytes": 1639,
-  "client_request_id": "kirk-anim-frame-vexillor-anchetil-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar-defeat": {
-  "q128_bytes": 2017,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar-followthrough": {
-  "q128_bytes": 1735,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar-victory": {
-  "q128_bytes": 2484,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/vigil-knight-wymar-windup": {
-  "q128_bytes": 1724,
-  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-defeat": {
-  "q128_bytes": 2440,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-defeat-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-defeat",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-followthrough": {
-  "q128_bytes": 1861,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-followthrough-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-followthrough",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-victory": {
-  "q128_bytes": 2106,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-victory-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-victory",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/wayfarer-aelis-windup": {
-  "q128_bytes": 1580,
-  "client_request_id": "kirk-anim-frame-wayfarer-aelis-windup-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-windup",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0
- },
- "nano-banana-2-1/audric-battle-alt-a": {
-  "master_bytes": 1022570,
-  "q128_bytes": 1756,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): campaign-worn patched jerkin + thrown-back dark field cloak"
- },
- "nano-banana-2-1/audric-battle-alt-b": {
-  "master_bytes": 822292,
-  "q128_bytes": 1584,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): ceremonial bone-white arming coat, gold cross, red sash"
- },
- "nano-banana-2-1/brother-aldwyn-alt-a": {
-  "master_bytes": 1073421,
-  "q128_bytes": 2781,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): winter midnight-blue hooded cloak, snow-dusted pack"
- },
- "nano-banana-2-1/brother-aldwyn-alt-b": {
-  "master_bytes": 1076773,
-  "q128_bytes": 3397,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): ash-grey penitent's habit"
- },
- "nano-banana-2-1/canoness-hrothwyn-alt-a": {
-  "master_bytes": 1096707,
-  "q128_bytes": 3362,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): high-feast white gold-trimmed choir cope"
- },
- "nano-banana-2-1/canoness-hrothwyn-alt-b": {
-  "master_bytes": 1076050,
-  "q128_bytes": 3227,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-altb-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): fur-lined midnight-blue winter cloak | v2 pinned retry (v1 pipe-art artifact foul)"
- },
- "nano-banana-2-1/cantor-sabina-alt-a": {
-  "master_bytes": 964296,
-  "q128_bytes": 2429,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): feast-day white habit, gold-embroidered hem"
- },
- "nano-banana-2-1/cantor-sabina-alt-b": {
-  "master_bytes": 960529,
-  "q128_bytes": 1690,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): ash-grey penitential habit, rope cord"
- },
- "nano-banana-2-1/chevalier-raimbaud-alt-a": {
-  "master_bytes": 1031986,
-  "q128_bytes": 2627,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): campaign-worn mudded plate, frayed tabard"
- },
- "nano-banana-2-1/chevalier-raimbaud-alt-b": {
-  "master_bytes": 1083997,
-  "q128_bytes": 2731,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): mirror-bright ceremonial plate + midnight-blue mantle"
- },
- "nano-banana-2-1/cleric-mabel-alt-a": {
-  "master_bytes": 981171,
-  "q128_bytes": 2732,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): bone-white hooded winter cloak, gold clasp"
- },
- "nano-banana-2-1/cleric-mabel-alt-b": {
-  "master_bytes": 894158,
-  "q128_bytes": 1919,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): undyed grey pilgrim habit, wooden cross"
- },
- "nano-banana-2-1/friar-osbert-alt-a": {
-  "master_bytes": 973670,
-  "q128_bytes": 1588,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): penitent sackcloth robe, barefoot"
- },
- "nano-banana-2-1/friar-osbert-alt-b": {
-  "master_bytes": 942341,
-  "q128_bytes": 2213,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): leather-brown hooded rain cloak"
- },
- "nano-banana-2-1/hospitaller-ysolt-alt-a": {
-  "master_bytes": 1006205,
-  "q128_bytes": 2530,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): campaign field apron w/ red cross, rolled sleeves"
- },
- "nano-banana-2-1/hospitaller-ysolt-alt-b": {
-  "master_bytes": 914452,
-  "q128_bytes": 1701,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): midnight-blue winter wool cloak"
- },
- "nano-banana-2-1/serjeant-bastien-alt-a": {
-  "master_bytes": 1071149,
-  "q128_bytes": 2219,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): campaign-worn scuffed jerkin, dented helm"
- },
- "nano-banana-2-1/serjeant-bastien-alt-b": {
-  "master_bytes": 955805,
-  "q128_bytes": 2152,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): fur-collared winter cloak, frost-rimmed helm"
- },
- "nano-banana-2-1/vexillor-anchetil-alt-a": {
-  "master_bytes": 1043092,
-  "q128_bytes": 1978,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): ceremonial crisp surcoat + bright unfurled banner"
- },
- "nano-banana-2-1/vexillor-anchetil-alt-b": {
-  "master_bytes": 936140,
-  "q128_bytes": 1875,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): campaign-worn mud-stained surcoat + battle-tattered banner"
- },
- "nano-banana-2-1/vigil-knight-wymar-alt-a": {
-  "master_bytes": 1039322,
-  "q128_bytes": 2797,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): snow-dusted armor + heavy black winter cloak"
- },
- "nano-banana-2-1/vigil-knight-wymar-alt-b": {
-  "master_bytes": 1052304,
-  "q128_bytes": 2181,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): unarmored dark grey penitent robe, barefoot"
- },
- "nano-banana-2-1/wayfarer-aelis-alt-a": {
-  "master_bytes": 998340,
-  "q128_bytes": 2103,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-alt-a",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (a): midnight-blue winter cloak, frosted shoulders"
- },
- "nano-banana-2-1/wayfarer-aelis-alt-b": {
-  "master_bytes": 1061730,
-  "q128_bytes": 2669,
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis-alt-b",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt wardrobe variant (b): sun-bleached bone summer cloak"
- },
- "nano-banana-2-1/audric-battle/gallery-alt-a": {
-  "gallery_bytes": 248282,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/audric-battle/gallery-alt-b": {
-  "gallery_bytes": 169182,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "audric-battle",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/cleric-mabel/gallery-alt-a": {
-  "gallery_bytes": 239500,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/cleric-mabel/gallery-alt-b": {
-  "gallery_bytes": 204640,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cleric-mabel",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/serjeant-bastien/gallery-alt-a": {
-  "gallery_bytes": 263839,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/serjeant-bastien/gallery-alt-b": {
-  "gallery_bytes": 218677,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "serjeant-bastien",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/hospitaller-ysolt/gallery-alt-a": {
-  "gallery_bytes": 243972,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/hospitaller-ysolt/gallery-alt-b": {
-  "gallery_bytes": 209079,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "hospitaller-ysolt",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/wayfarer-aelis/gallery-alt-a": {
-  "gallery_bytes": 245945,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/wayfarer-aelis/gallery-alt-b": {
-  "gallery_bytes": 264576,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "wayfarer-aelis",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/canoness-hrothwyn/gallery-alt-a": {
-  "gallery_bytes": 285804,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/canoness-hrothwyn/gallery-alt-b": {
-  "gallery_bytes": 269332,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-altb-v2",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "canoness-hrothwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6); plate derives from the pinned v2 master (v1 pipe-artifact foul)"
- },
- "nano-banana-2-1/vexillor-anchetil/gallery-alt-a": {
-  "gallery_bytes": 256312,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/vexillor-anchetil/gallery-alt-b": {
-  "gallery_bytes": 211251,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vexillor-anchetil",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/brother-aldwyn/gallery-alt-a": {
-  "gallery_bytes": 271052,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/brother-aldwyn/gallery-alt-b": {
-  "gallery_bytes": 276577,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-altb-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "brother-aldwyn",
-  "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/cantor-sabina/gallery-alt-a": {
-  "gallery_bytes": 222921,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina",
-  "src_dims": "1024x1024",
+ "nano-banana-2-1/aelis-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-wayfarer-aelis-v1",
   "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/cantor-sabina/gallery-alt-b": {
-  "gallery_bytes": 218602,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-altb-v1",
   "model": "ppq:nano-banana-2-1",
-  "subject": "cantor-sabina",
+  "q128_bytes": 2194,
+  "raw_bytes": 848186,
   "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+  "subject": "aelis-heraldry"
  },
- "nano-banana-2-1/chevalier-raimbaud/gallery-alt-a": {
-  "gallery_bytes": 251399,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud",
-  "src_dims": "1024x1024",
+ "nano-banana-2-1/aelis-heraldry-v2": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-wayfarer-aelis-v2",
   "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/chevalier-raimbaud/gallery-alt-b": {
-  "gallery_bytes": 269837,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-altb-v1",
   "model": "ppq:nano-banana-2-1",
-  "subject": "chevalier-raimbaud",
+  "q128_bytes": 2127,
+  "raw_bytes": 923077,
   "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+  "subject": "aelis-heraldry"
  },
- "nano-banana-2-1/vigil-knight-wymar/gallery-alt-a": {
-  "gallery_bytes": 259555,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar",
-  "src_dims": "1024x1024",
+ "nano-banana-2-1/aldwyn-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-brother-aldwyn-v1",
   "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/vigil-knight-wymar/gallery-alt-b": {
-  "gallery_bytes": 259352,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-altb-v1",
   "model": "ppq:nano-banana-2-1",
-  "subject": "vigil-knight-wymar",
+  "q128_bytes": 3013,
+  "raw_bytes": 991711,
   "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+  "subject": "aldwyn-heraldry"
  },
- "nano-banana-2-1/friar-osbert/gallery-alt-a": {
-  "gallery_bytes": 232144,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-alta-v1",
-  "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert",
-  "src_dims": "1024x1024",
+ "nano-banana-2-1/anchetil-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-vexillor-anchetil-v1",
   "cost_usd": 0.0,
-  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
- },
- "nano-banana-2-1/friar-osbert/gallery-alt-b": {
-  "gallery_bytes": 214551,
-  "gallery_dims": "512x512",
-  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-altb-v1",
   "model": "ppq:nano-banana-2-1",
-  "subject": "friar-osbert",
+  "q128_bytes": 1857,
+  "raw_bytes": 882191,
   "src_dims": "1024x1024",
-  "cost_usd": 0.0,
-  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+  "subject": "anchetil-heraldry"
  },
  "nano-banana-2-1/armenian-bowman": {
   "client_request_id": "kirk-adv-nano-banana-2-1-armenian-bowman-v1",
@@ -1792,6 +265,151 @@
   "src_dims": "1024x1024",
   "subject": "askari-alamdar"
  },
+ "nano-banana-2-1/audric-battle": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-battle-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1749,
+  "q64_bytes": 680,
+  "raw_bytes": 956078,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle"
+ },
+ "nano-banana-2-1/audric-battle-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1022570,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): campaign-worn patched jerkin + thrown-back dark field cloak",
+  "q128_bytes": 1756,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-alt-a"
+ },
+ "nano-banana-2-1/audric-battle-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 822292,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): ceremonial bone-white arming coat, gold cross, red sash",
+  "q128_bytes": 1584,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-alt-b"
+ },
+ "nano-banana-2-1/audric-battle-defeat": {
+  "client_request_id": "kirk-anim-frame-audric-battle-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1803,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-defeat"
+ },
+ "nano-banana-2-1/audric-battle-followthrough": {
+  "client_request_id": "kirk-anim-frame-audric-battle-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1480,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-followthrough"
+ },
+ "nano-banana-2-1/audric-battle-hit": {
+  "client_request_id": "kirk-anim-frame-audric-battle-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 865001,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-hit"
+ },
+ "nano-banana-2-1/audric-battle-sheet": {
+  "client_request_id": "kirk-anim-pilot-audric-battle-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "pilot reuse from card 4.3 (idle/step/strike/hit/defend/pray grid); no new API call",
+  "raw_bytes": 1149871,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-sheet"
+ },
+ "nano-banana-2-1/audric-battle-strike": {
+  "client_request_id": "kirk-anim-frame-audric-battle-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 897015,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-strike"
+ },
+ "nano-banana-2-1/audric-battle-victory": {
+  "client_request_id": "kirk-anim-frame-audric-battle-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1644,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-victory"
+ },
+ "nano-banana-2-1/audric-battle-windup": {
+  "client_request_id": "kirk-anim-frame-audric-battle-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1426,
+  "src_dims": "1024x1024",
+  "subject": "audric-battle-windup"
+ },
+ "nano-banana-2-1/audric-battle/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-battle-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 219429,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "audric-battle"
+ },
+ "nano-banana-2-1/audric-battle/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 248282,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "audric-battle"
+ },
+ "nano-banana-2-1/audric-battle/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-audric-battle-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 169182,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "audric-battle"
+ },
+ "nano-banana-2-1/audric-prayer": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-audric-prayer-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2167,
+  "q64_bytes": 897,
+  "raw_bytes": 1027155,
+  "src_dims": "1024x1024",
+  "subject": "audric-prayer"
+ },
+ "nano-banana-2-1/bastien-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-serjeant-bastien-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2200,
+  "raw_bytes": 913377,
+  "src_dims": "1024x1024",
+  "subject": "bastien-heraldry"
+ },
+ "nano-banana-2-1/battle-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-audric-battle-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1748,
+  "raw_bytes": 872873,
+  "src_dims": "1024x1024",
+  "subject": "battle-heraldry"
+ },
  "nano-banana-2-1/bedouin-outrider": {
   "client_request_id": "kirk-adv-nano-banana-2-1-bedouin-outrider-v1",
   "cost_usd": 0.0,
@@ -1801,6 +419,621 @@
   "raw_bytes": 911983,
   "src_dims": "1024x1024",
   "subject": "bedouin-outrider"
+ },
+ "nano-banana-2-1/brother-aldwyn": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brother-aldwyn-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2816,
+  "q64_bytes": 1006,
+  "raw_bytes": 1040967,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn"
+ },
+ "nano-banana-2-1/brother-aldwyn-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1073421,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): winter midnight-blue hooded cloak, snow-dusted pack",
+  "q128_bytes": 2781,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-alt-a"
+ },
+ "nano-banana-2-1/brother-aldwyn-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1076773,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): ash-grey penitent's habit",
+  "q128_bytes": 3397,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-alt-b"
+ },
+ "nano-banana-2-1/brother-aldwyn-defeat": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2286,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-defeat"
+ },
+ "nano-banana-2-1/brother-aldwyn-followthrough": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2962,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-followthrough"
+ },
+ "nano-banana-2-1/brother-aldwyn-hit": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 917539,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-hit"
+ },
+ "nano-banana-2-1/brother-aldwyn-sheet": {
+  "client_request_id": "kirk-anim-sheet-brother-aldwyn-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "retried v2 (v1 top-row sprites spilled into bottom-row cells)",
+  "raw_bytes": 1036467,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-sheet"
+ },
+ "nano-banana-2-1/brother-aldwyn-strike": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 934574,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-strike"
+ },
+ "nano-banana-2-1/brother-aldwyn-victory": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2924,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-victory"
+ },
+ "nano-banana-2-1/brother-aldwyn-windup": {
+  "client_request_id": "kirk-anim-frame-brother-aldwyn-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2752,
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn-windup"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brother-aldwyn-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 260673,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 271052,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn"
+ },
+ "nano-banana-2-1/brother-aldwyn/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-brother-aldwyn-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 276577,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "brother-aldwyn"
+ },
+ "nano-banana-2-1/brute-of-wrath": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brute-of-wrath-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3468,
+  "q64_bytes": 1156,
+  "raw_bytes": 1189193,
+  "src_dims": "1024x1024",
+  "subject": "brute-of-wrath"
+ },
+ "nano-banana-2-1/brute-of-wrath/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-brute-of-wrath-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 318691,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "brute-of-wrath"
+ },
+ "nano-banana-2-1/canoness-hrothwyn": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-canoness-hrothwyn-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2597,
+  "q64_bytes": 980,
+  "raw_bytes": 1039005,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1096707,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): high-feast white gold-trimmed choir cope",
+  "q128_bytes": 3362,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-alt-a"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-altb-v2",
+  "cost_usd": 0.0,
+  "master_bytes": 1076050,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): fur-lined midnight-blue winter cloak | v2 pinned retry (v1 pipe-art artifact foul)",
+  "q128_bytes": 3227,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-alt-b"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-defeat": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2379,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-defeat"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-followthrough": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2392,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-followthrough"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-hit": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 779352,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-hit"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-sheet": {
+  "client_request_id": "kirk-anim-sheet-canoness-hrothwyn-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "minor: raised psalter corner kisses top edge in idle/step cells (prop tip only, head/body intact)",
+  "raw_bytes": 1031893,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-sheet"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-strike": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 990212,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-strike"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-victory": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2045,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-victory"
+ },
+ "nano-banana-2-1/canoness-hrothwyn-windup": {
+  "client_request_id": "kirk-anim-frame-canoness-hrothwyn-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2788,
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn-windup"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-canoness-hrothwyn-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 253010,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 285804,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn"
+ },
+ "nano-banana-2-1/canoness-hrothwyn/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-canoness-hrothwyn-altb-v2",
+  "cost_usd": 0.0,
+  "gallery_bytes": 269332,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6); plate derives from the pinned v2 master (v1 pipe-artifact foul)",
+  "src_dims": "1024x1024",
+  "subject": "canoness-hrothwyn"
+ },
+ "nano-banana-2-1/cantor-sabina": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1758,
+  "q64_bytes": 723,
+  "raw_bytes": 985369,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina"
+ },
+ "nano-banana-2-1/cantor-sabina-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 964296,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): feast-day white habit, gold-embroidered hem",
+  "q128_bytes": 2429,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-alt-a"
+ },
+ "nano-banana-2-1/cantor-sabina-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 960529,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): ash-grey penitential habit, rope cord",
+  "q128_bytes": 1690,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-alt-b"
+ },
+ "nano-banana-2-1/cantor-sabina-defeat": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2168,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-defeat"
+ },
+ "nano-banana-2-1/cantor-sabina-followthrough": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2217,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-followthrough"
+ },
+ "nano-banana-2-1/cantor-sabina-hit": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 902761,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-hit"
+ },
+ "nano-banana-2-1/cantor-sabina-sheet": {
+  "client_request_id": "kirk-anim-sheet-cantor-sabina-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 961379,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-sheet"
+ },
+ "nano-banana-2-1/cantor-sabina-strike": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 908756,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-strike"
+ },
+ "nano-banana-2-1/cantor-sabina-victory": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1849,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-victory"
+ },
+ "nano-banana-2-1/cantor-sabina-windup": {
+  "client_request_id": "kirk-anim-frame-cantor-sabina-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2309,
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina-windup"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cantor-sabina-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 235938,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 222921,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina"
+ },
+ "nano-banana-2-1/cantor-sabina/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cantor-sabina-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 218602,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "cantor-sabina"
+ },
+ "nano-banana-2-1/chevalier-raimbaud": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2321,
+  "q64_bytes": 852,
+  "raw_bytes": 901454,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1031986,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): campaign-worn mudded plate, frayed tabard",
+  "q128_bytes": 2627,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-alt-a"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1083997,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): mirror-bright ceremonial plate + midnight-blue mantle",
+  "q128_bytes": 2731,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-alt-b"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-defeat": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3041,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-defeat"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-followthrough": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3067,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-followthrough"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-hit": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 888267,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-hit"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-sheet": {
+  "client_request_id": "kirk-anim-sheet-chevalier-raimbaud-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "retried v2 (v1 heads clipped at window top)",
+  "raw_bytes": 1144846,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-sheet"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-strike": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 966805,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-strike"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-victory": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3014,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-victory"
+ },
+ "nano-banana-2-1/chevalier-raimbaud-windup": {
+  "client_request_id": "kirk-anim-frame-chevalier-raimbaud-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2163,
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud-windup"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-raimbaud-v2",
+  "cost_usd": 0.0,
+  "gallery_bytes": 236391,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 251399,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud"
+ },
+ "nano-banana-2-1/chevalier-raimbaud/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-chevalier-raimbaud-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 269837,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "chevalier-raimbaud"
+ },
+ "nano-banana-2-1/chevalier-romilda": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-chevalier-romilda-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "canon gender rule pass 2026-10-14: species renamed Chevalier Raimbaud (male); cell regenerates as nano-banana-2-1/chevalier-raimbaud with id ...-v2",
+  "q128_bytes": 2332,
+  "q64_bytes": 899,
+  "raw_bytes": 911738,
+  "src_dims": "1024x1024",
+  "status": "superseded",
+  "subject": "chevalier-romilda"
+ },
+ "nano-banana-2-1/cleric-mabel": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cleric-mabel-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2817,
+  "q64_bytes": 1064,
+  "raw_bytes": 983343,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel"
+ },
+ "nano-banana-2-1/cleric-mabel-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 981171,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): bone-white hooded winter cloak, gold clasp",
+  "q128_bytes": 2732,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-alt-a"
+ },
+ "nano-banana-2-1/cleric-mabel-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 894158,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): undyed grey pilgrim habit, wooden cross",
+  "q128_bytes": 1919,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-alt-b"
+ },
+ "nano-banana-2-1/cleric-mabel-defeat": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2097,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-defeat"
+ },
+ "nano-banana-2-1/cleric-mabel-followthrough": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2532,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-followthrough"
+ },
+ "nano-banana-2-1/cleric-mabel-hit": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 917155,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-hit"
+ },
+ "nano-banana-2-1/cleric-mabel-sheet": {
+  "client_request_id": "kirk-anim-sheet-cleric-mabel-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 963244,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-sheet"
+ },
+ "nano-banana-2-1/cleric-mabel-strike": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 879418,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-strike"
+ },
+ "nano-banana-2-1/cleric-mabel-victory": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2338,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-victory"
+ },
+ "nano-banana-2-1/cleric-mabel-windup": {
+  "client_request_id": "kirk-anim-frame-cleric-mabel-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2099,
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel-windup"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-cleric-mabel-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 244083,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 239500,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel"
+ },
+ "nano-banana-2-1/cleric-mabel/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-cleric-mabel-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 204640,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "cleric-mabel"
  },
  "nano-banana-2-1/daylamite-axeman": {
   "client_request_id": "kirk-adv-nano-banana-2-1-daylamite-axeman-v1",
@@ -1812,6 +1045,142 @@
   "src_dims": "1024x1024",
   "subject": "daylamite-axeman"
  },
+ "nano-banana-2-1/fiend-of-lust": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-fiend-of-lust-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3041,
+  "q64_bytes": 974,
+  "raw_bytes": 1337287,
+  "src_dims": "1024x1024",
+  "subject": "fiend-of-lust"
+ },
+ "nano-banana-2-1/fiend-of-lust/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-fiend-of-lust-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 336869,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "fiend-of-lust"
+ },
+ "nano-banana-2-1/friar-osbert": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-friar-osbert-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2594,
+  "q64_bytes": 949,
+  "raw_bytes": 1030459,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert"
+ },
+ "nano-banana-2-1/friar-osbert-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 973670,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): penitent sackcloth robe, barefoot",
+  "q128_bytes": 1588,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-alt-a"
+ },
+ "nano-banana-2-1/friar-osbert-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 942341,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): leather-brown hooded rain cloak",
+  "q128_bytes": 2213,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-alt-b"
+ },
+ "nano-banana-2-1/friar-osbert-defeat": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1542,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-defeat"
+ },
+ "nano-banana-2-1/friar-osbert-followthrough": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2371,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-followthrough"
+ },
+ "nano-banana-2-1/friar-osbert-hit": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 923115,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-hit"
+ },
+ "nano-banana-2-1/friar-osbert-sheet": {
+  "client_request_id": "kirk-anim-sheet-friar-osbert-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 1100512,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-sheet"
+ },
+ "nano-banana-2-1/friar-osbert-strike": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 951877,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-strike"
+ },
+ "nano-banana-2-1/friar-osbert-victory": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2303,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-victory"
+ },
+ "nano-banana-2-1/friar-osbert-windup": {
+  "client_request_id": "kirk-anim-frame-friar-osbert-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2021,
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert-windup"
+ },
+ "nano-banana-2-1/friar-osbert/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-friar-osbert-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 248334,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert"
+ },
+ "nano-banana-2-1/friar-osbert/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 232144,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert"
+ },
+ "nano-banana-2-1/friar-osbert/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-friar-osbert-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 214551,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "friar-osbert"
+ },
  "nano-banana-2-1/ghulam-lancer": {
   "client_request_id": "kirk-adv-nano-banana-2-1-ghulam-lancer-v1",
   "cost_usd": 0.0,
@@ -1821,6 +1190,171 @@
   "raw_bytes": 995088,
   "src_dims": "1024x1024",
   "subject": "ghulam-lancer"
+ },
+ "nano-banana-2-1/glutton-maw": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-glutton-maw-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3420,
+  "q64_bytes": 1168,
+  "raw_bytes": 1152978,
+  "src_dims": "1024x1024",
+  "subject": "glutton-maw"
+ },
+ "nano-banana-2-1/glutton-maw/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-glutton-maw-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 309975,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "glutton-maw"
+ },
+ "nano-banana-2-1/grasper-of-greed": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-grasper-of-greed-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2525,
+  "q64_bytes": 819,
+  "raw_bytes": 1030950,
+  "src_dims": "1024x1024",
+  "subject": "grasper-of-greed"
+ },
+ "nano-banana-2-1/grasper-of-greed/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-grasper-of-greed-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 254064,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "grasper-of-greed"
+ },
+ "nano-banana-2-1/hospitaller-ysolt": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-hospitaller-ysolt-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1993,
+  "q64_bytes": 767,
+  "raw_bytes": 993246,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1006205,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): campaign field apron w/ red cross, rolled sleeves",
+  "q128_bytes": 2530,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-alt-a"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 914452,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): midnight-blue winter wool cloak",
+  "q128_bytes": 1701,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-alt-b"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-defeat": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2233,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-defeat"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-followthrough": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2280,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-followthrough"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-hit": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 911897,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-hit"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-sheet": {
+  "client_request_id": "kirk-anim-sheet-hospitaller-ysolt-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 981904,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-sheet"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-strike": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 912880,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-strike"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-victory": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1937,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-victory"
+ },
+ "nano-banana-2-1/hospitaller-ysolt-windup": {
+  "client_request_id": "kirk-anim-frame-hospitaller-ysolt-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1944,
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt-windup"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-hospitaller-ysolt-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 235632,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 243972,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt"
+ },
+ "nano-banana-2-1/hospitaller-ysolt/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-hospitaller-ysolt-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 209079,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "hospitaller-ysolt"
+ },
+ "nano-banana-2-1/hrothwyn-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-canoness-hrothwyn-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2433,
+  "raw_bytes": 949199,
+  "src_dims": "1024x1024",
+  "subject": "hrothwyn-heraldry"
  },
  "nano-banana-2-1/kilij-arslan-i": {
   "client_request_id": "kirk-adv-nano-banana-2-1-kilij-arslan-i-v1",
@@ -1841,6 +1375,15 @@
   "raw_bytes": 945566,
   "src_dims": "1024x1024",
   "subject": "kurdish-ghazw-rider"
+ },
+ "nano-banana-2-1/mabel-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-cleric-mabel-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2642,
+  "raw_bytes": 896685,
+  "src_dims": "1024x1024",
+  "subject": "mabel-heraldry"
  },
  "nano-banana-2-1/muqaddam-of-the-tulb": {
   "client_request_id": "kirk-adv-nano-banana-2-1-muqaddam-of-the-tulb-v1",
@@ -1872,6 +1415,44 @@
   "src_dims": "1024x1024",
   "subject": "nur-ad-din"
  },
+ "nano-banana-2-1/osbert-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-friar-osbert-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2667,
+  "raw_bytes": 901450,
+  "src_dims": "1024x1024",
+  "subject": "osbert-heraldry"
+ },
+ "nano-banana-2-1/prince-of-pride": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-prince-of-pride-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3000,
+  "q64_bytes": 1049,
+  "raw_bytes": 1214437,
+  "src_dims": "1024x1024",
+  "subject": "prince-of-pride"
+ },
+ "nano-banana-2-1/prince-of-pride/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-prince-of-pride-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 311245,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "prince-of-pride"
+ },
+ "nano-banana-2-1/raimbaud-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-chevalier-raimbaud-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3278,
+  "raw_bytes": 968368,
+  "src_dims": "1024x1024",
+  "subject": "raimbaud-heraldry"
+ },
  "nano-banana-2-1/road-east-header": {
   "client_request_id": "kirk-adv-nano-banana-2-1-road-east-header-v2",
   "cost_usd": 0.0,
@@ -1882,6 +1463,15 @@
   "src_dims": "1024x1024",
   "subject": "road-east-header"
  },
+ "nano-banana-2-1/sabina-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-cantor-sabina-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2131,
+  "raw_bytes": 825010,
+  "src_dims": "1024x1024",
+  "subject": "sabina-heraldry"
+ },
  "nano-banana-2-1/saladin": {
   "client_request_id": "kirk-adv-nano-banana-2-1-saladin-v1",
   "cost_usd": 0.0,
@@ -1891,6 +1481,142 @@
   "raw_bytes": 963630,
   "src_dims": "1024x1024",
   "subject": "saladin"
+ },
+ "nano-banana-2-1/serjeant-bastien": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-serjeant-bastien-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2863,
+  "q64_bytes": 997,
+  "raw_bytes": 1076721,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien"
+ },
+ "nano-banana-2-1/serjeant-bastien-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1071149,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): campaign-worn scuffed jerkin, dented helm",
+  "q128_bytes": 2219,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-alt-a"
+ },
+ "nano-banana-2-1/serjeant-bastien-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 955805,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): fur-collared winter cloak, frost-rimmed helm",
+  "q128_bytes": 2152,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-alt-b"
+ },
+ "nano-banana-2-1/serjeant-bastien-defeat": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1898,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-defeat"
+ },
+ "nano-banana-2-1/serjeant-bastien-followthrough": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1536,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-followthrough"
+ },
+ "nano-banana-2-1/serjeant-bastien-hit": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 810636,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-hit"
+ },
+ "nano-banana-2-1/serjeant-bastien-sheet": {
+  "client_request_id": "kirk-anim-sheet-serjeant-bastien-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 1056683,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-sheet"
+ },
+ "nano-banana-2-1/serjeant-bastien-strike": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 955221,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-strike"
+ },
+ "nano-banana-2-1/serjeant-bastien-victory": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1818,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-victory"
+ },
+ "nano-banana-2-1/serjeant-bastien-windup": {
+  "client_request_id": "kirk-anim-frame-serjeant-bastien-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1518,
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien-windup"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-serjeant-bastien-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 269484,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 263839,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien"
+ },
+ "nano-banana-2-1/serjeant-bastien/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-serjeant-bastien-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 218677,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "serjeant-bastien"
+ },
+ "nano-banana-2-1/sleeper-of-sloth": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3144,
+  "q64_bytes": 1061,
+  "raw_bytes": 969580,
+  "src_dims": "1024x1024",
+  "subject": "sleeper-of-sloth"
+ },
+ "nano-banana-2-1/sleeper-of-sloth/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-sleeper-of-sloth-v2",
+  "cost_usd": 0.0,
+  "gallery_bytes": 281615,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "sleeper-of-sloth"
  },
  "nano-banana-2-1/sudani-shieldbearer": {
   "client_request_id": "kirk-adv-nano-banana-2-1-sudani-shieldbearer-v1",
@@ -1911,5 +1637,405 @@
   "raw_bytes": 913198,
   "src_dims": "1024x1024",
   "subject": "turcoman-bowrider"
+ },
+ "nano-banana-2-1/vexillor-anchetil": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vexillor-anchetil-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1803,
+  "q64_bytes": 728,
+  "raw_bytes": 1047164,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil"
+ },
+ "nano-banana-2-1/vexillor-anchetil-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1043092,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): ceremonial crisp surcoat + bright unfurled banner",
+  "q128_bytes": 1978,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-alt-a"
+ },
+ "nano-banana-2-1/vexillor-anchetil-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 936140,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): campaign-worn mud-stained surcoat + battle-tattered banner",
+  "q128_bytes": 1875,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-alt-b"
+ },
+ "nano-banana-2-1/vexillor-anchetil-defeat": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2162,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-defeat"
+ },
+ "nano-banana-2-1/vexillor-anchetil-followthrough": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1858,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-followthrough"
+ },
+ "nano-banana-2-1/vexillor-anchetil-hit": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 912275,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-hit"
+ },
+ "nano-banana-2-1/vexillor-anchetil-sheet": {
+  "client_request_id": "kirk-anim-sheet-vexillor-anchetil-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "retried v2 (v1 dcx 17.0; banner shouldered in step cell)",
+  "raw_bytes": 1035948,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-sheet"
+ },
+ "nano-banana-2-1/vexillor-anchetil-strike": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 876844,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-strike"
+ },
+ "nano-banana-2-1/vexillor-anchetil-victory": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1785,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-victory"
+ },
+ "nano-banana-2-1/vexillor-anchetil-windup": {
+  "client_request_id": "kirk-anim-frame-vexillor-anchetil-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1639,
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil-windup"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vexillor-anchetil-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 257894,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 256312,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil"
+ },
+ "nano-banana-2-1/vexillor-anchetil/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vexillor-anchetil-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 211251,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "vexillor-anchetil"
+ },
+ "nano-banana-2-1/vigil-knight-wymar": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vigil-knight-wymar-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2392,
+  "q64_bytes": 810,
+  "raw_bytes": 1039428,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1039322,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): snow-dusted armor + heavy black winter cloak",
+  "q128_bytes": 2797,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-alt-a"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1052304,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): unarmored dark grey penitent robe, barefoot",
+  "q128_bytes": 2181,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-alt-b"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-defeat": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2017,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-defeat"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-followthrough": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1735,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-followthrough"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-hit": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)",
+  "raw_bytes": 911668,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-hit"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-sheet": {
+  "client_request_id": "kirk-anim-sheet-vigil-knight-wymar-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "retried v2 (v1 dcx 16.2/dcy 9.0); residual dcy 10.3 = bow-vs-standing pairs (bow-bend intrinsic; standing family <=7.7)",
+  "raw_bytes": 1061791,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-sheet"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-strike": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-strike-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "strike retried v2 (v1 foul: red sash off-identity); hit stayed v1 (v2 co-regeneration drifted red; v1 raw re-quantized)",
+  "raw_bytes": 918006,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-strike"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-victory": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2484,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-victory"
+ },
+ "nano-banana-2-1/vigil-knight-wymar-windup": {
+  "client_request_id": "kirk-anim-frame-vigil-knight-wymar-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1724,
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar-windup"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-vigil-knight-wymar-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 252270,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 259555,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar"
+ },
+ "nano-banana-2-1/vigil-knight-wymar/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-vigil-knight-wymar-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 259352,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "vigil-knight-wymar"
+ },
+ "nano-banana-2-1/wayfarer-aelis": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wayfarer-aelis-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2200,
+  "q64_bytes": 846,
+  "raw_bytes": 960645,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis"
+ },
+ "nano-banana-2-1/wayfarer-aelis-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-alta-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 998340,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (a): midnight-blue winter cloak, frosted shoulders",
+  "q128_bytes": 2103,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-alt-a"
+ },
+ "nano-banana-2-1/wayfarer-aelis-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-altb-v1",
+  "cost_usd": 0.0,
+  "master_bytes": 1061730,
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt wardrobe variant (b): sun-bleached bone summer cloak",
+  "q128_bytes": 2669,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-alt-b"
+ },
+ "nano-banana-2-1/wayfarer-aelis-defeat": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-defeat-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2440,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-defeat"
+ },
+ "nano-banana-2-1/wayfarer-aelis-followthrough": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-followthrough-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1861,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-followthrough"
+ },
+ "nano-banana-2-1/wayfarer-aelis-hit": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-hit-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 842002,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-hit"
+ },
+ "nano-banana-2-1/wayfarer-aelis-sheet": {
+  "client_request_id": "kirk-anim-sheet-wayfarer-aelis-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "note": "retried v2 (v1 dcy 15.5 row-baseline break); residual dcy 9.5 = bow-vs-standing pairs + mild row scale wobble; staging fine after eyeball",
+  "raw_bytes": 999433,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-sheet"
+ },
+ "nano-banana-2-1/wayfarer-aelis-strike": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-strike-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "raw_bytes": 907247,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-strike"
+ },
+ "nano-banana-2-1/wayfarer-aelis-victory": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-victory-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2106,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-victory"
+ },
+ "nano-banana-2-1/wayfarer-aelis-windup": {
+  "client_request_id": "kirk-anim-frame-wayfarer-aelis-windup-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1580,
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis-windup"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wayfarer-aelis-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 223935,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery-alt-a": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-alta-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 245945,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-a vesture plate: LANCZOS of committed master art/roster-staging/**/alt-a-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis"
+ },
+ "nano-banana-2-1/wayfarer-aelis/gallery-alt-b": {
+  "client_request_id": "kirk-roster-alt-nano-banana-2-1-wayfarer-aelis-altb-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 264576,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)",
+  "src_dims": "1024x1024",
+  "subject": "wayfarer-aelis"
+ },
+ "nano-banana-2-1/wretch-of-envy": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wretch-of-envy-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2151,
+  "q64_bytes": 803,
+  "raw_bytes": 895832,
+  "src_dims": "1024x1024",
+  "subject": "wretch-of-envy"
+ },
+ "nano-banana-2-1/wretch-of-envy/gallery": {
+  "client_request_id": "kirk-portfolio-nano-banana-2-1-wretch-of-envy-v1",
+  "cost_usd": 0.0,
+  "gallery_bytes": 200816,
+  "gallery_dims": "512x512",
+  "model": "ppq:nano-banana-2-1",
+  "note": "un-quantized portrait plate: LANCZOS downscale of the cell raw master, no palette remap, no ink keying; identity pinned to the parent cell's q128",
+  "src_dims": "1024x1024",
+  "subject": "wretch-of-envy"
+ },
+ "nano-banana-2-1/wymar-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-vigil-knight-wymar-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2399,
+  "raw_bytes": 934591,
+  "src_dims": "1024x1024",
+  "subject": "wymar-heraldry"
+ },
+ "nano-banana-2-1/wymar-heraldry-v2": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-vigil-knight-wymar-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2378,
+  "raw_bytes": 955406,
+  "src_dims": "1024x1024",
+  "subject": "wymar-heraldry"
+ },
+ "nano-banana-2-1/ysolt-heraldry-v1": {
+  "client_request_id": "kirk-heraldry-nano-banana-2-1-hospitaller-ysolt-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2376,
+  "raw_bytes": 934235,
+  "src_dims": "1024x1024",
+  "subject": "ysolt-heraldry"
  }
 }

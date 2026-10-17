@@ -25,9 +25,15 @@ pub enum Phase {
     /// The Hagiography: the witness roll of the revered non-combatant dead
     /// (pure lore) plus the Manuscript of Sins bestiary. A read-only
     /// memorial off the menu, like the roster minus every mechanic;
-    /// [`ViewSnapshot::witnesses`] and [`ViewSnapshot::sins`] carry the
-    /// two books only while this phase is up.
+    /// [`ViewSnapshot::witnesses`], [`ViewSnapshot::sins`],
+    /// [`ViewSnapshot::foes`] and [`ViewSnapshot::testimonies`] carry the
+    /// books only while this phase is up.
     Hagiography,
+    /// Post-battle Call to Repentance (M7b, docs/CONVERSION.md): a won
+    /// battle left a convertible adversary (ids 108..=117) yielded; the
+    /// player owes one choice per pending call — [`ClientInput::CallToRepentance`]
+    /// or [`ClientInput::ReleaseSoul`]. The queue drains into BattleOver.
+    ConversionChoice,
 }
 
 /// Campaign (PvE gauntlet) progress view: `Some` from StartCampaign until the
@@ -227,6 +233,57 @@ pub struct SinCard {
     pub defeated: bool,
 }
 
+/// One row of the Hagiography's third book, the Roll of Worthy
+/// Adversaries (docs/HISTORICAL-FOES.md section 6.5): one entry per field
+/// archetype (108..=117) and named commander (120..=123), in id order. The
+/// row always names the man (dimmed while unmet); once his defeat has been
+/// witnessed in any battle on this document (`defeated`), the chronicle
+/// `lore` reading is revealed. A sealed row carries EMPTY lore, so no UI
+/// binding can leak the reward text before it is earned.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FoeCard {
+    /// Static-table species id (108..=117, 120..=123).
+    pub species_id: u16,
+    /// The adversary's name (always shown — dimmed while sealed).
+    pub name: String,
+    /// The chronicle reading from the species table; empty until `defeated`.
+    pub lore: String,
+    /// The adversary's yield has been witnessed (the entry is revealed).
+    pub defeated: bool,
+}
+
+/// One row of the Hagiography's Testimonies of the Baptized: the converted
+/// archetype's own account of repentance (docs/CONVERSION.md section 4).
+/// Rows exist for the ten convertible archetypes in id order; a sealed row
+/// carries EMPTY `testimony` text until its `campaign.converts_baptized`
+/// bit is set. Commanders are never called, so they have no rows here.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TestimonyCard {
+    /// Static-table archetype id (108..=117).
+    pub species_id: u16,
+    /// The archetype's office (always shown — dimmed while sealed).
+    pub name: String,
+    /// The man's testimony, verbatim from `conversion::testimony`; empty
+    /// until `baptized`.
+    pub testimony: String,
+    /// An instance of this archetype has been baptized on this document.
+    pub baptized: bool,
+}
+
+/// The live post-battle Call (M7b): which yielded adversary the choice
+/// concerns, at what level, and the chance the Call succeeds (percent,
+/// pre-computed off `crusade_core::data::conversion_chance` — shown so the
+/// player reads the same odds the roll uses). `pending` counts the calls
+/// still owed, head included.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ConversionView {
+    pub species_id: u16,
+    pub species_name: String,
+    pub foe_level: u8,
+    pub chance_pct: u8,
+    pub pending: u8,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewSnapshot {
     pub phase: Phase,
@@ -256,8 +313,28 @@ pub struct ViewSnapshot {
     /// gated exactly like the witness roll above. Reveal state comes from
     /// the persisted defeat mask (client.rs `SINS_DEFEATED_KEY`), never
     /// from the live run — sealed rows carry empty `sin`/`lore`.
+    /// The Hagiography's Manuscript of Sins: the 7-row sin-boss bestiary,
+    /// gated exactly like the witness roll above. Reveal state comes from
+    /// the persisted defeat mask (client.rs `SINS_DEFEATED_KEY`), never
+    /// from the live run — sealed rows carry empty `sin`/`lore`.
     #[serde(default)]
     pub sins: Vec<SinCard>,
+    /// The Hagiography's Roll of Worthy Adversaries (HF 6.5): the 14-row
+    /// historical-foe codex, gated like the manuscript above; reveal state
+    /// is the persisted `campaign.foes_defeated` u32 mask. Sealed rows
+    /// carry empty `lore`.
+    #[serde(default)]
+    pub foes: Vec<FoeCard>,
+    /// The Hagiography's Testimonies of the Baptized (CONVERSION 4): one
+    /// row per convertible archetype, gated on the persisted
+    /// `campaign.converts_baptized` mask; sealed rows carry empty text.
+    #[serde(default)]
+    pub testimonies: Vec<TestimonyCard>,
+    /// The live Call to Repentance, if any: `Some` only while
+    /// [`Phase::ConversionChoice`] is up (one yielded convertible adversary
+    /// per decision; the queue drains into BattleOver).
+    #[serde(default)]
+    pub conversion: Option<ConversionView>,
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }
@@ -325,6 +402,14 @@ pub enum ClientInput {
     CycleVariant {
         species_id: u16,
     },
+    /// ConversionChoice (M7b): issue the Call to Repentance to the yielded
+    /// adversary at the head of the queue (docs/CONVERSION.md). One
+    /// contested roll; success baptizes him into the roster, failure is the
+    /// Mercy release.
+    CallToRepentance,
+    /// ConversionChoice: release the yielded adversary without the Call —
+    /// his soul commended unto God (Mercy outcome, no roll).
+    ReleaseSoul,
     /// Async bridge report (lobby session / duel lifecycle). Drives the
     /// synchronous lobby view-state; net handles never enter the client.
     LobbyNet(LobbyNet),

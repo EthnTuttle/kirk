@@ -472,8 +472,46 @@ unchanged at **$0.664**.
 stage_sprites.py ADVERSARIES table + icons stay UNWIRED until the HF §8
 human eyeball pass approves cells.
 
-## 5. Non-art host state at pause time
+### 4.18 Heraldry regeneration pass — D1 canon compliance (DONE 2026-10-16, $0.00)
 
+Owner direction: every crusader CHAMPION cell bears the fivefold Jerusalem
+cross (large potent cross + four small crosses in the quarters), gold
+`#c9a227` on bone/white, clearly readable (ART-PIPELINE §D1 "Heraldry
+canon"). Regenerated all **12 champion cells** on the locked
+`nano-banana-2-1` lane (free tier) with each existing subject descriptor
+verbatim from `ppq_roster.py`/`ppq_portfolio.py` plus a heraldry clause;
+quantized via `quant.py --size 128` to the LOCKED palette; every new q128
+eyeball-verified (5-fold cross readable, no style/pose/background drift vs
+the old cell). Fiends, anim-staging, adversaries-staging, and
+`crusade-app/assets` untouched — crusade wiring is the later human-QA card.
+
+Staging per cell: `heraldry-q128.png` (the new cell, review copy) +
+`q128-pre-heraldry.png` (backup of the old keeper) written first, then
+`q128.png` replaced with the new cell because every cell passed. Driver:
+`/tmp/opencode/sprite-bakeoff/heraldry_batch.py` (scratch; raws at
+`/tmp/opencode/sprite-bakeoff/heraldry/<subject>/raw-vN.png`;
+`client_request_id` pattern `kirk-heraldry-nano-banana-2-1-<subject>-vN`).
+Ledger: +14 keys in `tools/artbake/MANIFEST.json`
+(`nano-banana-2-1/<subject>-heraldry-vN`, incl. the 2 superseded v1 fouls).
+14 API calls, 0 errors, spend $0.00 (cumulative project spend unchanged at
+$0.664).
+
+| subject | result | tries | notes |
+|---|---|---|---|
+| audric-battle | PASS v1 | 1 | fivefold cross on bone tunic chest; stance/identity consistent |
+| cleric-mabel | PASS v1 | 1 | large fivefold gold panel on habit chest; alms purse kept |
+| serjeant-bastien | PASS v1 | 1 | fivefold cross on gambeson chest; kettle helm + planted spear kept |
+| hospitaller-ysolt | PASS v1 | 1 | fivefold cross on habit tabard; satchel + bandage kept |
+| wayfarer-aelis | PASS v2 | 2 | v1 foul: shoulder badge unreadable at 128; v2 moved to cloak-revealed tunic chest — readable |
+| canoness-hrothwyn | PASS v1 | 1 | large fivefold cross down the habit front; psalter kept |
+| vexillor-anchetil | PASS v1 | 1 | banner now bears the fivefold cross gold-on-white (+ surcoat); pole upright |
+| brother-aldwyn | PASS v1 | 1 | fivefold badge on robe shoulder; pack + rope belt kept |
+| cantor-sabina | PASS v1 | 1 | fivefold cross on stole front; handbell kept |
+| chevalier-raimbaud | PASS v1 | 1 | fivefold cross on bone tabard; battered plate + lowered shield kept |
+| vigil-knight-wymar | PASS v2 | 2 | v1 foul: pauldron badge mush; v2 bone-white circular pauldron badge patch — readable; kneel + planted sword + lantern kept |
+| friar-osbert | PASS v1 | 1 | fivefold cross on robe chest; crate + hand cross kept |
+
+## 5. Non-art host state at pause time
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize
   oldest-first on pushes touching `crusade-*/**`.
 - Merged today: B1 lobby `02b8303` → wasm-panic fix round → B2 `401b11a`

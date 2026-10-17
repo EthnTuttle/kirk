@@ -446,6 +446,12 @@ impl NetDuelDriver {
             // Seam required by view.rs: the Manuscript of Sins belongs to
             // ClientGame's Hagiography screen; a duel never carries it.
             sins: Vec::new(),
+            // Same seam: the Roll, the Testimonies, and the Call belong to
+            // ClientGame — PvP battles never convert (CONVERSION 3) and a
+            // driver's snapshot never enters the codex phases.
+            foes: Vec::new(),
+            testimonies: Vec::new(),
+            conversion: None,
             fresh_events: self.fresh_events.take(),
         }
     }

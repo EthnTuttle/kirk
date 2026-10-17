@@ -8,7 +8,8 @@ use async_trait::async_trait;
 use bevy::prelude::*;
 
 use crusade_app::{
-    ladder_line, ChampionCard, ClientInput, LobbyStage, Phase, SinCard, ViewSnapshot, WitnessCard,
+    ladder_line, ChampionCard, ClientInput, ConversionView, FoeCard, LobbyStage, Phase, SinCard,
+    TestimonyCard, ViewSnapshot, WitnessCard,
 };
 // The house purse's LNURL-pay switchboard reuses the B3a zaps module
 // (fetch_pay_params + the 64 KiB body cap) exactly as shipped -- the
@@ -122,6 +123,7 @@ pub fn rebuild_ui(
             }
             Phase::CampaignRest => (rest_screen(&mut commands, &snap, assets), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap, assets), true),
+            Phase::ConversionChoice => (conversion_screen(&mut commands, &snap), true),
             Phase::Lobby => (lobby_screen(&mut commands, &snap, ladder), false),
             Phase::Hagiography => (hagiography_screen(&mut commands, &snap, assets), false),
         },
@@ -2271,6 +2273,39 @@ fn hagiography_screen(
     } else {
         kids.push(manuscript_panel(cmd, &snap.sins, assets));
     }
+    kids.push(text_node(
+        cmd,
+        "- The Roll of Worthy Adversaries -".into(),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    if snap.foes.is_empty() {
+        // The phase guarantees the fourteen rows; stay defensive.
+        kids.push(text_node(
+            cmd,
+            "The roll is being read...".into(),
+            style::small_font(),
+            style::DIM,
+        ));
+    } else {
+        kids.push(adversary_roll_panel(cmd, &snap.foes));
+    }
+    kids.push(text_node(
+        cmd,
+        "- Testimonies of the Baptized -".into(),
+        style::small_font(),
+        style::GOLD_DIM,
+    ));
+    if snap.testimonies.is_empty() {
+        kids.push(text_node(
+            cmd,
+            "The testimonies are being read...".into(),
+            style::small_font(),
+            style::DIM,
+        ));
+    } else {
+        kids.push(testimony_panel(cmd, &snap.testimonies));
+    }
     kids
 }
 
@@ -2432,6 +2467,171 @@ fn sin_icon(
 /// "Tournament of Virtue" button.
 pub fn hagiography_menu_button(cmd: &mut Commands) -> Entity {
     action_button(cmd, "Hagiography".into(), ClientInput::ViewHagiography)
+}
+
+/// The Roll of Worthy Adversaries as ONE register panel holding the
+/// fourteen rows (ten archetypes, then the four named commanders): the
+/// book is a single artifact, same as the Manuscript. Row gating is
+/// doubled here as with [`manuscript_panel`]: lore renders only for
+/// `defeated` cards, so a mis-built snapshot cannot leak the readings.
+fn adversary_roll_panel(cmd: &mut Commands, foes: &[FoeCard]) -> Entity {
+    let rows: Vec<Entity> = foes.iter().map(|card| adversary_row(cmd, card)).collect();
+    cmd.spawn((
+        Node {
+            max_width: Val::Px(760.0),
+            row_gap: Val::Px(4.0),
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            ..style::panel_node()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&rows)
+    .id()
+}
+
+/// One adversary row. Revealed: name in gold over the chronicle reading in
+/// bone. Sealed: one dimmed line — "{name} - Unmet"; the man is not yet
+/// witnessed, and no lore is shown.
+fn adversary_row(cmd: &mut Commands, card: &FoeCard) -> Entity {
+    if card.defeated {
+        let heading = text_node(cmd, card.name.clone(), style::body_font(), style::GOLD);
+        let lore = cmd
+            .spawn((
+                Text::new(card.lore.clone()),
+                style::small_font(),
+                TextColor(style::BONE),
+                Node {
+                    max_width: Val::Px(700.0),
+                    ..default()
+                },
+            ))
+            .id();
+        return cmd
+            .spawn(Node {
+                row_gap: Val::Px(4.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            })
+            .add_children(&[heading, lore])
+            .id();
+    }
+    text_node(
+        cmd,
+        format!("{} - Unmet", card.name),
+        style::body_font(),
+        style::DIM,
+    )
+}
+
+/// The Testimonies of the Baptized as ONE register panel: ten rows, one
+/// per convertible archetype. Gating doubled as ever: testimony renders
+/// only for `baptized` cards.
+fn testimony_panel(cmd: &mut Commands, rows: &[TestimonyCard]) -> Entity {
+    let rows: Vec<Entity> = rows.iter().map(|card| testimony_row(cmd, card)).collect();
+    cmd.spawn((
+        Node {
+            max_width: Val::Px(760.0),
+            row_gap: Val::Px(6.0),
+            padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
+            ..style::panel_node()
+        },
+        BackgroundColor(style::PANEL),
+        BorderColor::all(style::GOLD_DIM),
+    ))
+    .add_children(&rows)
+    .id()
+}
+
+/// One testimony row. Baptized: the office in gold over the man's own
+/// account in bone. Sealed: one dimmed line — "{name} - Not yet called".
+fn testimony_row(cmd: &mut Commands, card: &TestimonyCard) -> Entity {
+    if card.baptized {
+        let heading = text_node(
+            cmd,
+            format!("{}, baptized into Christ", card.name),
+            style::body_font(),
+            style::GOLD,
+        );
+        let body = cmd
+            .spawn((
+                Text::new(card.testimony.clone()),
+                style::small_font(),
+                TextColor(style::BONE),
+                Node {
+                    max_width: Val::Px(700.0),
+                    ..default()
+                },
+            ))
+            .id();
+        return cmd
+            .spawn(Node {
+                row_gap: Val::Px(4.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            })
+            .add_children(&[heading, body])
+            .id();
+    }
+    text_node(
+        cmd,
+        format!("{} - Not yet called", card.name),
+        style::body_font(),
+        style::DIM,
+    )
+}
+
+/// The post-battle Call to Repentance screen (M7b, docs/CONVERSION.md): a
+/// yielded adversary stands disarmed; the player owes one choice per
+/// pending call. No battle chrome — the duel is over; this is the counsel
+/// after, centered like the other interstitial screens.
+fn conversion_screen(cmd: &mut Commands, snap: &ViewSnapshot) -> Vec<Entity> {
+    let mut kids = vec![text_node(
+        cmd,
+        "A Foe Yields".into(),
+        style::head_font(),
+        style::GOLD,
+    )];
+    match snap.conversion.as_ref() {
+        Some(call) => {
+            kids.push(text_node(
+                cmd,
+                format!(
+                    "The {} (level {}) stands disarmed and breathing. The Call may be made once: to repent and be baptized into Christ, or to be released with his soul commended unto God.",
+                    call.species_name, call.foe_level
+                ),
+                style::body_font(),
+                style::BONE,
+            ));
+            kids.push(text_node(
+                cmd,
+                format!(
+                    "The call's promise: {} in a hundred ({} call(s) remain).",
+                    call.chance_pct, call.pending
+                ),
+                style::small_font(),
+                style::DIM,
+            ));
+            kids.push(action_button(
+                cmd,
+                "Call to Repentance".into(),
+                ClientInput::CallToRepentance,
+            ));
+            kids.push(action_button(
+                cmd,
+                "Release his soul".into(),
+                ClientInput::ReleaseSoul,
+            ));
+        }
+        // The phase guarantees a pending call; stay defensive, never panic.
+        None => kids.push(text_node(
+            cmd,
+            "The field is quiet.".into(),
+            style::small_font(),
+            style::DIM,
+        )),
+    }
+    kids
 }
 
 #[cfg(test)]

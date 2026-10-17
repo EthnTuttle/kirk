@@ -47,8 +47,12 @@ Success => BAPTISM (section 4). Failure => RELEASE (section 5).
 The floor of 3% honors Romans 10:13 even against the hardest common foe;
 the 85% ceiling keeps zeal meaningful - no champion converts at will.
 
-Determinism: the roll consumes the same kirk commit-reveal per-battle seed
-discipline (crusade-bridge); one additional sub-seed draw post-battle.
+Determinism: the single-player draw uses a store-derived salt
+(splitmix64; see crusade-app/src/conversion.rs), deterministic per save —
+the kirk commit-reveal seam is NOT consumed here since PvP battles never
+convert and the single-player roll needs no opponent-facing proof. If a
+post-M8 mode ever makes conversion adversarial, re-route through the
+per-battle sub-seed discipline.
 PvP battles never convert (your opponent's roster is his own).
 
 ## 4. Baptism (success)
