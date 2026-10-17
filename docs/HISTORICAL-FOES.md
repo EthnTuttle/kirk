@@ -1,15 +1,20 @@
 # HISTORICAL FOES - design research for "The Road East"
 
-Status: SHELVED research, 2026-10-15 -> 2026-10-16. Superseded before
-implementation: the owner redirected the foe lane to a FANTASY-REGISTER
-heresy-cult theater (invented demon-worship foes: no real names, peoples,
-or period kit; no historical-accuracy or adversary-dignity bindings
-needed, as no real group stands underneath). This document stays in the
-tree as the attested record - factions, arms/armor notes, and sources
-remain sound research should a historical lane ever return. Should it
-return, section 6 binds it in full; that bar was reaffirmed by the
-orchestrator at the pivot and does not move. Open questions below are
-moot while the lane stays fictional.
+Status: REINSTATED 2026-10-16. The owner restored the historical lane as
+the main field-adversary theater and added the CONVERSION mechanic as the
+collection grammar: defeated adversaries are issued a Call to Repentance
+(contested by Obstinacy; spec in docs/CONVERSION.md); refusers' souls are
+released unto God. The Seven Deadly Sins remain the allegorical boss tier
+alongside the commanders in section 5. The game's voice names the foe's
+god a false god — grounded in attested doctrinal conflict per
+docs/DOCTRINAL-SINS.md, never caricature. Section 6 below is REVISED to
+the new register (preamble plus rules 1-4 rewritten 2026-10-16); the open
+questions in section 10 resolve per the owner's direction: conversion of
+common archetypes is core (q5 yes, baptised join the roster; commanders
+never convert); the 1187 Jerusalem surrender stays codex prose only (q6);
+the historical-figures ban in PLAN.md section 1 is amended (q1 yes).
+Sections 1-5 and 7-11 (factions, kit, archetypes, commanders, seams,
+art, roadmap, sources) stand as written.
 
 
 ## 1. Era scope: 1095-1192 (recommended)
@@ -143,42 +148,49 @@ Historically honest portraits: the honor is real where chroniclers of BOTH sides
 Sub-boss texture: Gokbori and Taki al-Din Umar (Saladin's wings at Hattin),
 both well attested, flavor the Hattin node.
 
-## 6. THE DIGNITY SECTION (binding rules for every follow-on card)
+## 6. THE REGISTER SECTION (revised 2026-10-16; binds every follow-on card)
 
-The sin-gauntlet is allegory; the Road East is PEOPLE - different moral physics apply, and these rules bind every downstream card.
+The sin-gauntlet is allegory; the historical lane is PEOPLE - and the
+game's theological voice is now explicit: these men fight for a false god,
+and the merciful work of the crusade is to call them to repentance. These
+rules bind every downstream card; the register is "chronicle-firm, not
+cruel", grounded in docs/DOCTRINAL-SINS.md.
 
-1. **Worthy adversaries, always.** These men fought for homes, faith, and
-   lords, exactly as our champions do. Latin Christendom itself set the
-   register: William of Tyre - no friend - weighed Saladin as a statesman;
-   within decades of Hattin, Latin letters made him a byword of honor, and
-   Dante placed him with the blameless. We adopt that register as authorial
-   voice, without irony: no sneering flavor text, no "savage" stat-bias, no
-   caricature sprites. The fallen foe is grave, whole, honored - the
-   chronicle's verbs for him are "yield", "stand", "hold"; never "gibber".
-2. **Naming rule (the "Saracen" question, decided with reasoning).** The
-   word fills period Latin sources, and quoting it is sometimes the honest
-   texture of the age - but OUR narrator voice uses the names the men used
+1. **Redeemable men, always.** Every adversary is a man Christ died for.
+   The fallen foe is grave, whole; the chronicle's verbs for him are
+   "yield", "stand", "hold" - never "gibber". Conversion of any common
+   archetype is always mechanically possible (weighted by Obstinacy), and
+   a converted foe's baptism is written as joy, not conquest candy.
+   Contrast is carried by KIT and by sin-depth portrayal (rule 4), not by
+   ugliness.
+2. **Naming rule.** Our narrator voice uses the names the men used
    themselves: "the Sultanate of Rum", "the atabeg Nur ad-Din", "Ayyubid
-   tulbs". RULE: period exonyms live only inside quotation marks, spoken by
-   a named character or source and marked as their speech. A chronicle line
-   may read: "William of Tyre calls them Saracens; their own banners say
-   otherwise." - attributed quotation turns slur-earshot into history.
-3. **No dehumanization tropes.** Banned without exception: groveling,
-   treachery-by-birth, "heathen horde" framing, forced-conversion subplots,
-   visual caricature in prompts. Contrast is carried by KIT, not ugliness.
-4. **Codex of record.** Clearing an archetype or defeating a commander
-   unlocks a real-history page, attested matters marked against [R]
-   romance. Proposed companion to the Manuscript of Sins (ART-STATUS 4.7):
-   **"The Roll of Worthy Adversaries"**, the Hagiography's third book -
-   sealed rows carry empty text until their bit is earned via a new
-   additive settings key `campaign.foes_defeated` (u8 bitmask, same
-   discipline as client.rs::SINS_DEFEATED_KEY). Sample - Saladin: "Sultan
-   of Egypt and Syria; Hattin, July 1187; Jerusalem, October 1187. Both
-   peoples' chroniclers praise his keeping of sworn words."
-5. **Canon amended, not bent.** PLAN.md section 1 today bans depictions of
-   actual historical figures - a rule that shields the sin-gauntlet from
-   slander. The Road East requires the owner to AMEND that bullet explicitly
-   (open question 1); nothing here ships until then.
+   tulbs". Period exonyms (e.g. "Saracen") live only inside quotation
+   marks, attributed to a named character or source.
+3. **Theological firmness without slander.** The narrator may say plainly,
+   in chronicle voice, that the foe's god is a false god and that his
+   doctrine errs (per docs/DOCTRINAL-SINS.md, always citing the doctrinal
+   point, e.g. denial of the Son, works-righteousness). Banned without
+   exception: groveling, treachery-by-birth, "heathen horde" framing,
+   ethnic mockery, mock-Arabic naming, visual racial caricature in prompts.
+   The game's own side is not above rebuke - the chroniclers confessed
+   crusader greed at 1099; our codex does too.
+4. **Sin-depth visual register (new, owner direction).** Portrayal darkens
+   as a foe's entrenchment deepens: common soldiers and converts are drawn
+   as dignified men; elite zealots and sin-boss-adjacent commanders carry
+   visible corruption (shadowed eyes, ashen palette drift within the
+   LOCKED 16-color palette's existing slots if possible). This visual
+   gradient mirrors the Obstinacy stat - see docs/CONVERSION.md - and
+   must read as spiritual condition, never ethnicity or kit slander.
+5. **Codex of record.** Clearing an archetype or defeating a commander
+   unlocks a real-history page ("The Roll of Worthy Adversaries",
+   Hagiography third book, attested matters marked against [R] romance,
+   unlocked via a new additive settings key `campaign.foes_defeated`
+   u32 bitmask - the 14 foe ids exceed a u8). Converting an archetype
+   additionally unlocks a **Testimonies page**: the man's account of
+   repentance - the emotional heart of the collection loop.
+6. **Canon amended.** PLAN.md section 1 now permits honorable historical
+   portrayals of deceased combatants of 1095-1192 under this register.
 
 ## 7. Mode / integration proposal
 
@@ -195,10 +207,11 @@ LOCKED (its tests assert exactly 19 entries at ids 1..=12 + 101..=107) and
 add `crusade-core/src/data/adversaries.rs` = `pub static ADVERSARIES:
 &[SpeciesBase]`, ids 108..=117 + 120..=123; `data::species_by_id` widens to
 scan both tables (ids < 108 unchanged). `Typing::Valor` is a new enum arm -
-serde-forwards-only; old builds never meet it; new rites 43..=54 likewise
+serde-forwards-only; old builds never meet it; new rites 43..=57 likewise
 additive. **Persistence is untouched**: instances serialize species_id u16
 only; no store migration; SINS_DEFEATED_KEY, ladder, wagers blind to this
-lane. Rewards mirror contrition shards as "Commendation Shards" (q4).
+lane. Rewards: baptism pays Firstfruits Shards, soul-release pays Mercy
+Shards (CONVERSION.md sections 4-5); no third shard type (owner, 2026-10-16).
 
 ## 8. Art-production implications
 
@@ -231,22 +244,19 @@ screens.rs, battle.rs - serialize after any in-flight shell card); HF-4 the
 Roll of Worthy Adversaries (mirrors 4.7). Optional v1.2 taste after HF-1:
 rotate one adversary id into PRACTICE_FOE_SPECIES - two lines, no new UI.
 
-## 10. Open questions for the owner
+## 10. Open questions for the owner — RESOLVED 2026-10-16
 
-1. May we amend PLAN.md section 1's ban on actual historical figures for
-   honorable portrayals of deceased combatants of 1095-1192? Blocks all.
-2. Typing: new `Typing::Valor` arm (1.0x both ways) - my recommendation -
-   or Typeless + shared rites only? Serde-additive, but edits types.rs.
-3. Register: may clearly attributed quotation of "Saracen" ship, or total
-   abstinence? Dignity rule 2 is the middle course.
-4. Rewards: parallel "Commendation Shards" item vs reuse of contrition
-   shards under flavor divergence? Economy identical; grammar differs.
-5. Rally: may common archetypes (108-117, NEVER commanders) join the roster
-   by post-battle trial (PLAN section 3)? If no, opponent-only forever.
-6. Jerusalem line: the 1187 surrender (safe-conducts honored) vs the 1099
-   sack is codex prose only - confirm prose-only.
-7. Rules: do boss nodes reuse campaign persistent damage, or is each node a
-   fresh full-hp ladder (shorter, replayable)?
+1. Historical figures ban amended: YES (PLAN.md section 1 rewritten).
+2. Typing: `Typing::Valor` arm (1.0x both ways) - ADOPTED, landed in M7.
+3. Register: "Saracen" may ship ONLY in clearly attributed quotation
+   (named character/source speech). Resolved: quotation OK.
+4. Rewards: Firstfruits Shards (baptism) + Mercy Shards (soul-release),
+   per CONVERSION.md 4-5. The "Commendation" name is retired.
+5. Conversion: common archetypes 108-117 convertible (the core loop);
+   commanders NEVER. Resolved per CONVERSION.md.
+6. Jerusalem line: codex prose only - confirmed.
+7. Boss nodes REUSE campaign persistent damage (gauntlet discipline).
+   Resolved: persistent damage.
 
 ## 11. Sources (attested basis noted per item; [R] = rejected later romance)
 

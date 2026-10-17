@@ -1,6 +1,6 @@
 //! Witness roll (lore-only). Revered figures of the faith whom the Order
 //! remembers in the Hagiography alongside the species' `lore` lines. A
-//! witness is never a combatant: no typing, no stats, no learnset, no rally
+//! witness is never a combatant: no typing, no stats, no learnset, no battle
 //! or roster presence. Adding entries here must not disturb the locked
 //! roster counts (12 champions, 42 rites, 7 sin-spawn) asserted by the
 //! `species.rs` and `rites.rs` table tests. Sorted by id.

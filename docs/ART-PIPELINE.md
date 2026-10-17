@@ -16,7 +16,7 @@ No sprite file exists anywhere in the repo today. The whole game renders as
 Bevy UI text nodes; placeholders already ship. Art is therefore **parallel
 work that can never block code**: produce behind placeholders, swap in later.
 
-**Primary path: hosted Retro Diffusion API (Replicate) → 64×64 indexed PNGs,
+**Primary path: hosted Retro Diffusion API (Replicate) → 128×128 indexed PNGs,
 one master palette, per-species key `champions/{id:03}-{slug}.png`, human
 cleanup pass.** Fallback ladder: (2) commission a pixel artist; (3) local
 SDXL + pixel-art LoRA on a GPU box this dev must supply — **this machine
@@ -55,7 +55,7 @@ Total v1-must-exist: **19 battle sprites** (+19 derived icons = 38 files).
      Convention: `assets/sprites/champions/001-squire-audric.png`,
      `assets/sprites/icons/001.png`; boss ids `101-prince-of-pride.png` etc.
 - Wasm mechanics: bevy's wasm `asset_server` is plain HTTP fetch of
-  `assets/…` relative to the page; 19×64×64 RGBA8 decodes to ~300 KB VRAM
+  `assets/…` relative to the page; 19×128×128 RGBA8 decodes to ~1.2 MB VRAM
   loose — **no texture atlas needed at this count**; loose files + per-file
   fetch is correct and simplest. Don't prematurally atlas.
 - App icon (`web/icon.svg` → 192/512 PNGs): flat navy `#0c1230` shield,
@@ -115,7 +115,7 @@ Sources: [HF nerijs/pixel-art-xl](https://huggingface.co/nerijs/pixel-art-xl),
 
 ## 5. Consistency techniques (what actually works)
 
-1. **One master palette, enforced at ingest.** Define ~24 colours
+1. **One master palette, enforced at ingest.** Define 16 colours
    (extend `style.rs` shell palette: navy/bone/gold family + one hue family
    per virtue). Every sprite is quantized to this palette in a CI checkable
    step (`scripts/check_palette.py`-flavoured; Pillow on a dev machine).
@@ -126,7 +126,7 @@ Sources: [HF nerijs/pixel-art-xl](https://huggingface.co/nerijs/pixel-art-xl),
    the other 17. This is cheaper and more reliable than LoRA training for
    a 19-unit roster; LoRA training (fallback 3's lever) needs a GPU anyway.
 3. **Generate large → downscale → posterize** for any generic-model output:
-   native 256–512 px render, k-centroid/region downscale to 64×64 (Retro
+   native 256–512 px render, k-centroid/region downscale to 128×128 (Retro
    Diffusion's own downscaler does this; Pillow `Image.resize(BOX)` +
    `.quantize()` reproduces it), then snap to master palette. Retro
    Diffusion generates at grid natively and skips half this.
@@ -139,9 +139,9 @@ Sources: [HF nerijs/pixel-art-xl](https://huggingface.co/nerijs/pixel-art-xl),
 
 | Spec | Value | Justification |
 |---|---|---|
-| Battle sprite | 64×64 px, 1 frame, front-facing | Battle layout is two symmetric cards (me/foe both face the player); no back-sprites needed — GB back-sprites served a 3/4 camera we don't have |
+| Battle sprite | 128×128 px, 1 frame, front-facing | Battle layout is two symmetric cards (me/foe both face the player); no back-sprites needed — GB back-sprites served a 3/4 camera we don't have |
 | Roster icon | 32×32 px | 2:1 downscale of battle sprite (auto) + optional head-crop touch |
-| Palette | 24-colour shared master, ≤16 unique/sprite | 8-bit scale, cheap CI conformance check, matches the shell's existing flat navy/gold/bone art direction; GB-4 is too austere for 19 distinct units, SNES-16/unit keeps QA tractable |
+| Palette | 16-colour shared master (LOCKED), ≤16 unique/sprite | 8-bit scale, cheap CI conformance check, matches the shell's existing flat navy/gold/bone art direction; GB-4 is too austere for 19 distinct units, SNES-16/unit keeps QA tractable |
 | Animation (v1) | **none** | UI tween (translate 2-px bob, HP-hit flash) is a code feature, not an art asset; true sprite animation (idle/attack) is v1.3+ — pays 4× sprite cost now for thumbless return |
 | Format | PNG (RGBA8 or indexed), nearest-neighbour sampling | bevy decodes both; indexed keeps repo size ~2–4 KB/sprite |
 
@@ -177,10 +177,10 @@ WS-B2; it must serialize after B2 merges** (card-disjointness rule).
 
 ### D1 — Style bible + palette + 2 anchor sprites [1 session + human art time]
 - **Files:** `docs/ART-PIPELINE.md` (append style bible §), `crusade-app/assets/palette.aseprite.json` (or palette png), `assets/sprites/champions/001-…`, `101-…`.
-- **Goal:** the 24-colour master palette + written silhouette/shading rules
+- **Goal:** the 16-colour master palette (LOCKED) + written silhouette/shading rules
   (light top-left, 2-px outline, bone highlights on mail) + Audric and
   Prince of Pride *approved* as anchors.
-- **Acceptance:** both anchors pass palette CI check, render at 64×64 with
+- **Acceptance:** both anchors pass palette CI check, render at 128×128 with
   ≤16 colours, and survive 3 em-dash-width squint test of style agreement.
 
 ### D2 — Remaining 17 species sprites [content, parallel with WS-B]
@@ -219,8 +219,8 @@ pendant, game boy advance era jrpg monster sprite, front facing,
 solid dark navy background"  →  native pixel output at target size
 ```
 
-→ downscale/quantize to the 24-colour palette → save as
-`crusade-app/assets/sprites/champions/001-squire-audric.png` (PNG, 64×64,
+→ downscale/quantize to the 16-colour LOCKED palette → save as
+`crusade-app/assets/sprites/champions/001-squire-audric.png` (PNG, 128×128,
 indexed). That file *is* bevy-consumable the moment it exists — D3's
 `ImageNode` needs no other pipeline property. Total cost: one API call
 (~$0.1) + ~30 minutes. If Audric can't be made shippable in three

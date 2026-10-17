@@ -13,26 +13,32 @@ manifestations of the **Seven Deadly Sins** (PvE campaign) and rival Orders in
 **PvP Tournaments of Virtue**.
 
 Tone rules (avoid heresy, glorify God):
-- God is never a game mechanic, stat, or collectible. Prayer and virtue are.
+- Christ is Lord, God is our Father, and the Holy Spirit descended to build
+  up the Church and advance the Kingdom of God on earth. God is never a
+  game mechanic, stat, or collectible. Prayer, virtue, and repentance are.
 - The Cross and Crusades are honoured; no mockery, no syncretism, no occult
-  player-facing mechanics. Enemy units are vices/demons given fantastical form.
-- Sin-bosses are grotesque allegories (Spenser/Dante tradition), not real
-  religions or peoples. Human foes are a separate lane from allegory.
-- Foe lanes (owner direction 2026-10-16): allegory holds every enemy
-  theater. The projected historical lane ("The Road East",
-  docs/HISTORICAL-FOES.md - shelved research) is SUPERSEDED by a fictional
-  heresy lane: invented demon-cult foes with no real names, peoples, or
-  period claims, where neither the historical-accuracy canon nor any
-  adversary-dignity register applies - they are monsters, not men. Any
-  future depiction of actual historical figures or real-world peoples
-  still binds to HISTORICAL-FOES section 6 in full; that bar does not move,
-  whatever the lane.
+  player-facing mechanics. Collection grammar is CONVERSION: "call them all
+  to repentance" (see section 3 and docs/CONVERSION.md).
+- Foe lanes (owner direction 2026-10-16): TWO lanes, one canon.
+  1. ALLEGORY: the Seven Deadly Sins remain the recurring boss tier
+     (grotesque allegories in the Spenser/Dante tradition).
+  2. HISTORY RESTORED: field adversaries are the Muslim armies of
+     1095-1192 (docs/HISTORICAL-FOES.md, reinstated). The game's voice is
+     the chronicle voice of the age: they fight for a false god, and the
+     work of mercy is to call them to repentance and baptism into Christ.
+     The register is grounded in attested doctrinal conflict
+     (docs/DOCTRINAL-SINS.md), never caricature: no slurs, no mock-Arabic
+     names, no dehumanizing sprites. The deeper a foe lives in his sin the
+     more corruption shows in his portrayal; the common soldier stands as
+     a man, redeemable. All men can be saved through repentance and faith
+     in Christ Jesus — that is the whole point of the mechanic.
 
 ## 2. IP Safety
 
 - No Pokemon names, creature designs, or trademarked terms. Not "type", we say
-  **Virtue**; not "moves", we say **Rites**; not "catch", we say **Rally**;
-  not "gym", we say **Chapter House**; not "Pokedex", we say **Hagiography**.
+  **Virtue**; not "moves", we say **Rites**; not "catch", we say **Call to
+  Repentance** (converts are **baptized** into the roster); not "gym", we
+  say **Chapter House**; not "Pokedex", we say **Hagiography**.
 - All names original Latin-flavoured inventions.
 
 ## 3. Mechanics (contract for crusade-core)
@@ -58,9 +64,16 @@ Tone rules (avoid heresy, glorify God):
   commit-reveal (see 5). Damage formula: classic multiplicative (stat ratio *
   power * STAB 1.5 * effectiveness * rand 0.85-1.0 * level factor). Fainting ->
   "Yield"; battle ends when a squad yields.
-- **Rally (collection)**: defeated sin-spawn can drop "Contrition Shards";
-  campaign NPC Champions join by trial (scripted). No Safari-style RNG capture
-  for humans (theologically cleaner: people aren't caught).
+- **Conversion (collection)**: "Call them all to repentance." Defeated
+  human adversaries may be issued a **Call to Repentance**. Conversion is a
+  contested roll: the issuing Champion's Piety against the foe's
+  **Obstinacy** — stronger practitioners, and those steeped deeper in sin,
+  convert less readily; named commanders never do. On success the foe
+  repents, is baptized, and joins the roster as a new Christian (his
+  typing shifts to a virtue; his kit is retained). On refusal his soul is
+  released unto God and he departs the field (Mercy-tier reward). Full
+  spec: docs/CONVERSION.md. Defeated sin-spawn still drop Contrition
+  Shards; campaign NPC Champions still join by trial (scripted).
 
 ## 4. Architecture (cargo workspace)
 
@@ -94,7 +107,8 @@ Build targets: `wasm32-unknown-unknown` (core+data+net-nostr+app),
 
 - [x] M0: plan + workspace scaffold, domain type contract in crusade-core.
 - [x] M1-core: 42 rites, 19 species, 25 callings, effectiveness wheel,
-      deterministic engine; 53 tests; review pass 1 + adjudicated fixes.
+      deterministic engine with full unit coverage; review pass 1 +
+      adjudicated fixes.
 - [x] M1-tail: crusade-sim harness (fuzz + duel). Balance debt noted:
       Cantor Sabina underperforms across levels; revisit in M6 content pass.
 - [x] M2: crusade-net: Transport trait, turn commit-reveal DuelSession,
@@ -122,7 +136,8 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 
 ## 7. Status notes
 
-- ALL milestones M0..M6 complete. Review rounds converged: R1 (10 findings,
+- Milestone status: M0..M6 complete (M5b Bevy shell done; M6 campaign/
+  PvP/ladder/kirk adapter done). Review rounds converged: R1 (10 findings,
   fixed), R2 (SHIP), R3 holistic (3 majors, fixed), R4 (SHIP), R5 final
   audit (1 critical + 2 majors in bridge replay, fixed), R6 (SHIP).
 - wasm32-unknown-unknown verified for the full stack (core, data, net,
@@ -136,15 +151,29 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 - Delegation reality: glm/deepseek flash models failed silently as coding
   subagents in this environment; all workers ran as tff/kimi-k3 with
   contract-first skeletons + compact prompts; reviewer tff/kimi-k3#high.
-- Remaining roadmap: M5b (Bevy visual shell, wasm32/mobile targets — needs
-  rustup wasm32 target + mobile SDKs), M6 (campaign content, Chapter Houses,
-  PvP ladder, wager escrow wiring, Game-trait mint replay adapter).
+- Forward lanes: M7 (adversary lane + conversion engine — IN FLIGHT
+  2026-10-16, data tables landed, under review), M8 "The Pilgrim Road"
+  overworld (docs/OVERWORLD.md), v1.2 wagers (BLOCKED on mint ops
+  decision, docs/PRODUCTION-ARCHITECTURE.md), v1.3 mobile signing/SDK.
+- New lanes (owner direction 2026-10-16): M7 = adversary data tables
+  (HISTORICAL-FOES ids 108-117 archetypes + 120-123 commanders, new rites
+  43+, Obstinacy stat) + the Call to Repentance conversion engine
+  (docs/CONVERSION.md) + art lane per HISTORICAL-FOES section 8 with the
+  sin-depth visual register. M8 = "The Pilgrim Road" overworld
+  (docs/OVERWORLD.md): top-down pixel tiles, Zelda-style screen-by-screen
+  exploration (not scrolling), random encounters in the wild, scripted
+  encounters at funnel points, choice encounters the player elects,
+  wrapped in Oregon-Trail pilgrimage logistics (supplies, attrition,
+  morale) en route to the Holy Land. M8 design begins immediately,
+  implemented after M7's data seams land.
 
 ## 7bis. Orchestration protocol
 
-- Workers: `tff/kimi-k3` (default variant) ONLY — flash-tier models
-  provably return garbage/no output here (re-confirmed 2026-10-14: a flash
-  verifier agent emitted pure noise). Planning/review: `tff/kimi-k3#high`.
+- Workers: `tff/kimi-k3` (default variant) ONLY for code — flash-tier models
+  provably failed as coding subagents here (re-confirmed 2026-10-14).
+  Datapoint 2026-10-16: `tff/glm-5.3-flash` completed a bounded
+  research/write task (docs/DLC-ASSESSMENT.md) successfully; flash remains
+  unproven for code. Planning/review: `tff/kimi-k3#high`.
 - Workers get: exact files, contracts, style rules; must run `cargo test -p <crate>`.
 - Reviewer gets: diff only + contract; returns issue list. Worker fixes.
 - Orchestrator commits after each green milestone. Concise conventional commits.

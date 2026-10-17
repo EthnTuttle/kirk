@@ -108,8 +108,8 @@ What v1 includes, honestly:
 - Practice duels vs the deterministic AI team — offline.
 - The seven-sins campaign gauntlet, incl. rest/rewards flow — offline.
 - Roster persistence across reloads/devices-with-the-same-browser.
-- **PvP is NOT wired into the UI yet** (the net driver exists in
-  `crusade-app`'s library, but no screen drives it).
+- **PvP** via the Tournament of Virtue lobby (nostr challenges →
+  NetDuelDriver; wired since v1.1).
 - **Wagers/ecash are deferred** (no Cashu flows in this UI).
 - No audio (bevy `audio` feature is excluded everywhere; see below).
 

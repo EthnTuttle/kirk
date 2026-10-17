@@ -29,10 +29,9 @@ a Bevy front-end shell:
 
 ## Known limitations of the current bundle (honest list)
 
-1. **PvP not exposed in the UI.** Transports, duel protocol, and attestation
-   exist and are tested, but there is no lobby/challenge-accept screen wiring
-   the kirk nostr challenge flow into a `NetDuelDriver` session. Sims/tests
-   prove the machinery end-to-end over localhost QUIC and an embedded relay.
+1. **PvP.** Wired since v1.1: the Tournament of Virtue lobby screens
+   (challenge posting/acceptance over nostr) drive `NetDuelDriver`
+   sessions with dual attestation (kind 9265).
 2. **No wagers in v1.** Attestations are produced; escrow claim flow against a
    live Cashu mint is not wired (needs a deployed mint + GameMint production
    config). The old `GameMint::new_test` stub debt is closed (2026-10-15):
@@ -50,7 +49,7 @@ a Bevy front-end shell:
 | Phase | Work | Depends on |
 |---|---|---|
 | **v1.0 (now)** | PWA on GH Pages: practice + campaign, offline, persistent roster | pages owner toggle |
-| **v1.1 — PvP wiring** | Nostr lobby UI: post challenge (existing kirk kinds 9259–9260), accept → seed → `NetDuelDriver` (iroh ticket upgrade, nostr fallback), in-game battle screen reuse, donation/rating on finish | code only, ~1 milestone |
+| **v1.1 — PvP wiring** | **DONE.** Nostr lobby UI: post challenge, accept → seed → `NetDuelDriver`, in-game battle screen reuse, rating on finish | shipped |
 | **v1.2 — Wagers** | GameMint deployment config, escrow via existing kirk token flow, settlement via replay adapter + attestation | a running mint |
 | **v1.3 — Mobile shells** | cargo-mobile2 Android/iOS wrappers around the same `bevy-ui` shell; app-store assets | SDKs, signing |
 | **v2.0 — Content live-ops** | More Champions/rites via data tables (code-free), Chapter Houses narrative, seasonal ladders, spectator replay viewer (transcripts are portable) | design |
