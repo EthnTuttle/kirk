@@ -26,9 +26,19 @@ impl Battle {
         staged.max(1)
     }
 
+    /// Battle typing of side `s`'s active instance: the instance's
+    /// `typing_override` (a baptized convert fights as Humility,
+    /// docs/CONVERSION.md section 4), falling back to the species' static
+    /// typing. Species-level reads (encounter tables, UI type badges for
+    /// the unconverted) do not come through here.
+    fn active_typing(&self, s: usize) -> Option<Typing> {
+        let c = self.sides[s].active();
+        c.typing_override
+            .or_else(|| data::species_by_id(c.species_id).map(|b| b.typing))
+    }
+
     pub(crate) fn stab_pct(&self, s: usize, rt: RiteType) -> u32 {
-        let sp = data::species_by_id(self.sides[s].active().species_id);
-        match (sp.map(|b| b.typing), rt) {
+        match (self.active_typing(s), rt) {
             (Some(Typing::Virtues(vs)), RiteType::Virtue(v)) if vs.contains(&Some(v)) => 150,
             (Some(Typing::Sin(sd)), RiteType::Sin(sr)) if sd == sr => 150,
             _ => 100,
@@ -87,9 +97,7 @@ impl Battle {
                 self.apply_secondaries(s, t, rite, 0, rng);
                 break;
             }
-            let def_typing = data::species_by_id(self.sides[t].active().species_id)
-                .map(|b| b.typing)
-                .expect("validated");
+            let def_typing = self.active_typing(t).expect("validated");
             let eff = data::effectiveness(rite.rite_type, def_typing);
             // reserved for future immunities; the current chart never yields 0
             if eff == 0 {

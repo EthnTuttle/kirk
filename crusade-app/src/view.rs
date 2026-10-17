@@ -32,8 +32,14 @@ pub enum Phase {
     /// Post-battle Call to Repentance (M7b, docs/CONVERSION.md): a won
     /// battle left a convertible adversary (ids 108..=117) yielded; the
     /// player owes one choice per pending call — [`ClientInput::CallToRepentance`]
-    /// or [`ClientInput::ReleaseSoul`]. The queue drains into BattleOver.
+    /// or [`ClientInput::ReleaseSoul`]. The queue drains into BattleOver
+    /// (or back to Trail mid-pilgrimage).
     ConversionChoice,
+    /// The Pilgrim Road (M8b, docs/OVERWORLD.md): the journey layer,
+    /// between screens. [`ViewSnapshot::trail`] carries the renderable
+    /// state; [`ClientInput::Travel`] marches a day, road battles reuse
+    /// the InBattle/BattleOver flow and route back here.
+    Trail,
 }
 
 /// Campaign (PvE gauntlet) progress view: `Some` from StartCampaign until the
@@ -335,6 +341,12 @@ pub struct ViewSnapshot {
     /// per decision; the queue drains into BattleOver).
     #[serde(default)]
     pub conversion: Option<ConversionView>,
+    /// The Pilgrim Road journey state (M8b): `Some` while a trail campaign
+    /// is on the document (including its battles and its terminal
+    /// Book-of-the-Fallen frame). Serde tail discipline: pre-M8b snapshots
+    /// load with `None`.
+    #[serde(default)]
+    pub trail: Option<TrailView>,
     /// New events produced by the last input (for animation queues).
     pub fresh_events: Vec<BattleEvent>,
 }
@@ -348,6 +360,40 @@ pub fn ladder_line(rating: Option<u64>) -> String {
         Some(r) => format!("Ladder: {r} (self-kept)"),
         None => "Ladder: unranked".to_string(),
     }
+}
+
+/// The Pilgrim Road's renderable journey row (docs/OVERWORLD.md sections
+/// 3-6), populated while a trail campaign lives on the document. Names,
+/// never numbers, for the men: `champion_name` is who carries the mantle,
+/// `last_fallen` the Book of the Fallen's latest page pre-rendered as
+/// "Name, day N, where — cause" (empty before any loss).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TrailView {
+    /// Current screen id (the world-layer position).
+    pub screen: u16,
+    /// Display name of the region the company marches through.
+    pub region_name: String,
+    /// Day of the pilgrimage (the Crossing consumed days 0-2).
+    pub day: u16,
+    pub supplies: u16,
+    pub morale: i8,
+    /// Souls still marching (named men, living).
+    pub living: u16,
+    /// The man bearing the mantle (empty when the file stands unled after
+    /// a rout until the mantle resolves — v1 always names someone while
+    /// any live).
+    pub champion_name: String,
+    /// Pages in the Book of the Fallen so far.
+    pub fallen_count: u16,
+    /// Pre-rendered latest page of the Book; empty if none.
+    pub last_fallen: String,
+    /// Adjacent screens the company may march to (Travel targets).
+    pub exits: Vec<u16>,
+    /// Elective choice-encounter refs on this screen (EngageChoice
+    /// targets; encounter props only — shrines etc. are scenery in v1).
+    pub choice_encounters: Vec<u16>,
+    /// The pilgrimage is over (the whole company is gone). Terminal.
+    pub over: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -410,6 +456,24 @@ pub enum ClientInput {
     /// ConversionChoice: release the yielded adversary without the Call —
     /// his soul commended unto God (Mercy outcome, no roll).
     ReleaseSoul,
+    /// Menu -> the Pilgrim Road (M8b): embark on a new trail campaign.
+    /// `charter_quality` (0..=255, banded poor/fair/best by the engine)
+    /// and `provisioning_spend` (same banding) are the Crossing's two
+    /// UI-facing dials (docs/OVERWORLD.md section 6.4).
+    StartTrail {
+        charter_quality: u8,
+        provisioning_spend: u16,
+    },
+    /// Trail: march one day to an adjacent screen (engine `travel_day`;
+    /// the day's fortunes, upkeep, and any gate/ambush/wild roll resolve
+    /// inside).
+    Travel { to_screen: u16 },
+    /// Trail: engage a ChoiceEncounter prop on the current screen (its
+    /// encounter ref from [`TrailView::choice_encounters`]).
+    EngageChoice { encounter_ref: u16 },
+    /// Trail -> Menu: abandon the pilgrimage; the lane is cleared from the
+    /// document (an abandoned run's Book pages vanish with it).
+    AbandonTrail,
     /// Async bridge report (lobby session / duel lifecycle). Drives the
     /// synchronous lobby view-state; net handles never enter the client.
     LobbyNet(LobbyNet),

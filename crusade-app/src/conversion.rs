@@ -25,7 +25,7 @@ use std::ops::RangeInclusive;
 
 /// Roster-store settings key: u32 bitmask of historical adversaries whose
 /// yield the company has witnessed (HF 6.5). Bit `id - 108` for
-/// archetypes 108..=117; bit `id - 120 + 12` for commanders 120..=123.
+/// archetypes 108..=117; bit `id - 120 + 12` for commanders 120..=125.
 /// Same persisted-settings discipline as `client.rs::SINS_DEFEATED_KEY`.
 pub const FOES_DEFEATED_KEY: &str = "campaign.foes_defeated";
 
@@ -59,10 +59,10 @@ pub const MERCY_BOUNTY: i64 = 3;
 /// Archetype ids that may answer the Call (ADVERSARIES, convertible lane).
 pub const CONVERTIBLE_IDS: RangeInclusive<u16> = 108..=117;
 /// Named commanders: recorded on the Roll, never called (CONVERSION 2).
-pub const COMMANDER_IDS: RangeInclusive<u16> = 120..=123;
+pub const COMMANDER_IDS: RangeInclusive<u16> = 120..=125;
 
 /// The `campaign.foes_defeated` bit for a species id, if it earns one:
-/// archetypes 108..=117 -> bits 0..=9, commanders 120..=123 -> bits
+/// archetypes 108..=117 -> bits 0..=9, commanders 120..=125 -> bits
 /// 12..=15 (HF 6.5; 14 foe ids exceed a u8, hence u32). Every other id
 /// (champions, sin-spawn) earns no bit.
 pub fn foe_bit(species_id: u16) -> Option<u8> {
@@ -180,7 +180,9 @@ mod tests {
         assert_eq!(foe_bit(117), Some(9));
         assert_eq!(foe_bit(120), Some(12));
         assert_eq!(foe_bit(123), Some(15));
-        for id in [1u16, 12, 101, 107, 118, 119, 124] {
+        assert_eq!(foe_bit(124), Some(16));
+        assert_eq!(foe_bit(125), Some(17));
+        for id in [1u16, 12, 101, 107, 118, 119, 126] {
             assert_eq!(foe_bit(id), None, "id {id} earns no codex bit");
         }
     }

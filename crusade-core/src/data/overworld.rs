@@ -109,15 +109,15 @@ pub static SCREENS: &[ScreenDef] = &[
     ScreenDef { id: 14, region: 5, tiles_ref: 5, edges: [None, Some(15), None, Some(13)], encounter_zone: Some(5), scripted_gate: None, props: &[] },
     ScreenDef { id: 15, region: 5, tiles_ref: 5, edges: [None, Some(16), None, Some(14)], encounter_zone: Some(5), scripted_gate: None, props: &[PropRef::Caravan] },
     ScreenDef { id: 16, region: 5, tiles_ref: 5, edges: [None, Some(17), None, Some(15)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 103, commander_id: Some(122) }), props: &[] },
-    // ---- 6. The Horns of Hattin (scripted gauntlet) ----
+    // ---- 6. The Horns of Hattin (scripted gauntlet; Gokbori / Taki al-Din wings) ----
     ScreenDef { id: 17, region: 6, tiles_ref: 6, edges: [None, Some(18), None, Some(16)], encounter_zone: Some(6), scripted_gate: None, props: &[] },
     ScreenDef { id: 18, region: 6, tiles_ref: 6, edges: [None, Some(19), None, Some(17)], encounter_zone: Some(6), scripted_gate: None, props: &[PropRef::ChoiceEncounter(303)] },
-    ScreenDef { id: 19, region: 6, tiles_ref: 6, edges: [None, Some(20), None, Some(18)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 104, commander_id: Some(122) }), props: &[] },
+    ScreenDef { id: 19, region: 6, tiles_ref: 6, edges: [None, Some(20), None, Some(18)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 104, commander_id: Some(124) }), props: &[] },
     ScreenDef { id: 20, region: 6, tiles_ref: 6, edges: [None, Some(21), None, Some(19)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 105, commander_id: Some(123) }), props: &[] },
     // ---- 7. The Holy Land (Arsuf, Jaffa; the finale gates) ----
     ScreenDef { id: 21, region: 7, tiles_ref: 7, edges: [None, Some(22), None, Some(20)], encounter_zone: Some(7), scripted_gate: None, props: &[PropRef::Shrine] },
     ScreenDef { id: 22, region: 7, tiles_ref: 7, edges: [None, Some(23), None, Some(21)], encounter_zone: Some(7), scripted_gate: None, props: &[] },
-    ScreenDef { id: 23, region: 7, tiles_ref: 7, edges: [None, Some(24), None, Some(22)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 106, commander_id: Some(121) }), props: &[] },
+    ScreenDef { id: 23, region: 7, tiles_ref: 7, edges: [None, Some(24), None, Some(22)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 106, commander_id: Some(125) }), props: &[] },
     ScreenDef { id: 24, region: 7, tiles_ref: 7, edges: [None, Some(25), None, Some(23)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 107, commander_id: Some(122) }), props: &[] },
     ScreenDef { id: 25, region: 7, tiles_ref: 7, edges: [None, None, None, Some(24)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 108, commander_id: Some(123) }), props: &[] },
 ];
@@ -257,12 +257,23 @@ mod tests {
                         crate::data::adversaries::ADVERSARIES
                             .iter()
                             .any(|a| a.id == cid && a.id >= 120),
-                        "gate commander {} must be a named adversary (120..=123)",
+                        "gate commander {} must be a named adversary (120..=125)",
                         cid
                     );
                 }
             }
         }
+    }
+
+    /// docs/OVERWORLD.md region 6: the Hattin gauntlet is flanked by
+    /// Saladin's wing commanders — Gokbori gates screen 19, Taki al-Din
+    /// Umar screen 23 (screens 20/24/25 keep the worker's existing
+    /// 123/122/123 finale mapping).
+    #[test]
+    fn hattin_wing_gates_reference_the_wing_commanders() {
+        let gate = |id: u16| screen_by_id(id).unwrap().scripted_gate.unwrap().commander_id;
+        assert_eq!(gate(19), Some(124));
+        assert_eq!(gate(23), Some(125));
     }
 
     #[test]

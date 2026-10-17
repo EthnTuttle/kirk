@@ -47,6 +47,7 @@ fn mkchamp(species_id: u16, level: u8, rite_ids: &[u16]) -> ChampionInstance {
         ailment: None,
         converted: false,
         converted_from: None,
+        typing_override: None,
     };
     c.current_resolve = data::compute_stats(&c, sp).max_resolve;
     c
@@ -165,6 +166,91 @@ fn effectiveness_neutral_vs_patience() {
         .collect();
     assert!(!effs.is_empty());
     assert!(effs.iter().all(|&e| e == 100));
+}
+
+// ---------- typing_override (docs/CONVERSION.md section 4 seam) ----------
+
+/// A baptized convert (Valor species, Humility override) TAKES per the
+/// wheel as Humility: Audric's Humility rite reads 50 into him where the
+/// un-overridden plains instance reads Valor's flat 100 — None does
+/// nothing.
+#[test]
+fn typing_override_resolves_incoming_effectiveness() {
+    let mut convert = mkchamp(108, 20, &[43]);
+    convert.converted = true;
+    convert.converted_from = Some(108);
+    convert.typing_override = Some(Typing::Virtues([Some(Virtue::Humility), None]));
+    let effs = |foe: ChampionInstance| -> Vec<u8> {
+        let mut b = battle(vec![audric(20, &[])], vec![foe], 5);
+        let _ = b.apply_turn(rite(0), rite(0));
+        b.events()
+            .iter()
+            .filter_map(|e| match e {
+                BattleEvent::Damage {
+                    side: 1,
+                    effectiveness_pct,
+                    ..
+                } => Some(*effectiveness_pct),
+                _ => None,
+            })
+            .collect()
+    };
+    let plain = effs(mkchamp(108, 20, &[43]));
+    assert!(!plain.is_empty());
+    assert!(
+        plain.iter().all(|&e| e == 100),
+        "plains instance unchanged: {plain:?}"
+    );
+    let humbled = effs(convert);
+    assert!(
+        humbled.iter().all(|&e| e == 50),
+        "convert takes as Humility: {humbled:?}"
+    );
+}
+
+/// The same convert DEALS per the wheel as Humility: his Humility rite
+/// earns the wheel's 150 STAB where Valor's flat 100 gave none, and the
+/// struck Patience-typed Bastien (effectiveness unchanged at 100) takes
+/// strictly more damage under the same seed.
+#[test]
+fn typing_override_grants_stab_and_outgoing_damage() {
+    let mut b = battle(vec![mkchamp(108, 20, &[1])], vec![mkchamp(3, 20, &[1])], 7);
+    assert_eq!(b.stab_pct(0, RiteType::Virtue(Virtue::Humility)), 100);
+    b.sides[0].active_mut().typing_override = Some(Typing::Virtues([Some(Virtue::Humility), None]));
+    assert_eq!(b.stab_pct(0, RiteType::Virtue(Virtue::Humility)), 150);
+    // The override must not leak onto the foe's read: Bastien stays
+    // species-Patience.
+    assert_eq!(b.stab_pct(1, RiteType::Virtue(Virtue::Patience)), 150);
+
+    let struck = |attacker: ChampionInstance| -> Vec<(u8, u16)> {
+        let mut b = battle(vec![attacker], vec![mkchamp(3, 20, &[1])], 7);
+        let _ = b.apply_turn(rite(0), rite(0));
+        b.events()
+            .iter()
+            .filter_map(|e| match e {
+                BattleEvent::Damage {
+                    side: 1,
+                    effectiveness_pct,
+                    amount,
+                    ..
+                } => Some((*effectiveness_pct, *amount)),
+                _ => None,
+            })
+            .collect()
+    };
+    let plain = struck(mkchamp(108, 20, &[1]));
+    let mut convert = mkchamp(108, 20, &[1]);
+    convert.typing_override = Some(Typing::Virtues([Some(Virtue::Humility), None]));
+    let humbled = struck(convert);
+    assert_eq!(plain.len(), humbled.len());
+    assert!(!plain.is_empty());
+    for ((eff_plain, dmg_plain), (eff_humbled, dmg_humbled)) in plain.iter().zip(&humbled) {
+        assert_eq!(eff_plain, eff_humbled); // only STAB shifted
+        assert!(
+            dmg_humbled > dmg_plain,
+            "STAB 150 must out-damage 100: {dmg_humbled} vs {dmg_plain}"
+        );
+    }
 }
 
 #[test]

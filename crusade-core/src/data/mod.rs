@@ -176,6 +176,7 @@ mod serde_tests {
         assert_eq!(c.species_id, 1);
         assert!(!c.converted);
         assert_eq!(c.converted_from, None);
+        assert_eq!(c.typing_override, None);
     }
 
     #[test]
@@ -184,14 +185,20 @@ mod serde_tests {
         let json = serde_json::to_string(&c).unwrap();
         assert!(json.contains("\"converted\":false"));
         assert!(!json.contains("converted_from"), "None origin stays absent");
+        assert!(
+            !json.contains("typing_override"),
+            "None typing override stays absent"
+        );
         let back: ChampionInstance = serde_json::from_str(&json).unwrap();
         assert_eq!(back, c);
-        // A baptized convert round-trips with its origin.
+        // A baptized convert round-trips with his origin and his typing.
         let mut conv = c.clone();
         conv.converted = true;
         conv.converted_from = Some(108);
+        conv.typing_override = Some(Typing::Virtues([Some(Virtue::Humility), None]));
         let json = serde_json::to_string(&conv).unwrap();
         assert!(json.contains("\"converted_from\":108"));
+        assert!(json.contains("typing_override"));
         assert_eq!(serde_json::from_str::<ChampionInstance>(&json).unwrap(), conv);
     }
 }
@@ -273,7 +280,7 @@ mod conversion_tests {
     #[test]
     fn non_convertible_foes_return_none() {
         // Commanders never convert.
-        for id in [120u16, 121, 122, 123] {
+        for id in [120u16, 121, 122, 123, 124, 125] {
             let foe = arch(id);
             assert_eq!(conversion_chance(200, 50, true, 15, foe, 1), None);
         }

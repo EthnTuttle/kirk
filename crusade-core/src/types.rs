@@ -282,6 +282,13 @@ pub struct ChampionInstance {
     /// (docs/CONVERSION.md section 7).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub converted_from: Option<u16>,
+    /// Instance-level battle typing (docs/CONVERSION.md section 4): a
+    /// baptized convert fights as Humility while his species table entry
+    /// stays Valor. `None` (the serde default) resolves to the species'
+    /// static typing; species-level reads (encounter tables, UI type
+    /// badges for unconverted) never come through here.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub typing_override: Option<Typing>,
 }
 
 /// Stat mathematics (exact integer formula, no floats):

@@ -1,12 +1,21 @@
 //! crusade-sim: headless AI-vs-AI battle harness over crusade-core.
 //!
 //! Subcommands (plain std::env::args parsing):
-//!   crusade-sim fuzz <n> <level>  — n seeded battles (seeds 0..n as
-//!                                   [s as u8; 32]), random 3-champion teams
-//!                                   from species 1..=12, balance report.
+//!   crusade-sim fuzz <n> <level> [pool]
+//!                                — n seeded battles (seeds 0..n as
+//!                                   [s as u8; 32]), random 3-member teams,
+//!                                   balance report. Pool defaults to
+//!                                   `champions` (species 1..=12 on both
+//!                                   sides, the original fuzz universe);
+//!                                   `adversaries` runs champions-vs-
+//!                                   adversaries then adversaries-vs-
+//!                                   adversaries over ids 108..=117 +
+//!                                   120..=123 (docs/HISTORICAL-FOES.md
+//!                                   section 4 band check).
 //!   crusade-sim duel <ids>v<ids>  — one verbose battle at level 25,
 //!                                   seed [42;32]. Example: 1,2,3v4,5,6
 
+use std::collections::HashMap;
 use std::process::exit;
 
 use crusade_core::data;
@@ -21,6 +30,45 @@ const TURN_CAP: u32 = 500;
 const TEAM_SIZE: usize = 3;
 const SPECIES_MIN: u16 = 1;
 const SPECIES_MAX: u16 = 12;
+
+/// M7 historical-adversary fuzz pool (docs/HISTORICAL-FOES.md sections
+/// 4-5): archetypes 108..=117 plus named commanders 120..=123. Pinned
+/// constants rather than a scan of `data::adversaries::ADVERSARIES` so
+/// fuzz results stay reproducible while later milestones append more
+/// ids to the table; extend this list when new adversaries land.
+const ADVERSARY_IDS: &[u16] = &[
+    108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 120, 121, 122, 123,
+];
+
+/// Fuzz pool: which id universe teams are drawn from.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Pool {
+    /// Champion species SPECIES_MIN..=SPECIES_MAX (the original pool; its
+    /// draw path is preserved bit-for-bit so old seeds replay the same
+    /// teams).
+    Champions,
+    /// Historical adversaries (M7): archetypes 108..=117 plus named
+    /// commanders 120..=123 (`ADVERSARY_IDS`, pinned for reproducibility).
+    Adversaries,
+}
+
+impl Pool {
+    fn parse(s: &str) -> Option<Self> {
+        match s {
+            "champions" => Some(Pool::Champions),
+            "adversaries" => Some(Pool::Adversaries),
+            _ => None,
+        }
+    }
+
+    /// Sorted ids in this pool.
+    fn ids(&self) -> Vec<u16> {
+        match self {
+            Pool::Champions => (SPECIES_MIN..=SPECIES_MAX).collect(),
+            Pool::Adversaries => ADVERSARY_IDS.to_vec(),
+        }
+    }
+}
 
 // ---------- Fixture construction ----------
 
@@ -80,17 +128,24 @@ fn build_champion(species_id: u16, level: u8) -> Result<ChampionInstance, String
         ailment: None,
         converted: false,
         converted_from: None,
+        typing_override: None,
     };
     c.current_resolve = data::compute_stats(&c, sp).max_resolve;
     Ok(c)
 }
 
-/// Deterministic random team from species ids SPECIES_MIN..=SPECIES_MAX,
-/// drawn from the per-battle seeded rng.
-fn gen_team(rng: &mut ChaCha8Rng, level: u8) -> Result<Vec<ChampionInstance>, String> {
+/// Deterministic random team from `pool`, drawn from the per-battle seeded
+/// rng. Champions keep the exact `gen_range(SPECIES_MIN..=SPECIES_MAX)`
+/// draw of the original harness so historical seeds reproduce the same
+/// teams; other pools index into the pool's sorted id list.
+fn gen_team(rng: &mut ChaCha8Rng, level: u8, pool: Pool) -> Result<Vec<ChampionInstance>, String> {
+    let ids = pool.ids();
     (0..TEAM_SIZE)
         .map(|_| {
-            let id = rng.gen_range(SPECIES_MIN..=SPECIES_MAX);
+            let id = match pool {
+                Pool::Champions => rng.gen_range(SPECIES_MIN..=SPECIES_MAX),
+                Pool::Adversaries => ids[rng.gen_range(0..ids.len())],
+            };
             build_champion(id, level)
         })
         .collect()
@@ -189,62 +244,37 @@ fn run_battle(mut b: Battle, verbose: bool) -> Result<(u8, u32), String> {
 
 // ---------- Subcommands ----------
 
-fn cmd_fuzz(n: usize, level: u8) -> i32 {
-    if level == 0 || level > MAX_LEVEL {
-        eprintln!("fuzz: level must be 1..={MAX_LEVEL}");
-        return 2;
-    }
-    let mut side_wins = [0usize; 2];
-    let mut total_turns: u64 = 0;
-    let mut stats = [(0usize, 0usize); (SPECIES_MAX + 1) as usize]; // id -> (appearances, wins)
-    let mut failures = 0usize;
+/// Per-species (appearances, wins) tallied by species id. Keyed HashMap,
+/// not an id-indexed array: the pools now include adversary ids
+/// (108..=123) far above SPECIES_MAX, which would panic a fixed array
+/// (M7-REVIEW.md issue 4).
+#[derive(Default)]
+struct Stats(HashMap<u16, (usize, usize)>);
 
-    for s in 0..n {
-        let seed = [s as u8; 32];
-        let mut rng = ChaCha8Rng::from_seed(seed);
-        let result =
-            (|| -> Result<(Vec<ChampionInstance>, Vec<ChampionInstance>, u8, u32), String> {
-                let ta = gen_team(&mut rng, level)?;
-                let tb = gen_team(&mut rng, level)?;
-                let b =
-                    Battle::new(ta.clone(), tb.clone(), seed).map_err(|e| format!("setup: {e}"))?;
-                let (w, t) = run_battle(b, false)?;
-                Ok((ta, tb, w, t))
-            })();
-        match result {
-            Ok((ta, tb, w, t)) => {
-                side_wins[w as usize] += 1;
-                total_turns += u64::from(t);
-                let winners = if w == 0 { &ta } else { &tb };
-                for c in ta.iter().chain(tb.iter()) {
-                    stats[c.species_id as usize].0 += 1;
-                }
-                for c in winners.iter() {
-                    stats[c.species_id as usize].1 += 1;
-                }
-            }
-            Err(e) => {
-                failures += 1;
-                println!("FAIL seed {s}: {e}");
-            }
-        }
+impl Stats {
+    fn appear(&mut self, id: u16) {
+        self.0.entry(id).or_default().0 += 1;
     }
 
-    println!("== crusade-sim fuzz (level {level}) ==");
-    println!("battles: {n}");
-    println!("side0 wins: {}", side_wins[0]);
-    println!("side1 wins: {}", side_wins[1]);
-    println!(
-        "avg turns: {}",
-        if n > 0 { total_turns / n as u64 } else { 0 }
-    );
-    println!();
+    fn win(&mut self, id: u16) {
+        self.0.entry(id).or_default().1 += 1;
+    }
+
+    fn get(&self, id: u16) -> (usize, usize) {
+        self.0.get(&id).copied().unwrap_or((0, 0))
+    }
+}
+
+/// Print the per-id win-rate table for `ids` (ids with zero appearances
+/// are skipped), sorted win-rate desc (integer permille), then
+/// appearances desc, then id asc.
+fn print_stats_table(stats: &Stats, ids: &[u16]) {
     println!("{:<22} {:>4} {:>4} {:>5}", "species", "app", "wins", "win%");
-    let mut rows: Vec<(u16, usize, usize)> = (SPECIES_MIN..=SPECIES_MAX)
-        .filter(|&id| stats[id as usize].0 > 0)
-        .map(|id| (id, stats[id as usize].0, stats[id as usize].1))
+    let mut rows: Vec<(u16, usize, usize)> = ids
+        .iter()
+        .filter(|&&id| stats.get(id).0 > 0)
+        .map(|&id| (id, stats.get(id).0, stats.get(id).1))
         .collect();
-    // win-rate desc (integer permille), then appearances desc, then id asc
     rows.sort_by(|&(ia, aa, wa), &(ib, ab, wb)| {
         (wb * 1000 / ab)
             .cmp(&(wa * 1000 / aa))
@@ -258,9 +288,133 @@ fn cmd_fuzz(n: usize, level: u8) -> i32 {
             wins * 100 / app
         );
     }
+}
+
+/// Run `n` seeded battles (seeds 0..n as [s as u8; 32]) with side 0 drawn
+/// from `pool_a` and side 1 from `pool_b`. Returns side wins, total
+/// turns, per-id tallies, and a failure count (failures also logged).
+fn run_battles(n: usize, level: u8, pool_a: Pool, pool_b: Pool) -> ([usize; 2], u64, Stats, usize) {
+    let mut side_wins = [0usize; 2];
+    let mut total_turns: u64 = 0;
+    let mut stats = Stats::default();
+    let mut failures = 0usize;
+
+    for s in 0..n {
+        let seed = [s as u8; 32];
+        let mut rng = ChaCha8Rng::from_seed(seed);
+        let result =
+            (|| -> Result<(Vec<ChampionInstance>, Vec<ChampionInstance>, u8, u32), String> {
+                let ta = gen_team(&mut rng, level, pool_a)?;
+                let tb = gen_team(&mut rng, level, pool_b)?;
+                let b =
+                    Battle::new(ta.clone(), tb.clone(), seed).map_err(|e| format!("setup: {e}"))?;
+                let (w, t) = run_battle(b, false)?;
+                Ok((ta, tb, w, t))
+            })();
+        match result {
+            Ok((ta, tb, w, t)) => {
+                side_wins[w as usize] += 1;
+                total_turns += u64::from(t);
+                let winners = if w == 0 { &ta } else { &tb };
+                for c in ta.iter().chain(tb.iter()) {
+                    stats.appear(c.species_id);
+                }
+                for c in winners.iter() {
+                    stats.win(c.species_id);
+                }
+            }
+            Err(e) => {
+                failures += 1;
+                println!("FAIL seed {s}: {e}");
+            }
+        }
+    }
+
+    (side_wins, total_turns, stats, failures)
+}
+
+/// Original champions-only fuzz: both sides from species 1..=12. Output
+/// format is unchanged from the pre-adversary harness.
+fn cmd_fuzz_champions(n: usize, level: u8) -> i32 {
+    let (side_wins, total_turns, stats, failures) =
+        run_battles(n, level, Pool::Champions, Pool::Champions);
+
+    println!("== crusade-sim fuzz (level {level}) ==");
+    println!("battles: {n}");
+    println!("side0 wins: {}", side_wins[0]);
+    println!("side1 wins: {}", side_wins[1]);
+    println!(
+        "avg turns: {}",
+        if n > 0 { total_turns / n as u64 } else { 0 }
+    );
+    println!();
+    print_stats_table(&stats, &Pool::Champions.ids());
     println!("failures: {failures}");
 
     i32::from(failures > 0)
+}
+
+/// Adversary fuzz (docs/HISTORICAL-FOES.md section 4): two matchups of
+/// `n` battles each at the same seeds — champions (side 0) vs adversaries
+/// (side 1), then adversaries vs adversaries — so archetype win rates can
+/// be read against the 40-60% champion band and commanders checked for
+/// mini-boss/boss tier dominance.
+fn cmd_fuzz_adversaries(n: usize, level: u8) -> i32 {
+    let champion_ids = Pool::Champions.ids();
+    let adversary_ids = Pool::Adversaries.ids();
+
+    println!("== crusade-sim fuzz (adversaries, level {level}) ==");
+    println!("battles per matchup: {n} (seeds 0..{n} as [s as u8; 32])");
+    println!();
+
+    println!("-- matchup 1: champions (side 0) vs adversaries (side 1) --");
+    let (side_wins, total_turns, stats, failures_1) =
+        run_battles(n, level, Pool::Champions, Pool::Adversaries);
+    println!("battles: {n}");
+    println!("side0 (champions) wins: {}", side_wins[0]);
+    println!("side1 (adversaries) wins: {}", side_wins[1]);
+    println!(
+        "avg turns: {}",
+        if n > 0 { total_turns / n as u64 } else { 0 }
+    );
+    println!();
+    println!("champion per-id:");
+    print_stats_table(&stats, &champion_ids);
+    println!();
+    println!("adversary per-id:");
+    print_stats_table(&stats, &adversary_ids);
+    println!();
+
+    println!("-- matchup 2: adversaries (side 0) vs adversaries (side 1) --");
+    let (side_wins, total_turns, stats, failures_2) =
+        run_battles(n, level, Pool::Adversaries, Pool::Adversaries);
+    println!("battles: {n}");
+    println!("side0 wins: {}", side_wins[0]);
+    println!("side1 wins: {}", side_wins[1]);
+    println!(
+        "avg turns: {}",
+        if n > 0 { total_turns / n as u64 } else { 0 }
+    );
+    println!();
+    println!("adversary per-id:");
+    print_stats_table(&stats, &adversary_ids);
+    println!();
+
+    let failures = failures_1 + failures_2;
+    println!("failures: {failures}");
+
+    i32::from(failures > 0)
+}
+
+fn cmd_fuzz(n: usize, level: u8, pool: Pool) -> i32 {
+    if level == 0 || level > MAX_LEVEL {
+        eprintln!("fuzz: level must be 1..={MAX_LEVEL}");
+        return 2;
+    }
+    match pool {
+        Pool::Champions => cmd_fuzz_champions(n, level),
+        Pool::Adversaries => cmd_fuzz_adversaries(n, level),
+    }
 }
 
 fn cmd_duel(desc: &str) -> i32 {
@@ -332,10 +486,15 @@ fn main() {
         Some("fuzz") => {
             let n = args.get(2).and_then(|s| s.parse::<usize>().ok());
             let level = args.get(3).and_then(|s| s.parse::<u8>().ok());
-            match (n, level) {
-                (Some(n), Some(level)) => cmd_fuzz(n, level),
+            let pool = match args.get(4).map(String::as_str) {
+                None => Some(Pool::Champions),
+                Some(p) => Pool::parse(p),
+            };
+            match (n, level, pool) {
+                (Some(n), Some(level), Some(pool)) => cmd_fuzz(n, level, pool),
                 _ => {
-                    eprintln!("usage: crusade-sim fuzz <n> <level>");
+                    eprintln!("usage: crusade-sim fuzz <n> <level> [pool]");
+                    eprintln!("  pool: champions (default) | adversaries");
                     2
                 }
             }
@@ -349,7 +508,8 @@ fn main() {
         },
         _ => {
             eprintln!("usage:");
-            eprintln!("  crusade-sim fuzz <n> <level>");
+            eprintln!("  crusade-sim fuzz <n> <level> [pool]");
+            eprintln!("    pool: champions (default) | adversaries");
             eprintln!("  crusade-sim duel <a,b,cvX,Y,Z>  (e.g. 1,2,3v4,5,6)");
             2
         }

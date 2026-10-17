@@ -14,7 +14,10 @@
 use std::cell::RefCell;
 
 use crusade_core::data;
+use crusade_core::data::overworld::{self, PropRef};
+use crusade_core::engine::trail::{self as trail_engine, SuccessionOutcome, TrailState};
 use crusade_core::engine::{Action, Battle, BattleEvent};
+use crusade_core::rng::BattleRng;
 use crusade_core::types::{
     Ailment, BattleStat, ChampionInstance, DevotionStats, GraceStats, RiteCategory, RiteSlot,
     RiteType, Sin, Typing, Virtue, Volatile, MAX_LEVEL,
@@ -23,12 +26,13 @@ use crusade_data::RosterStore;
 use nostr::Keys;
 
 use crate::conversion as conv;
+use crate::persist::{self, TrailSave};
 use crate::policy::greedy_action;
 use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
     BattleChampionView, CampaignView, ChampionCard, ClientInput, ConversionView, FoeCard,
-    LobbyNet, LobbyStage, LobbyView, Phase, RiteCard, SinCard, TestimonyCard, ViewSnapshot,
-    WitnessCard,
+    LobbyNet, LobbyStage, LobbyView, Phase, RiteCard, SinCard, TestimonyCard, TrailView,
+    ViewSnapshot, WitnessCard,
 };
 use crate::AppError;
 
@@ -139,6 +143,163 @@ struct CampaignState {
     shards_earned: u64,
 }
 
+// ---------- The Pilgrim Road (M8b; docs/OVERWORLD.md sections 2-6) ----------
+//
+// The trail is a PARALLEL lane beside the seven-sin gauntlet `campaign`:
+// same battle driver, same conversion flow, different journey engine. All
+// trail randomness derives from the document's pilgrimage seed (minted
+// once into `persist::TRAIL_SEED_KEY`, so reloads replay identically) via
+// `BattleRng::for_turn(seed, day)` — one rng stream per travel day, the
+// engine's own golden-sim discipline.
+
+/// Morale the road grants a won battle (docs/OVERWORLD.md section 3:
+/// morale rises on victories); the clamp is the engine's.
+const TRAIL_VICTORY_MORALE: i8 = 5;
+/// v1 WILD ENCOUNTER SIMPLIFICATION (docs/OVERWORLD.md section 2's
+/// per-step roll): the client rolls ONE wild check per travel day on
+/// entering an `encounter_zone` screen, not per tile step — the world
+/// layer's tile stepping lands with the bevy shell's world pass.
+const TRAIL_WILD_ROLL_PCT: u8 = 8;
+
+/// A live trail campaign: the engine's journey state plus the app-lane
+/// battle facts the engine deliberately does not own (M8A review: the
+/// roster here is ONE file — the champion's file).
+#[derive(Debug, Clone)]
+struct TrailCampaign {
+    state: TrailState,
+    /// The battle-lane party: ONE champion instance bearing the mantle
+    /// (v1's single file), resolve persisting between road battles.
+    party: Vec<ChampionInstance>,
+    /// The current/fallen champion's level (succession banding input).
+    champion_level: u8,
+    /// The pilgrimage ended (every soul lost or the mantle unclaimed).
+    over: bool,
+}
+
+impl TrailCampaign {
+    /// The man bearing the mantle, if any lives.
+    fn champion(&self) -> Option<&trail_engine::ManEntry> {
+        self.state.living().find(|m| m.champion)
+    }
+}
+
+/// Wild-encounter and ambush mixes: per-battle_ref (engine `TrailVerb::
+/// Battle` payloads) and per-encounter_zone tables, 2-3 archetype ids from
+/// the ADVERSARIES lane, matched loosely to region geography
+/// (docs/HISTORICAL-FOES.md section 2). Refs 2xx are ambushes off the
+/// trail-event table; zone ids key the per-day wild roll.
+fn trail_foe_mix(battle_ref: u16, zone: Option<u8>) -> &'static [u16] {
+    match battle_ref {
+        // 201 "brigands upon the road" (any region).
+        201 => &[112, 113],
+        // 203 "Seljuk riders shadowing the column" (Anatolia).
+        203 => &[108, 109, 111],
+        _ => match zone {
+            // 1: the Marches (home wilds; deserters and broken men).
+            Some(1) => &[112, 113],
+            // 3: Anatolia (the Rum Seljuk band: bowriders, lancers, levy).
+            Some(3) => &[108, 109, 111],
+            // 4: the Coasts (mixed Zengid garrisons).
+            Some(4) => &[111, 114, 116],
+            // 5: the Roads of Egypt (Shirkuh's column screens).
+            Some(5) => &[113, 110, 114],
+            // 6: the Horns of Hattin (the gauntlet's pickets).
+            Some(6) => &[114, 116, 117],
+            // 7: the Holy Land (Ayyubid field army).
+            Some(7) => &[108, 109, 115],
+            _ => &[112],
+        },
+    }
+}
+
+/// Gate escort mix by gate `battle_ref` (1xx): the commander's two
+/// archetype escorts — the battle of record's banner-guard.
+fn gate_escort_mix(battle_ref: u16) -> &'static [u16] {
+    match battle_ref {
+        // 101 Dorylaeum (Kilij Arslan): the Seljuk van.
+        101 => &[108, 109],
+        // 102 Harim (Nur ad-Din): ghazw riders and spears.
+        102 => &[114, 116],
+        // 103 Egypt (Shirkuh): the column's core.
+        103 => &[110, 116],
+        // 104/105 Hattin (wings; Taki al-Din/Gokbori pending M8 review
+        // issue 2 — Shirkuh/Saladin stand in): the horns' pickets.
+        104 => &[116, 114],
+        105 => &[116, 117],
+        // 106 Arsuf approach (Nur ad-Din per the M8a spine).
+        106 => &[111, 116],
+        // 107 Jaffa (Shirkuh per the M8a spine).
+        107 => &[110, 117],
+        // 108 the finale (Saladin): the Ayyubid guard.
+        108 => &[116, 117],
+        _ => &[112],
+    }
+}
+
+/// Mint-or-load the document's pilgrimage seed: deterministic bytes mixed
+/// (FNV-1a -> splitmix64) from the document's persisted salts — the codex
+/// masks, the calls tally, and the roster ids — then persisted under
+/// `persist::TRAIL_SEED_KEY` at first embark so a mid-journey reload
+/// replays the same per-day streams (conversion.rs's store-derived-salt
+/// discipline).
+fn pilgrim_seed(store: &RosterStore) -> Result<[u8; 32], AppError> {
+    if let Some(hex_seed) = store.setting(persist::TRAIL_SEED_KEY)? {
+        let bytes = hex::decode(&hex_seed).map_err(|e| illegal(format!("trail seed: {e}")))?;
+        if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
+            return Ok(arr);
+        }
+    }
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    fn mix(h: &mut u64, s: &str) {
+        for b in s.as_bytes() {
+            *h ^= u64::from(*b);
+            *h = h.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+    }
+    for key in [
+        SINS_DEFEATED_KEY,
+        conv::FOES_DEFEATED_KEY,
+        conv::CONVERTS_BAPTIZED_KEY,
+        conv::CALLS_ISSUED_KEY,
+    ] {
+        mix(&mut h, &store.setting(key)?.unwrap_or_default());
+    }
+    let mut roster = store.list_champions()?;
+    roster.sort_by(|a, b| a.0.cmp(&b.0));
+    for (id, c) in &roster {
+        mix(&mut h, id);
+        h ^= u64::from(c.species_id);
+        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    // Stir in a per-document nonce so two identical fresh rosters do not
+    // walk the same road: stored settings count at mint time plays that
+    // role via the calls-tally read above; here splitmix into 32 bytes.
+    let mut seed = [0u8; 32];
+    let mut x = h.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    for chunk in seed.chunks_mut(8) {
+        x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        x = (x ^ (x >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        x ^= x >> 31;
+        chunk.copy_from_slice(&x.to_le_bytes());
+    }
+    Ok(seed)
+}
+
+/// The rng stream for one travel day of a pilgrimage.
+fn trail_day_rng(seed: [u8; 32], day: u16) -> BattleRng {
+    BattleRng::for_turn(seed, u32::from(day) + 1)
+}
+
+/// The seed for a road battle: the pilgrimage seed day-keyed and
+/// domain-separated from the day streams, so battle rolls never alias a
+/// travel day's rolls.
+fn trail_battle_seed(seed: [u8; 32], day: u16) -> [u8; 32] {
+    let mut s = seed;
+    s[0] ^= 0xB8;
+    s[2..4].copy_from_slice(&day.to_le_bytes());
+    s
+}
+
 #[derive(Debug)]
 pub struct ClientGame {
     store: RosterStore,
@@ -146,6 +307,14 @@ pub struct ClientGame {
     phase: Phase,
     /// Active gauntlet run, if any.
     campaign: Option<CampaignState>,
+    /// Active Pilgrim Road campaign, if any (M8b; restored from the
+    /// document's `trail.save` at construction). Parallel to the sin
+    /// gauntlet: the lanes never share a live battle.
+    trail: Option<TrailCampaign>,
+    /// True while `battle` belongs to the trail lane (gate, ambush, wild,
+    /// or choice encounter) — routes `on_battle_end` and the conversion
+    /// queue back to the road instead of the gauntlet/practice plumbing.
+    trail_battle: bool,
     /// Lobby render state while in [`Phase::Lobby`]. The async nostr
     /// session it mirrors lives in the UI's bridge task; everything here is
     /// plain data arrived via [`ClientInput::LobbyNet`].
@@ -169,11 +338,23 @@ pub struct ClientGame {
 
 impl ClientGame {
     pub fn new(store: RosterStore) -> Self {
+        // A persisted mid-journey pilgrimage rejoins the road exactly
+        // where the document left it (M8b save/load).
+        let trail = persist::load_trail(&store).ok().flatten().map(|save| {
+            TrailCampaign {
+                state: save.to_state(),
+                party: save.party.clone(),
+                champion_level: save.champion_level,
+                over: save.over,
+            }
+        });
         Self {
             store,
             battle: None,
-            phase: Phase::Menu,
+            phase: if trail.is_some() { Phase::Trail } else { Phase::Menu },
             campaign: None,
+            trail,
+            trail_battle: false,
             lobby: None,
             nostr_keys: None,
             log: Vec::new(),
@@ -257,6 +438,10 @@ impl ClientGame {
             } else {
                 None
             },
+            // The Pilgrim Road rides along whenever a trail campaign is on
+            // the document (one small row — the road screen + the Book's
+            // summary), restored trails included.
+            trail: self.trail.as_ref().map(trail_view),
             fresh_events,
         };
         let Some(b) = self.battle.as_ref() else {
@@ -557,6 +742,30 @@ impl ClientGame {
             ClientInput::ReleaseSoul => match self.phase {
                 Phase::ConversionChoice => self.resolve_call(false),
                 p => Err(illegal(format!("no yielded foe to release from {p:?}"))),
+            },
+            ClientInput::StartTrail {
+                charter_quality,
+                provisioning_spend,
+            } => self.start_trail(charter_quality, provisioning_spend),
+            ClientInput::Travel { to_screen } => match self.phase {
+                Phase::Trail => self.travel(to_screen),
+                p => Err(illegal(format!("cannot march from {p:?}"))),
+            },
+            ClientInput::EngageChoice { encounter_ref } => match self.phase {
+                Phase::Trail => self.engage_choice_encounter(encounter_ref),
+                p => Err(illegal(format!("no encounter to engage from {p:?}"))),
+            },
+            ClientInput::AbandonTrail => match self.phase {
+                Phase::Trail => {
+                    persist::clear_trail(&mut self.store)?;
+                    self.trail = None;
+                    self.push_log(vec![
+                        "The company turns back; the pilgrim road is left unwalked.".to_string()
+                    ]);
+                    self.phase = Phase::Menu;
+                    Ok(())
+                }
+                p => Err(illegal(format!("no pilgrimage to abandon from {p:?}"))),
             },
             ClientInput::EnterLobby => match self.phase {
                 Phase::Menu | Phase::Roster => self.enter_lobby(),
@@ -912,6 +1121,412 @@ impl ClientGame {
         Ok(())
     }
 
+    // ---------- The Pilgrim Road (M8b) ----------
+
+    /// StartTrail: resolve the Crossing (charter quality + provisioning
+    /// spend are the UI's only dials, OVERWORLD 6.4), land the company,
+    /// name the mantle-bearer, and open the road at the far shore. The
+    /// roster's lead champion template supplies the mantle's first battle
+    /// instance; the store is never mutated by road battles.
+    fn start_trail(&mut self, charter_quality: u8, provisioning_spend: u16) -> Result<(), AppError> {
+        if !matches!(self.phase, Phase::Menu | Phase::Trail)
+            || self.battle.is_some()
+            || self.campaign.is_some()
+        {
+            return Err(illegal("a battle or campaign is already active"));
+        }
+        if let Some(t) = &self.trail {
+            if !t.over {
+                return Err(illegal("a pilgrimage is already underway"));
+            }
+        }
+        let mut roster = self.store.list_champions()?;
+        if roster.is_empty() {
+            return Err(illegal("cannot take the pilgrim road with an empty roster"));
+        }
+        roster.sort_by(|a, b| a.0.cmp(&b.0));
+        let template = roster[0].1.clone();
+        let champion_level = template.level.clamp(1, MAX_LEVEL);
+
+        let seed = pilgrim_seed(&self.store)?;
+        let mut crossing_rng = trail_day_rng(seed, 0);
+        let out = trail_engine::the_crossing(charter_quality, provisioning_spend, &mut crossing_rng);
+        let mut state = out.state;
+        // The mantle lands on the hardiest of the landing party (the
+        // engine leaves the champion flag to the caller, M8A issue 6).
+        if let Some(m) = state.living_mut().next() {
+            m.champion = true;
+        }
+        let party = vec![field_reset(template, champion_level)?];
+        let mut t = TrailCampaign {
+            champion_level,
+            party,
+            state,
+            over: false,
+        };
+        let mut lines = vec![format!(
+            "The Crossing is behind you. {} soul(s) went down into the sea; the company lands with {} supplies and a {} heart. Day {} dawns on the far shore.",
+            out.men_lost_at_sea, out.supplies_carried,
+            if out.morale_scar < 0 { "chastened" } else { "whole" },
+            t.state.day,
+        )];
+        if let Some(c) = t.champion() {
+            lines.push(format!("{} takes up the mantle of command.", c.name));
+        }
+        self.push_log(lines);
+        self.trail = Some(t);
+        self.store
+            .set_setting(persist::TRAIL_SEED_KEY, &hex::encode(seed))?;
+        self.save_trail()?;
+        self.phase = Phase::Trail;
+        Ok(())
+    }
+
+    /// Persist the live trail row into the document (one settings write;
+    /// every road-mutating transition ends here, same sanctioned-write
+    /// discipline as the shard bounties).
+    fn save_trail(&mut self) -> Result<(), AppError> {
+        let Some(t) = &self.trail else {
+            return Ok(());
+        };
+        let save = TrailSave::capture(&t.state, &t.party, t.champion_level, t.over)
+            .map_err(illegal)?;
+        persist::save_trail(&mut self.store, &save)?;
+        Ok(())
+    }
+
+    /// The document's pilgrimage seed (minted at embark, kept forever).
+    fn pilgrim_seed(&self) -> Result<[u8; 32], AppError> {
+        pilgrim_seed(&self.store)
+    }
+
+    /// Travel: march one day to an adjacent screen. Upkeep, the day's
+    /// trail event, gate funnels, and the per-day wild roll all resolve
+    /// here; battles and yielded-hearer Calls route into their phases.
+    fn travel(&mut self, to_screen: u16) -> Result<(), AppError> {
+        if self.trail.as_ref().is_some_and(|t| t.over) {
+            return Err(illegal("the pilgrimage is over"));
+        }
+        let seed = self.pilgrim_seed()?;
+        let day = self
+            .trail
+            .as_ref()
+            .ok_or_else(|| illegal("no pilgrimage is underway"))?
+            .state
+            .day;
+        let mut rng = trail_day_rng(seed, day);
+
+        /// What the day leaves behind; routed after the state's borrow ends.
+        enum FollowUp {
+            Convert(u16),
+            Gate(u16, u16),          // battle_ref, commander id
+            Ambush(u16, Option<u8>), // battle_ref, encounter zone
+            Wild(u8),                // encounter zone
+            Quiet,
+        }
+        let (lines, follow) = {
+            let t = self.trail.as_mut().expect("trail checked above");
+            let out = trail_engine::travel_day(&mut t.state, to_screen, &mut rng)
+                .map_err(|e| illegal(e.to_string()))?;
+            let mut lines = vec![format!(
+                "Day {}: the company marches to screen {} (supplies {}, morale {}).",
+                out.day, out.screen, out.supplies, out.morale
+            )];
+            for name in &out.men_lost {
+                lines.push(format!("{name} is lost; the Book of the Fallen gains a page."));
+            }
+            let dest =
+                overworld::screen_by_id(to_screen).expect("travel_day validated the screen");
+            let follow = if let Some(c) = out.convert_ref {
+                FollowUp::Convert(c)
+            } else if let Some(gate) = dest.scripted_gate {
+                FollowUp::Gate(
+                    gate.battle_ref,
+                    gate.commander_id.expect("gate commanders are named adversaries"),
+                )
+            } else if let Some(b) = out.battle_ref {
+                FollowUp::Ambush(b, dest.encounter_zone)
+            } else if let Some(zone) = dest.encounter_zone {
+                // v1 wild roll: ONE roll per travel day on an
+                // encounter-zone screen (not per tile step; see
+                // TRAIL_WILD_ROLL_PCT).
+                if rng.pct() < TRAIL_WILD_ROLL_PCT {
+                    FollowUp::Wild(zone)
+                } else {
+                    FollowUp::Quiet
+                }
+            } else {
+                FollowUp::Quiet
+            };
+            (lines, follow)
+        };
+        self.push_log(lines);
+        match follow {
+            FollowUp::Quiet => self.save_trail(),
+            FollowUp::Convert(c) => {
+                // A willing hearer on the road: the Call decision is
+                // queued exactly like a post-battle yield (M7b flow).
+                self.queue_trail_call(c)?;
+                self.save_trail()?;
+                self.phase = Phase::ConversionChoice;
+                Ok(())
+            }
+            FollowUp::Gate(battle_ref, commander) => {
+                // Scripted funnel (OVERWORLD section 2): the battle of
+                // record — one boss commander with two archetype escorts;
+                // no skipping.
+                let lv = self.trail.as_ref().expect("trail").champion_level;
+                let boss_lv = lv.saturating_add(2).min(MAX_LEVEL);
+                let escort_lv = lv.saturating_sub(2).clamp(5, MAX_LEVEL);
+                let mut foes = Vec::with_capacity(3);
+                for id in gate_escort_mix(battle_ref).iter().take(2) {
+                    foes.push(practice_champion(*id, escort_lv)?);
+                }
+                foes.push(practice_champion(commander, boss_lv)?);
+                let name = data::species_by_id(commander)
+                    .map(|s| s.name.to_string())
+                    .expect("gate commanders are named adversaries");
+                self.save_trail()?;
+                self.enter_trail_battle(
+                    foes,
+                    format!("{name} bars the road. There is no way around."),
+                )
+            }
+            FollowUp::Ambush(battle_ref, zone) => {
+                let mix = trail_foe_mix(battle_ref, zone);
+                let foes = self.build_trail_foes(mix)?;
+                self.save_trail()?;
+                self.enter_trail_battle(foes, "Ambush upon the road!".to_string())
+            }
+            FollowUp::Wild(zone) => {
+                let mix = trail_foe_mix(0, Some(zone));
+                let foes = self.build_trail_foes(mix)?;
+                self.save_trail()?;
+                self.enter_trail_battle(foes, "Foes rise from the wilds!".to_string())
+            }
+        }
+    }
+
+    /// Build a wild/ambush foe party from a mix table at mantle level.
+    fn build_trail_foes(&self, mix: &[u16]) -> Result<Vec<ChampionInstance>, AppError> {
+        let level = self
+            .trail
+            .as_ref()
+            .map(|t| t.champion_level.clamp(5, MAX_LEVEL))
+            .unwrap_or(5);
+        mix.iter().map(|&id| practice_champion(id, level)).collect()
+    }
+
+    /// Queue a road-side Call to Repentance (trail ConvertOpportunity or a
+    /// won road battle): the choice is a plain `pending_calls` entry; the
+    /// M7b `resolve_call` flow owns the roll.
+    fn queue_trail_call(&mut self, adversary_id: u16) -> Result<(), AppError> {
+        let t = self.trail.as_ref().expect("trail checked above");
+        let caller = t.party.first().ok_or_else(|| illegal("the mantle is vacant"))?;
+        let caller_sp = data::species_by_id(caller.species_id)
+            .ok_or_else(|| illegal(format!("unknown species {}", caller.species_id)))?;
+        let piety = data::compute_stats(caller, caller_sp).piety;
+        let sp = data::species_by_id(adversary_id)
+            .ok_or_else(|| illegal(format!("unknown adversary {adversary_id}")))?;
+        let champion_level = t.champion_level;
+        let chance = data::conversion_chance(
+            piety,
+            champion_level,
+            false, // final-blow virtue attribution: not tracked in v1
+            0,     // fervor items: not wired in v1
+            sp,
+            champion_level,
+        )
+        .expect("convertible ids carry obstinacy (3..=85)");
+        let foe_name = sp.name.to_string();
+        self.push_log(vec![format!(
+            "A {foe_name} heard the Word gladly by the way; the company may call him to repentance."
+        )]);
+        self.pending_calls.push(PendingCall {
+            species_id: adversary_id,
+            foe_level: champion_level,
+            chance_pct: chance,
+        });
+        Ok(())
+    }
+
+    /// Enter a road battle (gate funnel, ambush, wild roll, or elective
+    /// choice encounter): the mantle's file vs `foes`, battle rolls
+    /// day-keyed off the pilgrimage seed.
+    fn enter_trail_battle(&mut self, foes: Vec<ChampionInstance>, intro: String) -> Result<(), AppError> {
+        let seed = self.pilgrim_seed()?;
+        let t = self.trail.as_ref().ok_or_else(|| illegal("no pilgrimage is underway"))?;
+        let bseed = trail_battle_seed(seed, t.state.day);
+        let party = t.party.clone();
+        let battle = Battle::new(party, foes, bseed)?;
+        self.battle = Some(battle);
+        self.trail_battle = true;
+        self.phase = Phase::InBattle;
+        self.fresh_events.borrow_mut().clear();
+        self.push_log(vec![intro]);
+        Ok(())
+    }
+
+    /// EngageChoice: an elective prop encounter on the current screen
+    /// (walk up and engage; OVERWORLD section 2's choice species).
+    fn engage_choice_encounter(&mut self, encounter_ref: u16) -> Result<(), AppError> {
+        let t = self
+            .trail
+            .as_ref()
+            .ok_or_else(|| illegal("no pilgrimage is underway"))?;
+        if t.over {
+            return Err(illegal("the pilgrimage is over"));
+        }
+        let screen = overworld::screen_by_id(t.state.screen)
+            .ok_or_else(|| illegal(format!("unknown screen {}", t.state.screen)))?;
+        let on_screen = screen
+            .props
+            .iter()
+            .any(|p| matches!(p, PropRef::ChoiceEncounter(r) if *r == encounter_ref));
+        if !on_screen {
+            return Err(illegal(format!(
+                "no choice encounter {encounter_ref} on this screen"
+            )));
+        }
+        let mix = trail_foe_mix(0, screen.encounter_zone);
+        let foes = self.build_trail_foes(mix)?;
+        self.enter_trail_battle(foes, format!("The company engages the camp (encounter {encounter_ref})."))
+    }
+
+    /// Route a finished ROAD battle (the trail lane's end-of-battle card).
+    /// Victory: the yielded foes are scanned for the Roll and any Calls
+    /// (the M7b flow rides unchanged), the men take heart, the survivors
+    /// march on UNRESTED (the road does not pause). Defeat: the mantle
+    /// falls — the champion's own page is written to the Book, then
+    /// `champion_falls` resolves THE MANTLE over the file: a rising in
+    /// righteousness promotes a named man into a new mantle instance
+    /// (level band former-5..+2, day-seeded), a reordering bleeds the file
+    /// and fields a lesser captain at former-5. When no soul remains, the
+    /// pilgrimage is over.
+    fn on_trail_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
+        self.trail_battle = false;
+        if winner == MY_SIDE {
+            self.scan_defeated_foes()?;
+            let b = self.battle.as_ref().expect("a battle just ended");
+            let survivors: Vec<ChampionInstance> = b.sides[usize::from(MY_SIDE)]
+                .party
+                .iter()
+                .filter(|c| c.current_resolve > 0)
+                .cloned()
+                .collect();
+            let t = self.trail.as_mut().expect("trail battle implies trail");
+            t.party = survivors;
+            t.state.morale = (t.state.morale + TRAIL_VICTORY_MORALE).min(trail_engine::MORALE_MAX);
+            self.push_log(vec![
+                "The road is won; the men take heart and march on.".to_string()
+            ]);
+            self.battle = None;
+            self.phase = if self.pending_calls.is_empty() {
+                Phase::Trail
+            } else {
+                Phase::ConversionChoice
+            };
+            self.save_trail()?;
+            return Ok(());
+        }
+
+        // Defeat: the mantle falls where the company broke.
+        let seed = self.pilgrim_seed()?;
+        let former_level = self
+            .trail
+            .as_ref()
+            .map(|t| t.champion_level)
+            .unwrap_or(1);
+        let former_species = self
+            .battle
+            .as_ref()
+            .map(|b| b.sides[usize::from(MY_SIDE)].party[0].species_id)
+            .unwrap_or(1);
+        self.battle = None;
+
+        /// What the succession left to assemble after the borrow ends.
+        enum Mantle {
+            Promoted { level: u8 },
+            /// The run is over.
+            Over,
+            /// A lesser captain of the remnant at this level.
+            ReorderedContinue { level: u8 },
+        }
+        let (lines, mantle) = {
+            let t = self.trail.as_mut().expect("trail battle implies trail");
+            let mut lines: Vec<String> = Vec::new();
+            // The champion's own Book page — the engine's mantle note
+            // deliberately does not write it (M8A review issue 6).
+            if let Some(ch) = t.state.men.iter_mut().find(|m| m.alive && m.champion) {
+                ch.alive = false;
+                ch.champion = false;
+                let name = ch.name.clone();
+                t.state.fallen.push(trail_engine::FallenEntry {
+                    name: name.clone(),
+                    day: t.state.day,
+                    cause: persist::FallenCause::SlainInBattle.as_str(),
+                    where_fell: t.state.screen,
+                });
+                lines.push(format!(
+                    "{name} is slain where the company broke. The Book of the Fallen gains a page."
+                ));
+            }
+            let mut rng = trail_day_rng(seed, t.state.day);
+            let mantle = match trail_engine::champion_falls(&mut t.state, &mut rng) {
+                SuccessionOutcome::RisesInRighteousness(name) => {
+                    let level = former_level
+                        .saturating_sub(5)
+                        .saturating_add(rng.range_u8(0, 7))
+                        .clamp(1, MAX_LEVEL);
+                    t.champion_level = level;
+                    lines.push(format!(
+                        "{name} rises in righteousness and takes up the mantle (level {level}). The company marches on."
+                    ));
+                    Mantle::Promoted { level }
+                }
+                SuccessionOutcome::Reordered { lost } => {
+                    lines.push(format!(
+                        "No man is found worthy; the file reorders and {lost} are lost in the rout."
+                    ));
+                    if t.state.living_count() == 0 {
+                        t.over = true;
+                        lines.push(
+                            "The last of the company is gone. The pilgrimage ends here; the Book of the Fallen closes."
+                                .to_string(),
+                        );
+                        t.party.clear();
+                        Mantle::Over
+                    } else {
+                        // A lesser captain of the remnant takes the road
+                        // (named: the engine's reorder leaves no
+                        // mantle-bearer, so the first living man is
+                        // marked to keep the Book honest).
+                        let level = former_level.saturating_sub(5).max(1);
+                        t.champion_level = level;
+                        if let Some(m) = t.state.living_mut().next() {
+                            m.champion = true;
+                        }
+                        Mantle::ReorderedContinue { level }
+                    }
+                }
+            };
+            (lines, mantle)
+        };
+        self.push_log(lines);
+        match mantle {
+            Mantle::Over => {
+                self.phase = Phase::BattleOver;
+            }
+            Mantle::Promoted { level } | Mantle::ReorderedContinue { level } => {
+                let t = self.trail.as_mut().expect("trail battle implies trail");
+                t.party = vec![practice_champion(former_species, level)?];
+                self.phase = Phase::Trail;
+            }
+        }
+        self.save_trail()?;
+        Ok(())
+    }
+
     /// One full turn: my chosen action vs the greedy foe, then any forced
     /// switch the foe owes is resolved immediately (greedy first-alive).
     fn play_turn(&mut self, mine: Action) -> Result<(), AppError> {
@@ -958,6 +1573,9 @@ impl ClientGame {
     /// (M7b) — a non-empty queue takes the phase to ConversionChoice
     /// before BattleOver.
     fn on_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
+        if self.trail_battle {
+            return self.on_trail_battle_end(winner);
+        }
         if winner == MY_SIDE {
             self.scan_defeated_foes()?;
         }
@@ -1162,7 +1780,16 @@ impl ClientGame {
         }
         self.pending_calls.remove(0);
         if self.pending_calls.is_empty() {
-            self.phase = Phase::BattleOver;
+            // Road-queued Calls (trail battles, willing hearers) hand the
+            // phase back to the pilgrimage; every other lane returns to
+            // the battle-over screen as before.
+            let back_to_road = self.campaign.is_none()
+                && self.trail.as_ref().is_some_and(|t| !t.over);
+            self.phase = if back_to_road {
+                Phase::Trail
+            } else {
+                Phase::BattleOver
+            };
         }
         Ok(())
     }
@@ -1387,6 +2014,7 @@ fn practice_champion(species_id: u16, level: u8) -> Result<ChampionInstance, App
             ailment: None,
             converted: false,
             converted_from: None,
+            typing_override: None,
         },
         level,
     )
@@ -1495,6 +2123,49 @@ pub(crate) fn species_name(c: &ChampionInstance) -> String {
         || format!("Champion #{}", c.species_id),
         |sp| sp.name.to_string(),
     )
+}
+
+/// The Pilgrim Road's renderable row (serde tail field `ViewSnapshot::
+/// trail`). Pre-rendered summaries only; names, never numbers, for the
+/// fallen.
+fn trail_view(t: &TrailCampaign) -> TrailView {
+    let screen = overworld::screen_by_id(t.state.screen);
+    let region_name = screen
+        .and_then(|s| overworld::region_by_id(s.region))
+        .map_or("Unknown Lands", |r| r.name)
+        .to_string();
+    let mut exits: Vec<u16> = screen
+        .map(|s| s.edges.iter().flatten().copied().collect())
+        .unwrap_or_default();
+    exits.sort_unstable();
+    let choice_encounters = screen
+        .map(|s| {
+            s.props
+                .iter()
+                .filter_map(|p| match p {
+                    PropRef::ChoiceEncounter(r) => Some(*r),
+                    _ => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let last_fallen = t.state.fallen.last().map_or_else(String::new, |f| {
+        format!("{}, day {}, at screen {} — {}", f.name, f.day, f.where_fell, f.cause)
+    });
+    TrailView {
+        screen: t.state.screen,
+        region_name,
+        day: t.state.day,
+        supplies: t.state.supplies,
+        morale: t.state.morale,
+        living: t.state.living_count(),
+        champion_name: t.champion().map_or_else(String::new, |m| m.name.clone()),
+        fallen_count: t.state.fallen.len() as u16,
+        last_fallen,
+        exits,
+        choice_encounters,
+        over: t.over,
+    }
 }
 
 /// The gallery-card stat line shared by Devotion and Grace renders: six
@@ -2382,9 +3053,9 @@ mod conversion_tests {
         game.handle(ClientInput::ViewHagiography)
             .expect("the menu opens the hagiography");
         let snap = game.snapshot();
-        assert_eq!(snap.foes.len(), 14, "ten archetypes + four commanders");
+        assert_eq!(snap.foes.len(), 16, "ten archetypes + six commanders");
         let order: Vec<u16> = snap.foes.iter().map(|c| c.species_id).collect();
-        assert_eq!(order, (108..=117).chain(120..=123).collect::<Vec<u16>>());
+        assert_eq!(order, (108..=117).chain(120..=125).collect::<Vec<u16>>());
         for card in &snap.foes {
             assert!(!card.defeated && card.lore.is_empty());
             assert!(!card.name.is_empty() && card.name.is_ascii(), "{}", card.name);
@@ -2592,5 +3263,387 @@ mod hagiography_tests {
             snap.sins,
             "the manuscript survives reload unchanged"
         );
+    }
+}
+
+#[cfg(test)]
+mod trail_tests {
+    //! M8b: the Pilgrim Road end-to-end at the client level — the Crossing,
+    //! day travel with upkeep and seeded determinism, the Kilij Arslan
+    //! scripted gate, post-battle conversion choices routed back to the
+    //! road, the Book of the Fallen, THE MANTLE succession lanes, and
+    //! mid-journey save/load. Battles are settled by the same fabrication
+    //! the conversion tests use (foe resolve zeroed, winner set, the
+    //! end-of-battle router run) — the battle engine is proven elsewhere;
+    //! what these tests pin is the ROUTING.
+
+    use super::*;
+    use crusade_core::engine::trail as te;
+
+    /// One-champion roster fixture (same shape as the other test mods).
+    fn fixture_store() -> RosterStore {
+        let mut store = RosterStore::new();
+        store
+            .add_champion(&practice_champion(1, 20).expect("fixture champion"))
+            .expect("fixture store accepts the champion");
+        store
+    }
+
+    /// March-friendly fixture store: lead champion high enough that gate
+    /// escorts build (escort level floors at 5 regardless — clamped).
+    fn embarked_game() -> ClientGame {
+        let mut game = ClientGame::new(fixture_store());
+        game.handle(ClientInput::StartTrail {
+            charter_quality: 200,
+            provisioning_spend: 400,
+        })
+        .expect("the crossing is legal from the menu");
+        game
+    }
+
+    /// Fabricate a WON settlement of the live battle (conversion-test
+    /// recipe), then drain any queued Calls via Release.
+    fn auto_win(game: &mut ClientGame) {
+        {
+            let b = game.battle.as_mut().expect("a battle is live");
+            for f in &mut b.sides[usize::from(FOE_SIDE)].party {
+                f.current_resolve = 0;
+            }
+            b.winner = Some(MY_SIDE);
+        }
+        game.on_battle_end(MY_SIDE).expect("won battle routes");
+        while game.phase() == Phase::ConversionChoice {
+            game.handle(ClientInput::ReleaseSoul)
+                .expect("release is legal");
+        }
+    }
+
+    /// Fabricate a LOST settlement of the live battle.
+    fn auto_lose(game: &mut ClientGame) {
+        {
+            let b = game.battle.as_mut().expect("a battle is live");
+            for f in &mut b.sides[usize::from(MY_SIDE)].party {
+                f.current_resolve = 0;
+            }
+            b.winner = Some(FOE_SIDE);
+        }
+        game.on_battle_end(FOE_SIDE).expect("lost battle routes");
+    }
+
+    /// March one screen east, settling anything the day raised.
+    fn march_east(game: &mut ClientGame) {
+        let next = game
+            .snapshot()
+            .trail
+            .expect("trail view present")
+            .exits
+            .into_iter()
+            .max()
+            .expect("the spine has an east exit");
+        game.handle(ClientInput::Travel { to_screen: next })
+            .expect("travel is legal");
+        while game.phase() == Phase::InBattle {
+            auto_win(game);
+        }
+        // A willing hearer by the way lands in the same queue; the march
+        // harness releases souls so the road resumes.
+        while game.phase() == Phase::ConversionChoice {
+            game.handle(ClientInput::ReleaseSoul)
+                .expect("release is legal");
+        }
+    }
+
+    #[test]
+    fn crossing_lands_the_company_and_is_deterministic() {
+        let mut g1 = embarked_game();
+        let _ = &mut g1;
+        let t = g1.snapshot().trail.expect("trail view rides the snapshot");
+        assert_eq!(g1.phase(), Phase::Trail);
+        assert_eq!((t.day, t.screen), (2, 5), "the crossing ends on the far shore");
+        assert!(t.living >= 5, "the company always lands somebody");
+        assert!(!t.champion_name.is_empty(), "the mantle is named");
+        assert_eq!(t.region_name, "The Crossing");
+        assert_eq!(t.exits, vec![4, 6]);
+        assert!(t.choice_encounters.is_empty());
+        assert!(!t.over);
+        // The fallen at sea are already in the Book at day 0.
+        assert_eq!(t.fallen_count, 20 - t.living, "every loss at sea has a page");
+        // Reloaded onto the same document, the crossing is byte-identical
+        // (the pilgrimage seed rides the store).
+        let bytes = g1.store().save_bytes().expect("document saves");
+        let g2r = ClientGame::new(RosterStore::load_bytes(&bytes).expect("document loads"));
+        assert_eq!(g2r.snapshot().trail.expect("reloaded trail"), t);
+    }
+
+    #[test]
+    fn travel_advances_days_charges_upkeep_and_stays_deterministic() {
+        let mut g1 = embarked_game();
+        let before = g1.snapshot().trail.expect("trail").supplies;
+        for _ in 0..4 {
+            march_east(&mut g1);
+        }
+        let t = g1.snapshot().trail.expect("trail");
+        assert_eq!((t.day, t.screen), (6, 9), "four marches land at the gate");
+        assert!(t.supplies < before + 15 * 4, "upkeep outruns even constant forage");
+        // Determinism: the same document reloaded walks the same road.
+        let bytes = g1.store().save_bytes().expect("document saves");
+        let mut g2 = ClientGame::new(RosterStore::load_bytes(&bytes).expect("document loads"));
+        let want = g1.snapshot().trail;
+        march_east(&mut g1);
+        march_east(&mut g2);
+        assert_eq!(g1.snapshot().trail, g2.snapshot().trail, "same seeds, same road");
+        let _ = want;
+    }
+
+    #[test]
+    fn the_kilij_arslan_gate_fields_commander_and_escorts_and_routes_back() {
+        let mut game = embarked_game();
+        // March 5 -> 8 (three days); the fourth march enters screen 9 and
+        // the scripted gate fires before any settlement of it.
+        for _ in 0..3 {
+            march_east(&mut game);
+        }
+        assert_eq!(game.snapshot().trail.expect("trail view").screen, 8);
+        game.handle(ClientInput::Travel { to_screen: 9 })
+            .expect("the gate march is legal");
+        // Screen 9's scripted gate fired on entry: the company stands in
+        // battle against Kilij Arslan (120) behind two escorts.
+        let b = game.battle.as_ref().expect("the gate battle is live");
+        let foes: Vec<u16> = b.sides[usize::from(FOE_SIDE)]
+            .party
+            .iter()
+            .map(|c| c.species_id)
+            .collect();
+        assert_eq!(foes, vec![108, 109, 120], "escorts screen, commander last");
+        assert_eq!(b.sides[usize::from(FOE_SIDE)].party[2].level, 22);
+        assert_eq!(game.phase(), Phase::InBattle);
+
+        auto_win(&mut game);
+        // Road victories return to the pilgrimage (Calls drained by
+        // auto_win's releases), never to the gauntlet's BattleOver.
+        assert_eq!(game.phase(), Phase::Trail);
+        assert_eq!(game.snapshot().trail.expect("trail view").screen, 9);
+        // The Roll recorded all three (commander bit 12; escorts 0 and 1).
+        let mask: u32 = game
+            .store()
+            .setting(conv::FOES_DEFEATED_KEY)
+            .unwrap()
+            .expect("the roll mask was written")
+            .parse()
+            .unwrap();
+        assert_eq!(mask & (1 | 2 | (1 << 12)), 1 | 2 | (1 << 12));
+    }
+
+    #[test]
+    fn road_calls_resolve_against_the_mantle_and_return_to_the_road() {
+        let mut game = embarked_game();
+        // A willing hearer by the way (trail ConvertOpportunity = the
+        // convert_ref lane): queue through the same PendingCall flow.
+        game.queue_trail_call(113).expect("road call queues");
+        game.phase = Phase::ConversionChoice;
+        let call = game
+            .snapshot()
+            .conversion
+            .expect("a live call rides the snapshot");
+        assert_eq!(call.species_id, 113);
+        assert_eq!(call.foe_level, 20, "charged at mantle level");
+        assert!((3..=85).contains(&call.chance_pct));
+        game.handle(ClientInput::ReleaseSoul).expect("release is legal");
+        assert_eq!(game.phase(), Phase::Trail, "the road resumes after the choice");
+    }
+
+    /// Craft a trail state around a game (succession fixtures).
+    fn craft_trail(game: &mut ClientGame, devotions: &[(u8, bool)], morale: i8) {
+        let men: Vec<te::ManEntry> = devotions
+            .iter()
+            .enumerate()
+            .map(|(i, &(d, champ))| te::ManEntry {
+                name: format!("Test-Man {i}"),
+                devotion: d,
+                alive: true,
+                champion: champ,
+            })
+            .collect();
+        game.trail = Some(TrailCampaign {
+            state: TrailState {
+                day: 10,
+                screen: 9,
+                supplies: 100,
+                morale,
+                men,
+                fallen: vec![],
+                region_flags: 0,
+            },
+            party: vec![practice_champion(1, 20).expect("mantle instance")],
+            champion_level: 20,
+            over: false,
+        });
+        game.phase = Phase::Trail;
+    }
+
+    /// Put the game into a live trail battle vs one weak foe.
+    fn force_trail_battle(game: &mut ClientGame) {
+        let foes = vec![practice_champion(108, 5).expect("foe")];
+        let b = Battle::new(
+            game.trail.as_ref().expect("trail").party.clone(),
+            foes,
+            [3u8; 32],
+        )
+        .expect("battle builds");
+        game.battle = Some(b);
+        game.trail_battle = true;
+        game.phase = Phase::InBattle;
+    }
+
+    #[test]
+    fn the_mantle_rises_in_righteousness_and_the_book_keeps_the_captain() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail(&mut game, &[(255, true), (250, false), (90, false)], 0);
+        let fallen_name = "Test-Man 0".to_string();
+        force_trail_battle(&mut game);
+        auto_lose(&mut game);
+
+        assert_eq!(game.phase(), Phase::Trail, "the company marches on");
+        let t = game.trail.as_ref().expect("trail");
+        // THE MANTLE: the 250-devotion man rises; the fallen captain's
+        // page carries place and cause.
+        assert_eq!(t.champion().expect("a champion").name, "Test-Man 1");
+        assert_eq!(t.state.fallen.len(), 1);
+        let page = &t.state.fallen[0];
+        assert_eq!(page.name, fallen_name);
+        assert_eq!(page.cause, persist::FallenCause::SlainInBattle.as_str());
+        assert_eq!(page.where_fell, 9, "the Book keeps where he fell");
+        // The band: former 20 - 5..+2 -> 15..=22, seeded.
+        assert!((15..=22).contains(&t.champion_level));
+        assert_eq!(t.party[0].level, t.champion_level);
+    }
+
+    #[test]
+    fn a_reordering_file_bleeds_but_marches_on_with_a_lesser_captain() {
+        let mut game = ClientGame::new(fixture_store());
+        // All low devotion; high morale -> the reorder roll spares them.
+        craft_trail(
+            &mut game,
+            &[(255, true), (10, false), (10, false), (10, false)],
+            100,
+        );
+        force_trail_battle(&mut game);
+        auto_lose(&mut game);
+
+        assert_eq!(game.phase(), Phase::Trail);
+        let t = game.trail.as_ref().expect("trail");
+        assert_eq!(t.state.living_count(), 3, "high morale spared the file");
+        assert_eq!(t.champion_level, 15, "a lesser captain at former - 5");
+        assert!(t.champion().is_some(), "some man is named to keep the Book honest");
+    }
+
+    #[test]
+    fn when_no_soul_remains_the_pilgrimage_is_over() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail(&mut game, &[(255, true), (10, false), (10, false)], -100);
+        force_trail_battle(&mut game);
+        auto_lose(&mut game);
+
+        assert_eq!(game.phase(), Phase::BattleOver, "the run-over screen");
+        let view = game.snapshot().trail.expect("the terminal trail view rides");
+        assert!(view.over);
+        assert_eq!(view.living, 0);
+        assert_eq!(view.fallen_count, 3, "every man has his page");
+        assert!(game
+            .handle(ClientInput::Travel { to_screen: 10 })
+            .is_err());
+        game.handle(ClientInput::AcknowledgeResult)
+            .expect("the run is acknowledged");
+        assert_eq!(game.phase(), Phase::Menu);
+    }
+
+    #[test]
+    fn save_and_load_mid_journey_restore_the_identical_road() {
+        let mut game = embarked_game();
+        for _ in 0..3 {
+            march_east(&mut game);
+        }
+        assert_eq!(game.phase(), Phase::Trail);
+        let want = persist::load_trail(&game.store)
+            .expect("load")
+            .expect("the lane is saved");
+        let bytes = game.store().save_bytes().expect("document saves");
+        let reloaded = ClientGame::new(RosterStore::load_bytes(&bytes).expect("document loads"));
+        assert_eq!(reloaded.phase(), Phase::Trail, "the road resumes on load");
+        let got = persist::load_trail(&reloaded.store)
+            .expect("load")
+            .expect("the lane is saved");
+        assert_eq!(got, want, "the trail DTO is byte-faithful through the document");
+        assert_eq!(reloaded.snapshot().trail, game.snapshot().trail);
+        // And the per-day rng streams rebuild: the NEXT march is identical
+        // on both sides of the reload.
+        let mut a = game;
+        let mut b = reloaded;
+        for _ in 0..2 {
+            march_east(&mut a);
+            march_east(&mut b);
+            assert_eq!(a.snapshot().trail, b.snapshot().trail);
+        }
+    }
+
+    #[test]
+    fn trail_input_guards_hold() {
+        // No trail: Travel/Engage/Abandon are dead ends; StartTrail needs
+        // a roster.
+        let mut game = ClientGame::new(RosterStore::new());
+        assert!(game.handle(ClientInput::Travel { to_screen: 6 }).is_err());
+        assert!(game
+            .handle(ClientInput::EngageChoice { encounter_ref: 301 })
+            .is_err());
+        assert!(game.handle(ClientInput::AbandonTrail).is_err());
+        assert!(game
+            .handle(ClientInput::StartTrail {
+                charter_quality: 100,
+                provisioning_spend: 100
+            })
+            .is_err());
+
+        let mut game = embarked_game();
+        // Non-adjacent marches are rejected without state movement.
+        let day = game.snapshot().trail.expect("trail").day;
+        assert!(game.handle(ClientInput::Travel { to_screen: 25 }).is_err());
+        assert_eq!(game.snapshot().trail.expect("trail").day, day);
+        // A second embark while underway is refused.
+        assert!(game
+            .handle(ClientInput::StartTrail {
+                charter_quality: 100,
+                provisioning_spend: 100
+            })
+            .is_err());
+        // An encounter ref not on this screen is refused.
+        assert!(game
+            .handle(ClientInput::EngageChoice { encounter_ref: 301 })
+            .is_err());
+        // The Abandon path clears the lane (and the save) and returns.
+        game.handle(ClientInput::AbandonTrail).expect("abandon");
+        assert_eq!(game.phase(), Phase::Menu);
+        assert!(game.snapshot().trail.is_none());
+        assert_eq!(
+            persist::load_trail(&game.store).expect("load"),
+            None,
+            "the lane is cleared from the document"
+        );
+    }
+
+    #[test]
+    fn the_choice_prop_opens_an_elective_battle() {
+        let mut game = embarked_game();
+        // Screen 7 carries ChoiceEncounter(301). March 5 -> 6 -> 7.
+        for _ in 0..2 {
+            march_east(&mut game);
+        }
+        let view = game.snapshot().trail.expect("trail");
+        assert_eq!(view.screen, 7);
+        assert_eq!(view.choice_encounters, vec![301]);
+        game.handle(ClientInput::EngageChoice { encounter_ref: 301 })
+            .expect("the elective battle engages");
+        assert_eq!(game.phase(), Phase::InBattle);
+        auto_win(&mut game);
+        assert_eq!(game.phase(), Phase::Trail);
     }
 }

@@ -452,6 +452,9 @@ impl NetDuelDriver {
             foes: Vec::new(),
             testimonies: Vec::new(),
             conversion: None,
+            // Same seam: the Pilgrim Road belongs to ClientGame's solo
+            // lane; a net duel's snapshot never carries it.
+            trail: None,
             fresh_events: self.fresh_events.take(),
         }
     }

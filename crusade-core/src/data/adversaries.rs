@@ -1,8 +1,9 @@
 //! Historical adversary tables (M7, docs/HISTORICAL-FOES.md sections 4-6):
-//! field archetypes ids 108..=117 and named commanders 120..=123, plus the
-//! add-only adversary rites 43..=57 cited `[NEW]` in the section 4 kit
-//! sketches. `data::species_by_id` / `data::rite_by_id` scan these tables
-//! after SPECIES / RITES; ids below 108 resolve exactly as before.
+//! field archetypes ids 108..=117 and named commanders 120..=125 (the
+//! Hattin wing commanders Gokbori and Taki al-Din Umar join at 124/125),
+//! plus the add-only adversary rites 43..=57 cited `[NEW]` in the section
+//! 4 kit sketches. `data::species_by_id` / `data::rite_by_id` scan these
+//! tables after SPECIES / RITES; ids below 108 resolve exactly as before.
 //!
 //! Register (section 6, chronicle voice): these are honorable men who fight
 //! for a false god — redeemable, never caricatured. `Typing::Valor` keeps
@@ -239,8 +240,9 @@ pub static ADVERSARY_RITES: &[Rite] = &[
     },
 ];
 
-/// Historical field adversaries: archetypes 108..=117 (section 4 table) and
-/// named commanders 120..=123 (section 5). Sorted by id.
+/// Historical field adversaries: archetypes 108..=117 (section 4 table)
+/// and named commanders 120..=125 (section 5 — the Hattin wing commanders
+/// ride the same band and never convert). Sorted by id.
 pub static ADVERSARIES: &[SpeciesBase] = &[
     SpeciesBase {
         id: 108,
@@ -473,6 +475,44 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         obstinacy: None,
         sin_depth: Some(3),
     },
+    SpeciesBase {
+        // Hattin wing (section 5 sub-boss texture): Saladin's shrewd
+        // right hand; rides the commander band at 405 and never converts.
+        id: 124,
+        name: "Gokbori",
+        typing: Typing::Valor,
+        base: Stats { resolve: 80, valour: 80, piety: 45, guard: 70, aegis: 60, alacrity: 70 },
+        learnset: &[
+            LearnEntry { level: 1, rite_id: 51 },
+            LearnEntry { level: 6, rite_id: 43 },
+            LearnEntry { level: 10, rite_id: 57 },
+            LearnEntry { level: 14, rite_id: 56 },
+        ],
+        xp_slope: 4,
+        xp_div: 5,
+        lore: "He rode the Sultan's left wing at Hattin, folding our flank in all day long; shrewd in the spending of men, and grave with it.",
+        obstinacy: None,
+        sin_depth: Some(3),
+    },
+    SpeciesBase {
+        // Hattin wing (section 5 sub-boss texture): the Sultan's left
+        // hand; rides the commander band at 400 and never converts.
+        id: 125,
+        name: "Taki al-Din Umar",
+        typing: Typing::Valor,
+        base: Stats { resolve: 85, valour: 80, piety: 50, guard: 75, aegis: 65, alacrity: 45 },
+        learnset: &[
+            LearnEntry { level: 1, rite_id: 45 },
+            LearnEntry { level: 6, rite_id: 53 },
+            LearnEntry { level: 10, rite_id: 47 },
+            LearnEntry { level: 14, rite_id: 57 },
+        ],
+        xp_slope: 4,
+        xp_div: 5,
+        lore: "The Sultan's right wing barred the springs of Hattin from us; from the ninth hour the thirst did his work, and the day went with the water.",
+        obstinacy: None,
+        sin_depth: Some(3),
+    },
 ];
 
 #[cfg(test)]
@@ -482,13 +522,13 @@ mod tests {
 
     #[test]
     fn adversaries_sorted_unique_ids_and_count() {
-        assert_eq!(ADVERSARIES.len(), 14);
+        assert_eq!(ADVERSARIES.len(), 16);
         for (i, w) in ADVERSARIES.windows(2).enumerate() {
             assert!(w[0].id < w[1].id, "ids out of order at {}", i);
         }
         let ids: Vec<u16> = ADVERSARIES.iter().map(|s| s.id).collect();
         let mut expected: Vec<u16> = (108..=117).collect();
-        expected.extend(120..=123);
+        expected.extend(120..=125);
         assert_eq!(ids, expected);
     }
 
@@ -649,6 +689,35 @@ mod tests {
         }
     }
 
+    /// Section 5 sub-boss texture: Saladin's Hattin wings — the shrewd
+    /// left (Gokbori, 124) rides the commander band at 405, the right
+    /// (Taki al-Din Umar, 125) at 400; both Valor-typed, never convertible,
+    /// kits drawn from the adversary rites 43..=57.
+    #[test]
+    fn hattin_wing_commanders_match_spec() {
+        let right = ADVERSARIES.iter().find(|s| s.id == 124).unwrap();
+        let left = ADVERSARIES.iter().find(|s| s.id == 125).unwrap();
+        assert_eq!(right.name, "Gokbori");
+        assert_eq!(left.name, "Taki al-Din Umar");
+        for (sp, want) in [(right, 405), (left, 400)] {
+            let total = sp.base.resolve
+                + sp.base.valour
+                + sp.base.piety
+                + sp.base.guard
+                + sp.base.aegis
+                + sp.base.alacrity;
+            assert_eq!(total, want, "{} total {total}", sp.name);
+            assert_eq!(sp.typing, Typing::Valor, "{}", sp.name);
+            assert_eq!(sp.obstinacy, None, "{} must never convert", sp.name);
+            assert_eq!(sp.sin_depth, Some(3), "{}", sp.name);
+            assert!(
+                sp.learnset.iter().all(|e| (43..=57).contains(&e.rite_id)),
+                "{} kit draws on adversary rites",
+                sp.name
+            );
+        }
+    }
+
     #[test]
     fn species_by_id_scans_adversaries_after_species() {
         // ids < 108 resolve exactly as before.
@@ -664,6 +733,6 @@ mod tests {
         // The archetype/commander gap stays empty.
         assert!(species_by_id(118).is_none());
         assert!(species_by_id(119).is_none());
-        assert!(species_by_id(124).is_none());
+        assert!(species_by_id(126).is_none());
     }
 }

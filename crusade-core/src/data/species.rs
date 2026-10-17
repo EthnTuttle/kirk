@@ -528,6 +528,7 @@ mod tests {
             ailment: None,
             converted: false,
             converted_from: None,
+            typing_override: None,
         }
     }
 
@@ -589,6 +590,7 @@ mod tests {
             ailment: None,
             converted: false,
             converted_from: None,
+            typing_override: None,
         }
     }
 

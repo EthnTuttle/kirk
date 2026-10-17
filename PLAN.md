@@ -151,10 +151,11 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
 - Delegation reality: glm/deepseek flash models failed silently as coding
   subagents in this environment; all workers ran as tff/kimi-k3 with
   contract-first skeletons + compact prompts; reviewer tff/kimi-k3#high.
-- Forward lanes: M7 (adversary lane + conversion engine — IN FLIGHT
-  2026-10-16, data tables landed, under review), M8 "The Pilgrim Road"
-  overworld (docs/OVERWORLD.md), v1.2 wagers (BLOCKED on mint ops
-  decision, docs/PRODUCTION-ARCHITECTURE.md), v1.3 mobile signing/SDK.
+- Forward lanes: M7 core LANDED 2026-10-16 (commit 4fa9137; review SHIP).
+  IN FLIGHT: M7b conversion UI + codex pages, M7a adversary art lane,
+  M8a overworld schema + trail engine (The Mantle, Crossing). Remaining:
+  M8b/M8c shell + persistence, v1.2 wagers (BLOCKED on mint ops decision,
+  docs/PRODUCTION-ARCHITECTURE.md), v1.3 mobile signing/SDK.
 - New lanes (owner direction 2026-10-16): M7 = adversary data tables
   (HISTORICAL-FOES ids 108-117 archetypes + 120-123 commanders, new rites
   43+, Obstinacy stat) + the Call to Repentance conversion engine
