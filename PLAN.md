@@ -152,9 +152,15 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
   subagents in this environment; all workers ran as tff/kimi-k3 with
   contract-first skeletons + compact prompts; reviewer tff/kimi-k3#high.
 - Forward lanes: M7 core LANDED 2026-10-16 (commit 4fa9137; review SHIP).
-  IN FLIGHT: M7b conversion UI + codex pages, M7a adversary art lane,
-  M8a overworld schema + trail engine (The Mantle, Crossing). Remaining:
-  M8b/M8c shell + persistence, v1.2 wagers (BLOCKED on mint ops decision,
+  M7b conversion UI + codex LANDED (0362383; review SHIP). M7a adversary
+  art LANDED (2bf27ed; owner QA pending in the review gallery).
+  M8a/M8b/M8c ALL LANDED (78dc917, 4f5e2a7, b2c1640): trail engine +
+  client/persist/UI + Bevy tile renderer behind `overworld` flag; the
+  renderer drives the real TrailView (Travel/EngageChoice). IN FLIGHT:
+  GLM balance-tuning card off docs/FUZZ-ADVERSARIES.md (Shieldbearer kit
+  change per owner; L5 pool trim; lift below-band 111/112/113/115/116),
+  kimi-k3#high review to follow. Remaining: owner art QA + sprite wiring
+  (stage_sprites), v1.2 wagers (BLOCKED on mint ops decision,
   docs/PRODUCTION-ARCHITECTURE.md), v1.3 mobile signing/SDK.
 - New lanes (owner direction 2026-10-16): M7 = adversary data tables
   (HISTORICAL-FOES ids 108-117 archetypes + 120-123 commanders, new rites
