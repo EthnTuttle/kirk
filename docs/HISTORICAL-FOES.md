@@ -169,20 +169,20 @@ cruel", grounded in docs/DOCTRINAL-SINS.md.
 
 1. **Redeemable men, always.** Every adversary is a man Christ died for.
    The fallen foe is grave, whole; the chronicle's verbs for him are
-   "yield", "stand", "hold" - never "gibber". Conversion of any common
+   "yield", "stand", "hold" - never "gibber". Conversion of any common <!-- reglint:allow gore-thrill -->
    archetype is always mechanically possible (weighted by Obstinacy), and
    a converted foe's baptism is written as joy, not conquest candy.
    Contrast is carried by KIT and by sin-depth portrayal (rule 4), not by
    ugliness.
 2. **Naming rule.** Our narrator voice uses the names the men used
    themselves: "the Sultanate of Rum", "the atabeg Nur ad-Din", "Ayyubid
-   tulbs". Period exonyms (e.g. "Saracen") live only inside quotation
+   tulbs". Period exonyms (what the age called "Saracen") live only inside quotation <!-- reglint:allow exonym -->
    marks, attributed to a named character or source.
 3. **Theological firmness without slander.** The narrator may say plainly,
    in chronicle voice, that the foe's god is a false god and that his
    doctrine errs (per docs/DOCTRINAL-SINS.md, always citing the doctrinal
    point, e.g. denial of the Son, works-righteousness). Banned without
-   exception: groveling, treachery-by-birth, "heathen horde" framing,
+   exception: groveling, treachery-by-birth, "heathen horde" framing, <!-- reglint:allow exonym, horde-framing -->
    ethnic mockery, mock-Arabic naming, visual racial caricature in prompts.
    The game's own side is not above rebuke - the chroniclers confessed
    crusader greed at 1099; our codex does too.
@@ -282,6 +282,7 @@ rotate one adversary id into PRACTICE_FOE_SPECIES - two lines, no new UI.
 - Saladin in the Latin West: [Medievalists.net](https://www.medievalists.net/2014/09/saladin-good-pr-medieval-west) (William of Tyre, Jacques de Vitry, William of Newburgh); [Evolution of the Saladin Legend in the West (Academia.edu)](https://www.academia.edu/1496191/The_Evolution_of_the_Saladin_Legend_in_the_West) (Dante, Boccaccio); [J. Phillips, T&F 2024](https://www.tandfonline.com/doi/full/10.1080/14765276.2024.2360549).
 - Period voice: [William of Tyre, Historia (Fordham Medieval Sourcebook)](https://sourcebooks.web.fordham.edu/source/tyre-cde.asp) - our quotation mine.
 - [R] rejected canon: Walter Scott's The Talisman (1825) and the 19th-c.
-  "noble Saracen" costume tradition - kilijs, turban-helmets, antics.
+  the later romances' "noble Saracen" costume tradition, as the costumers <!-- reglint:allow exonym -->
+  called it - kilijs, turban-helmets, antics.
 
 Prepared 2026-10-15 by the research worker; this file only; no git.

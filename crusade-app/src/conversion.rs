@@ -231,7 +231,7 @@ mod tests {
     /// it outright, which is stricter and safe.)
     #[test]
     fn register_gate_banned_terms_absent() {
-        const BANNED: [&str; 5] = ["saracen", "infidel", "heathen", "gibber", "forced convert"];
+        const BANNED: [&str; 5] = ["saracen", "infidel", "heathen", "gibber", "forced convert"]; // reglint:allow exonym, gore-thrill, coercion — this test's own banned-terms const (the Rust-side register gate)
         let mut corpus: Vec<String> = Vec::new();
         for id in 108u16..=117 {
             corpus.push(baptismal_name(id).unwrap().to_string());

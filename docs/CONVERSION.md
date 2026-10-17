@@ -132,7 +132,7 @@ read as spiritual condition, never kit or ethnicity (HF 6.4).
 
 ## 8. Banned register for all conversion text
 
-Never: coercion verbs ("converted him"), gore-thrills at refusal,
+Never: coercion verbs ("converted him"), gore-thrills at refusal, <!-- reglint:allow coercion -->
 mockery of the man's former faith beyond the attested doctrinal points
 (DOCTRINAL-SINS.md), or suggesting the soul released is damned by the
 GAME rather than by his own refusal - "his soul unto God" is the exact
