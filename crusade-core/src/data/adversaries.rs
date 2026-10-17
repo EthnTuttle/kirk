@@ -1,9 +1,11 @@
 //! Historical adversary tables (M7, docs/HISTORICAL-FOES.md sections 4-6):
 //! field archetypes ids 108..=117 and named commanders 120..=125 (the
 //! Hattin wing commanders Gokbori and Taki al-Din Umar join at 124/125),
-//! plus the add-only adversary rites 43..=57 cited `[NEW]` in the section
-//! 4 kit sketches. `data::species_by_id` / `data::rite_by_id` scan these
-//! tables after SPECIES / RITES; ids below 108 resolve exactly as before.
+//! plus the add-only adversary rites 43..=62 cited `[NEW]` in the section
+//! 4 kit sketches (58..=62 are the 2026-10-17 balance-tune strokes — see
+//! the post-tune note in docs/FUZZ-ADVERSARIES.md). `data::species_by_id`
+//! / `data::rite_by_id` scan these tables after SPECIES / RITES; ids
+//! below 108 resolve exactly as before.
 //!
 //! Register (section 6, chronicle voice): these are honorable men who fight
 //! for a false god — redeemable, never caricatured. `Typing::Valor` keeps
@@ -181,7 +183,7 @@ pub static ADVERSARY_RITES: &[Rite] = &[
         name: "Comet of Naphtha",
         rite_type: RiteType::Typeless,
         category: RiteCategory::Spiritual,
-        power: 60,
+        power: 80,
         accuracy: 90,
         zeal: 15,
         priority: 0,
@@ -238,6 +240,78 @@ pub static ADVERSARY_RITES: &[Rite] = &[
             chance_pct: 100,
         }],
     },
+    Rite {
+        // Sudani Shieldbearer (110): the short thrusting spear taking a
+        // horseman out of the saddle; the shield never leaves the line.
+        id: 58,
+        name: "Unhorse the Rider",
+        rite_type: RiteType::Typeless,
+        category: RiteCategory::Martial,
+        power: 65,
+        accuracy: 90,
+        zeal: 15,
+        priority: 0,
+        secondaries: &[Secondary::StageOnSelf {
+            stat: BattleStat::Guard,
+            delta: 1,
+            chance_pct: 100,
+        }],
+    },
+    Rite {
+        // Armenian Bowman (111): the last sheaf, a shaft finding the eye-slit.
+        id: 59,
+        name: "Arrow through the Visor",
+        rite_type: RiteType::Typeless,
+        category: RiteCategory::Martial,
+        power: 85,
+        accuracy: 90,
+        zeal: 12,
+        priority: 0,
+        secondaries: &[Secondary::HighCrit],
+    },
+    Rite {
+        // Daylamite Axeman (112): the falling stroke hewing harness and shield.
+        id: 60,
+        name: "The Falling Stroke",
+        rite_type: RiteType::Typeless,
+        category: RiteCategory::Martial,
+        power: 85,
+        accuracy: 90,
+        zeal: 12,
+        priority: 0,
+        secondaries: &[Secondary::StageOnTarget {
+            stat: BattleStat::Guard,
+            delta: -1,
+            chance_pct: 100,
+        }],
+    },
+    Rite {
+        // Bedouin Outrider (113): the one true charge, the lance taken at speed.
+        id: 61,
+        name: "Lance at the Gallop",
+        rite_type: RiteType::Typeless,
+        category: RiteCategory::Martial,
+        power: 80,
+        accuracy: 95,
+        zeal: 15,
+        priority: 0,
+        secondaries: &[Secondary::Volatile {
+            volatile_: Volatile::Flinch,
+            chance_pct: 30,
+        }],
+    },
+    Rite {
+        // Askari Alamdar (116): the banner going forward, the line behind it.
+        id: 62,
+        name: "The Banner Advances",
+        rite_type: RiteType::Typeless,
+        category: RiteCategory::Martial,
+        power: 85,
+        accuracy: 90,
+        zeal: 12,
+        priority: 0,
+        secondaries: &[],
+    },
 ];
 
 /// Historical field adversaries: archetypes 108..=117 (section 4 table)
@@ -250,9 +324,12 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 40, valour: 55, piety: 35, guard: 40, aegis: 45, alacrity: 85 },
         learnset: &[
-            LearnEntry { level: 1, rite_id: 43 },
+            // Balance-tune 2026-10-17: Wheeling Shots pushed off the L1 lane
+            // (L5 pool overtuning, docs/FUZZ-ADVERSARIES.md) — at L5 the
+            // Bowrider fields Measured Blow and dust, not the multi-hit.
             LearnEntry { level: 1, rite_id: 1 },
             LearnEntry { level: 5, rite_id: 44 },
+            LearnEntry { level: 6, rite_id: 43 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -266,7 +343,10 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 65, valour: 85, piety: 30, guard: 70, aegis: 50, alacrity: 45 },
         learnset: &[
-            LearnEntry { level: 1, rite_id: 15 },
+            // Balance-tune 2026-10-17: Sundering Blow pushed off the L1 lane
+            // (L5 pool overtuning); Measured Blow holds the early charge.
+            LearnEntry { level: 1, rite_id: 1 },
+            LearnEntry { level: 6, rite_id: 15 },
             LearnEntry { level: 7, rite_id: 18 },
             LearnEntry { level: 12, rite_id: 45 },
         ],
@@ -282,9 +362,15 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 80, valour: 55, piety: 25, guard: 85, aegis: 45, alacrity: 30 },
         learnset: &[
+            // Balance-tune 2026-10-17 (owner decision, docs/FUZZ-ADVERSARIES.md
+            // post-tune note): the wall that punishes. Measured Blow alone
+            // could not answer the champions' harness, so the short spear
+            // joins at 6 — a real stroke that still locks the shield line
+            // (Guard rising with each hit). Testudo of Hides moves to 10.
             LearnEntry { level: 1, rite_id: 1 },
             LearnEntry { level: 1, rite_id: 2 },
-            LearnEntry { level: 8, rite_id: 46 },
+            LearnEntry { level: 6, rite_id: 58 },
+            LearnEntry { level: 10, rite_id: 46 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -298,9 +384,17 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 55, valour: 60, piety: 35, guard: 50, aegis: 55, alacrity: 65 },
         learnset: &[
-            LearnEntry { level: 1, rite_id: 47 },
+            // Balance-tune 2026-10-17: Storm of Arrows pushed off the L1 lane
+            // (L5 pool overtuning). Measured Blow holds the L1 slot so a
+            // level 1-4 baptized convert is never riteless (bricked); under
+            // the max-power policy it is dormant once Volley in Turn joins
+            // at 5. Arrow through the Visor (59) answers the chronic L20/L40
+            // sag with a real sheaf-ender at 12.
+            LearnEntry { level: 1, rite_id: 1 },
             LearnEntry { level: 5, rite_id: 48 },
+            LearnEntry { level: 6, rite_id: 47 },
             LearnEntry { level: 9, rite_id: 2 },
+            LearnEntry { level: 12, rite_id: 59 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -314,9 +408,13 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 70, valour: 80, piety: 25, guard: 65, aegis: 40, alacrity: 40 },
         learnset: &[
+            // Balance-tune 2026-10-17: Cleave of Axes pushed off the L4 lane
+            // (L5 pool overtuning); The Falling Stroke (60) answers the L20/L40
+            // sag — the harness-hewing stroke the axes were made for.
             LearnEntry { level: 1, rite_id: 1 },
-            LearnEntry { level: 4, rite_id: 49 },
+            LearnEntry { level: 6, rite_id: 49 },
             LearnEntry { level: 8, rite_id: 50 },
+            LearnEntry { level: 12, rite_id: 60 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -330,9 +428,13 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 45, valour: 65, piety: 30, guard: 40, aegis: 40, alacrity: 85 },
         learnset: &[
+            // Balance-tune 2026-10-17: Harass and Fade pushed off the L3 lane
+            // (L5 pool overtuning); Lance at the Gallop (61) answers the L20/L40
+            // sag — the one true charge of a man never at sword's length.
             LearnEntry { level: 1, rite_id: 1 },
-            LearnEntry { level: 3, rite_id: 51 },
+            LearnEntry { level: 6, rite_id: 51 },
             LearnEntry { level: 7, rite_id: 52 },
+            LearnEntry { level: 10, rite_id: 61 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -346,8 +448,11 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 60, valour: 75, piety: 35, guard: 60, aegis: 50, alacrity: 55 },
         learnset: &[
-            LearnEntry { level: 1, rite_id: 15 },
-            LearnEntry { level: 6, rite_id: 53 },
+            // Balance-tune 2026-10-17: Sundering Blow pushed off the L1 lane
+            // (L5 pool overtuning); Measured Blow holds the early ride.
+            LearnEntry { level: 1, rite_id: 1 },
+            LearnEntry { level: 6, rite_id: 15 },
+            LearnEntry { level: 7, rite_id: 53 },
             LearnEntry { level: 10, rite_id: 7 },
         ],
         xp_slope: 4,
@@ -362,7 +467,11 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 50, valour: 45, piety: 70, guard: 55, aegis: 60, alacrity: 40 },
         learnset: &[
-            LearnEntry { level: 1, rite_id: 54 },
+            // Balance-tune 2026-10-17: Comet of Naphtha pushed off the L1 lane
+            // (L5 pool overtuning) and its power trimmed up 60 -> 80 to answer
+            // the chronic L20/L40 sag — the naphtha pot is his whole trade.
+            LearnEntry { level: 1, rite_id: 1 },
+            LearnEntry { level: 6, rite_id: 54 },
             LearnEntry { level: 6, rite_id: 55 },
             LearnEntry { level: 9, rite_id: 5 },
         ],
@@ -378,9 +487,13 @@ pub static ADVERSARIES: &[SpeciesBase] = &[
         typing: Typing::Valor,
         base: Stats { resolve: 75, valour: 60, piety: 40, guard: 70, aegis: 65, alacrity: 45 },
         learnset: &[
+            // Balance-tune 2026-10-17: Bulwark's Stand pushed off the L5 lane
+            // (L5 pool overtuning); The Banner Advances (62) answers the L20/L40
+            // sag — the banner going forward with the line behind it.
             LearnEntry { level: 1, rite_id: 1 },
-            LearnEntry { level: 5, rite_id: 18 },
+            LearnEntry { level: 6, rite_id: 18 },
             LearnEntry { level: 9, rite_id: 56 },
+            LearnEntry { level: 12, rite_id: 62 },
         ],
         xp_slope: 4,
         xp_div: 5,
@@ -533,8 +646,8 @@ mod tests {
     }
 
     #[test]
-    fn adversary_rites_sorted_unique_ids_43_to_57() {
-        assert_eq!(ADVERSARY_RITES.len(), 15);
+    fn adversary_rites_sorted_unique_ids_43_to_62() {
+        assert_eq!(ADVERSARY_RITES.len(), 20);
         for (i, r) in ADVERSARY_RITES.iter().enumerate() {
             assert_eq!(r.id, i as u16 + 43);
         }

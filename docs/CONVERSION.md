@@ -112,12 +112,16 @@ read as spiritual condition, never kit or ethnicity (HF 6.4).
   seams below - the settings keys `campaign.foes_defeated` /
   `campaign.converts_baptized` (u32) and the post-victory dialog - are
   DEFERRED to M7b (ROADMAP), matching HF section 9 HF-3/HF-4.
-- M7 balance debt (documented, M1-Sabina precedent): the Sudani
-  Shieldbearer's no-STAB Valor lane puts him below the 40-60% fuzz band;
-  fixing needs a doc-level kit change in HISTORICAL-FOES section 4 or a
-  RiteType::Valor STAB lane - owner decision. Also: `crusade-sim fuzz'
-  pool is champions-only today; widening it for adversaries needs the
-  id-indexed stats array fixed first (crusade-sim main.rs).
+- M7 balance debt (documented, M1-Sabina precedent): RESOLVED 2026-10-17
+  by the balance-tuning card — the Sudani Shieldbearer's below-band record
+  (23/29 at L20/L40) was fixed with a kit change, not a Valor STAB lane:
+  new adversary rite 58 "Unhorse the Rider" (power 65, Guard +1 on self)
+  learned at 6, with Steady Ward and Testudo of Hides keeping the wall
+  identity (51/56 after; docs/FUZZ-ADVERSARIES.md post-tune verification).
+  The `crusade-sim fuzz` champions-only limitation was already resolved by
+  the committed adversary pool mode; the L5 pool overtuning it surfaced
+  was fixed the same day via learn levels (strong archetype rites now
+  land at 6+).
 - Client flow (crusade-app): post-victory dialog when a convertible foe
   yielded: [Call to Repentance] [Release his soul] - choosing Release
   directly grants Mercy Shards with no roll.

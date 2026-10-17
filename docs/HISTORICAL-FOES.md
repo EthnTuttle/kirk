@@ -92,20 +92,31 @@ Kits cite existing rites 1-42 plus PROPOSED add-only rites 43+ ([NEW]).
 
 | id | Name (ASCII) | Basis (unit, era, faction) | Arms / armor (art recipe) | Stats (total) | Kit sketch |
 |---|---|---|---|---|---|
-| 108 | Turcoman Bowrider | horse-archer screen; Rum Seljuks et al., 1096-1192 | unarmored; fur kalpak cap over wrapped turban, belted khaftan, riding boots, composite bow drawn, small round hide shield slung | 40/55/35/40/45/85 (300) | [NEW "Wheeling Shots" multi-hit], Measured Blow, [NEW "Dust of the Plain" evade] |
-| 109 | Ghulam Lancer | household slave-soldier heavy cavalry; Zengid/Ayyubid askars | maille hauberk over khaftan, conical khud helm + aventail, kite shield, couched two-handed lance, saif at belt | 65/85/30/70/50/45 (345) | Sundering Blow, Bulwark's Stand, [NEW "Couched Lance" high-crit] |
-| 110 | Sudani Shieldbearer | black African great-shield spearman; Fatimid foot to 1169 | towering full-body hide shield, short thrusting spear, plain white tunic, head-cloth; no metal | 80/55/25/85/45/30 (320) | Steady Ward, [NEW "Testudo of Hides" guard], Measured Blow |
-| 111 | Armenian Bowman | foot archer; Fatimid + garrison service, 11th-12th c. | open coat, soft cap, composite bow taller than the horseman's, tall quiver, knife only | 55/60/35/50/55/65 (320) | [NEW "Storm of Arrows" multi-hit], [NEW "Volley in Turn"], Steady Ward |
-| 112 | Daylamite Axeman | hill-foot shock infantry; Fatimid/Zengid service | two tabar axes (one slung), zhupin javelin, knee-length maille shirt, round shield on back | 70/80/25/65/40/40 (320) | [NEW "Cleave of Axes" high-crit], Measured Blow, [NEW "Zhupin Cast" priority] |
-| 113 | Bedouin Outrider | tribal light-horse scout/raider; all factions' auxiliaries | flowing head-cloth and mantle, no armor, light lance, small hide buckler, lean pony | 45/65/30/40/40/85 (305) | [NEW "Harass and Fade" flinch], [NEW "Mirage Veil" protect], Measured Blow |
-| 114 | Kurdish Ghazw Rider | spear-armed tribal cavalry of Nur ad-Din/Saladin, 1160s-87 | jawshan lamellar over khaftan, wound-turban cap, round shield, spear over-arm, saif at hip | 60/75/35/60/50/55 (335) | Sundering Blow, [NEW "Spear of the Hills"], Zealous Cry |
-| 115 | Naffatun Sapper | naphtha-pot thrower of the siege parks; Zengid/Ayyubid | padded hood, wet rawhide apron, clay grenade cradled, torch held low; calm face | 50/45/70/55/60/40 (320) | [NEW "Comet of Naphtha" Brand], [NEW "Wet Hide Ward"], Litany of Stillness |
-| 116 | Askari Alamdar | banner-bearer of a lord's askar; the tulb's rally point | maille + lamellar half-suit, regimental banner (faction accent) planted, saif low | 75/60/40/70/65/45 (355) | [NEW "Hold the Banner" buff], Bulwark's Stand, Measured Blow |
+| 108 | Turcoman Bowrider | horse-archer screen; Rum Seljuks et al., 1096-1192 | unarmored; fur kalpak cap over wrapped turban, belted khaftan, riding boots, composite bow drawn, small round hide shield slung | 40/55/35/40/45/85 (300) | Measured Blow, [NEW "Dust of the Plain" evade], [NEW "Wheeling Shots" multi-hit @6] |
+| 109 | Ghulam Lancer | household slave-soldier heavy cavalry; Zengid/Ayyubid askars | maille hauberk over khaftan, conical khud helm + aventail, kite shield, couched two-handed lance, saif at belt | 65/85/30/70/50/45 (345) | Measured Blow, Sundering Blow @6, Bulwark's Stand, [NEW "Couched Lance" high-crit @12] |
+| 110 | Sudani Shieldbearer | black African great-shield spearman; Fatimid foot to 1169 | towering full-body hide shield, short thrusting spear, plain white tunic, head-cloth; no metal | 80/55/25/85/45/30 (320) | Measured Blow, Steady Ward, [NEW "Unhorse the Rider" spear, Guard+], [NEW "Testudo of Hides" guard @10] |
+| 111 | Armenian Bowman | foot archer; Fatimid + garrison service, 11th-12th c. | open coat, soft cap, composite bow taller than the horseman's, tall quiver, knife only | 55/60/35/50/55/65 (320) | Measured Blow, [NEW "Volley in Turn" @5], [NEW "Storm of Arrows" multi-hit @6], Steady Ward, [NEW "Arrow through the Visor" high-crit @12] |
+| 112 | Daylamite Axeman | hill-foot shock infantry; Fatimid/Zengid service | two tabar axes (one slung), zhupin javelin, knee-length maille shirt, round shield on back | 70/80/25/65/40/40 (320) | Measured Blow, [NEW "Cleave of Axes" high-crit @6], [NEW "Zhupin Cast" priority], [NEW "The Falling Stroke" @12] |
+| 113 | Bedouin Outrider | tribal light-horse scout/raider; all factions' auxiliaries | flowing head-cloth and mantle, no armor, light lance, small hide buckler, lean pony | 45/65/30/40/40/85 (305) | Measured Blow, [NEW "Harass and Fade" flinch @6], [NEW "Mirage Veil" protect], [NEW "Lance at the Gallop" flinch @10] |
+| 114 | Kurdish Ghazw Rider | spear-armed tribal cavalry of Nur ad-Din/Saladin, 1160s-87 | jawshan lamellar over khaftan, wound-turban cap, round shield, spear over-arm, saif at hip | 60/75/35/60/50/55 (335) | Measured Blow, Sundering Blow @6, [NEW "Spear of the Hills" @7], Zealous Cry |
+| 115 | Naffatun Sapper | naphtha-pot thrower of the siege parks; Zengid/Ayyubid | padded hood, wet rawhide apron, clay grenade cradled, torch held low; calm face | 50/45/70/55/60/40 (320) | Measured Blow, [NEW "Comet of Naphtha" Brand @6], [NEW "Wet Hide Ward"], Litany of Stillness |
+| 116 | Askari Alamdar | banner-bearer of a lord's askar; the tulb's rally point | maille + lamellar half-suit, regimental banner (faction accent) planted, saif low | 75/60/40/70/65/45 (355) | Measured Blow, Bulwark's Stand @6, [NEW "Hold the Banner" buff], [NEW "The Banner Advances" @12] |
 | 117 | Muqaddam of the Tulb | officer of a 70-200-man tulb; mini-boss tier | full lamellar cuirass over maille, khud helm + nasal, mace raised, saif sheathed, barded horse | 85/85/45/80/60/50 (405) | [NEW "Wheel the Line"], Couched Lance, Sundering Blow, Hold the Banner |
 
 117's 405 rides the COMMANDER band by design - a boss fight minus the named
 portrait. Names are transliterated office/unit terms, ASCII-clean: never a
 slur, never mock-Arabic fantasy.
+
+Kit note (2026-10-17 balance-tune, docs/FUZZ-ADVERSARIES.md post-tune
+verification): the `@N` suffixes above mark the learn levels of CHANGED
+entries only (unchanged entries keep their original levels and are
+unmarked) - the strong strokes land at level 6+ so level-5 foes field
+Measured-Blow-tier kits, and rites 58-62 (`Unhorse the Rider`, `Arrow
+through the Visor`, `The Falling Stroke`, `Lance at the Gallop`, `The
+Banner Advances`) are the tuning strokes that lifted the chronic L20/L40
+stragglers to-or-near the 40-60% band (the Sapper rests at 39/39, inside
+the fuzz noise floor). Stat lines, ids, names, lore, obstinacy
+and sin_depth are unchanged; 117 and the commanders are untouched.
 
 **Lore register (chronicle voice: reverent, plain, masculine - samples):**
 
@@ -207,7 +218,7 @@ LOCKED (its tests assert exactly 19 entries at ids 1..=12 + 101..=107) and
 add `crusade-core/src/data/adversaries.rs` = `pub static ADVERSARIES:
 &[SpeciesBase]`, ids 108..=117 + 120..=123; `data::species_by_id` widens to
 scan both tables (ids < 108 unchanged). `Typing::Valor` is a new enum arm -
-serde-forwards-only; old builds never meet it; new rites 43..=57 likewise
+serde-forwards-only; old builds never meet it; new rites 43..=62 likewise
 additive. **Persistence is untouched**: instances serialize species_id u16
 only; no store migration; SINS_DEFEATED_KEY, ladder, wagers blind to this
 lane. Rewards: baptism pays Firstfruits Shards, soul-release pays Mercy

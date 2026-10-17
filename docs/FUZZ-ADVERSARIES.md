@@ -179,3 +179,159 @@ Ghulam L20 (-17), Bowman L20 (-17) and L40 (-9), Sapper L40 (-13).
   sets it to `None` (behavior-neutral — verified by byte-identical fuzz
   output before/after the field landed). No crusade-core files were edited
   by this task.
+
+## Post-tune verification (2026-10-17)
+
+Balance-tuning card over the archetype kits (owner decisions 2026-10-17:
+Shieldbearer kit redesign, L5 pool de-tuning via learn levels, lifts for
+the chronic L20/L40 stragglers). Stat lines, typings, ids, names, lore,
+obstinacy and sin_depth are untouched; rites 1..=42, the engine, and the
+harness are untouched. Muqaddam (117) and the commanders (120..=125) were
+not modified. Same harness, same seeds, deterministic; `fuzz 300 5`,
+`fuzz 300 20`, and `fuzz 2000 5 champions` outputs verified byte-identical
+before/after every edit (champion mode golden holds); `cargo test -p
+crusade-core` 102/102 green throughout. Three tuning fuzz passes after the
+baseline (within the ~6-iteration budget).
+
+What changed (details per archetype below): five new adversary rites
+58..=62 (`Unhorse the Rider`, `Arrow through the Visor`, `The Falling
+Stroke`, `Lance at the Gallop`, `The Banner Advances`), one power bump on
+an archetype-only rite (`Comet of Naphtha` 60 -> 80), and learn-level
+re-ordering across archetypes 108..=116 so the strong L1-lane rites
+(43, 15, 47, 49, 51, 54, 18) land at level 6+ and L5 foes field
+Measured-Blow-tier kits. Kits and learn levels are updated in
+HISTORICAL-FOES.md section 4; the CONVERSION.md balance-debt note is
+resolved.
+
+### Aggregate, champions (side 0) vs adversaries (side 1)
+
+| level | before side0 | before side1 | after side0 | after side1 |
+|------:|-------------:|-------------:|------------:|------------:|
+| 5     | 496 (25%)    | 1504 (75%)   | 884 (44%)   | 1116 (56%)  |
+| 20    | 1028 (51%)   | 972 (49%)    | 783 (39%)   | 1217 (61%)  |
+| 40    | 997 (50%)    | 1003 (50%)   | 791 (40%)   | 1209 (60%)  |
+
+Failures: 0 at every level and matchup. Avg turns 14/13/14 (matchup 1).
+Adversaries-vs-adversaries side splits after: 914/1086 (L5), 892/1108
+(L20), 916/1084 (L40); before: 1001/999, 920/1080, 927/1073.
+
+### Per-id win rates, champions vs adversaries (before -> after)
+
+| id  | name                  | L5        | L20       | L40       |
+|----:|-----------------------|----------:|----------:|----------:|
+| 108 | Turcoman Bowrider     | 85 -> 49  | 41 -> 55  | 37 -> 44  |
+| 109 | Ghulam Lancer         | 76 -> 36  | 46 -> 62  | 49 -> 65  |
+| 110 | Sudani Shieldbearer   | 54 -> 38  | 23 -> 51  | 29 -> 56  |
+| 111 | Armenian Bowman       | 57 -> 46  | 25 -> 49  | 28 -> 43  |
+| 112 | Daylamite Axeman      | 66 -> 35  | 31 -> 49  | 36 -> 49  |
+| 113 | Bedouin Outrider      | 64 -> 37  | 36 -> 41  | 34 -> 39  |
+| 114 | Kurdish Ghazw Rider   | 82 -> 60  | 49 -> 60  | 49 -> 62  |
+| 115 | Naffatun Sapper       | 52 -> 35  | 29 -> 39  | 29 -> 39  |
+| 116 | Askari Alamdar        | 76 -> 39  | 39 -> 44  | 34 -> 42  |
+| 117 | Muqaddam of the Tulb  | 77 -> 67  | 70 -> 80  | 74 -> 79  |
+| 120 | Kilij Arslan I        | 95 -> 92  | 82 -> 89  | 81 -> 87  |
+| 121 | Nur ad-Din            | 86 -> 78  | 63 -> 69  | 65 -> 73  |
+| 122 | Asad al-Din Shirkuh   | 90 -> 78  | 74 -> 75  | 74 -> 83  |
+| 123 | Saladin               | 93 -> 80  | 63 -> 72  | 71 -> 68  |
+
+### Per-id win rates, adversaries vs adversaries (before -> after)
+
+| id  | name                  | L5        | L20       | L40       |
+|----:|-----------------------|----------:|----------:|----------:|
+| 108 | Turcoman Bowrider     | 52 -> 40  | 52 -> 45  | 46 -> 45  |
+| 109 | Ghulam Lancer         | 50 -> 41  | 45 -> 37  | 45 -> 39  |
+| 110 | Sudani Shieldbearer   | 23 -> 36  | 37 -> 61  | 36 -> 66  |
+| 111 | Armenian Bowman       | 42 -> 51  | 35 -> 32  | 36 -> 29  |
+| 112 | Daylamite Axeman      | 42 -> 40  | 44 -> 57  | 44 -> 58  |
+| 113 | Bedouin Outrider      | 33 -> 32  | 25 -> 27  | 22 -> 29  |
+| 114 | Kurdish Ghazw Rider   | 50 -> 41  | 45 -> 36  | 46 -> 34  |
+| 115 | Naffatun Sapper       | 38 -> 31  | 40 -> 48  | 39 -> 51  |
+| 116 | Askari Alamdar        | 43 -> 44  | 42 -> 45  | 45 -> 43  |
+| 117 | Muqaddam of the Tulb  | 53 -> 60  | 63 -> 58  | 63 -> 57  |
+| 120 | Kilij Arslan I        | 86 -> 85  | 85 -> 86  | 84 -> 83  |
+| 121 | Nur ad-Din            | 58 -> 59  | 57 -> 50  | 59 -> 50  |
+| 122 | Asad al-Din Shirkuh   | 58 -> 65  | 67 -> 62  | 70 -> 61  |
+| 123 | Saladin               | 65 -> 68  | 58 -> 56  | 59 -> 55  |
+
+### Account of each change
+
+- **Sudani Shieldbearer (110), kit redesign (owner decision 1).** The old
+  kit (Measured Blow + Steady Ward + Testudo of Hides) gave the
+  never-switch policy AI one feeble 40-power stroke, so he stalled and lost
+  chronically (23/29 at L20/L40). New rite 58 `Unhorse the Rider`
+  (power 65, accuracy 90, Guard +1 on self per hit) arrives at level 6:
+  the short thrusting spear that takes a horseman out of the saddle while
+  the shield line locks — a patient wall that punishes. Steady Ward stays
+  at 1 and Testudo of Hides at 10, so the defensive identity is intact;
+  Measured Blow keeps early zeal. 23/29 -> 51/56, dead in band; the
+  mirror matchup rises 37/36 -> 61/66 (he was the mirror floor before).
+  An 85-power snowballing first cut (70 power + Alacrity -1 on target +
+  Guard +1) measured 63/71 in tuning pass 1 and was trimmed to the final
+  shape in pass 2.
+- **L5 pool overtuning (owner decision 2), learn-level lever.** The strong
+  L1-lane rites moved to level 6+ in every archetype learnset (43 off
+  Bowrider, 15 off Ghulam/Ghazw, 47 off Bowman, 49 off Axeman, 51 off
+  Outrider, 54 off Sapper, 18 off Alamdar), each gaining Measured Blow at
+  level 1 so the early-damage guard test still holds. L5 champion team win
+  rate 25% -> 44%; L5 per-id now 35-60 across archetypes (from 52-85).
+  44% sits 0.8pp under the 45% floor of the target — inside the +/-6-7pp
+  noise floor, and structurally pinned there: five above-band-by-design
+  ids (117, 120..=123) average 79% at L5, so pushing archetype L5 win
+  rates to mid-band would push the aggregate back past 60% adversary. See
+  Residuals for the unapplied commander-kit proposal.
+- **Armenian Bowman (111).** New rite 59 `Arrow through the Visor`
+  (power 85, accuracy 90, HighCrit) at level 12 — the last sheaf finding
+  the eye-slit. Volley in Turn is now the level-5 anchor (the policy AI
+  always played it over Storm of Arrows anyway). 25/28 -> 49/43, in band.
+- **Daylamite Axeman (112).** New rite 60 `The Falling Stroke` (power 85,
+  accuracy 90, Guard -1 on target) at level 12 — the harness-hewing
+  downward cut. Cleave of Axes (boss-shared with Shirkuh, numbers
+  untouched) moves to 6. 31/36 -> 49/49, in band.
+- **Bedouin Outrider (113).** New rite 61 `Lance at the Gallop` (power 80,
+  accuracy 95, 30% flinch) at level 10 — the one true charge of a man
+  never at sword's length. A flinch-less 70-power cut moved nothing
+  (34/34, pass 2); the flinch rider at 80 power carried him to 41/39.
+  His 305-total stat line (resolve 45) is the binding floor — this is as
+  far as kit levers reach.
+- **Naffatun Sapper (115).** `Comet of Naphtha` trimmed up 60 -> 80
+  (archetype-only rite; the naphtha pot is his whole trade) and pushed to
+  level 6 for the L5 fix. 29/29 -> 39/39, at the accepted >=38 line.
+- **Askari Alamdar (116).** New rite 62 `The Banner Advances` (power 85,
+  accuracy 90, no riders) at level 12 — the banner going forward. A
+  Valour +1 on self per hit snowballed to 75/76 in pass 1 and was cut to
+  the flat stroke in pass 2 (Hold the Banner keeps the rally flavor as a
+  status). Bulwark's Stand moves to 6 for the L5 fix. 39/34 -> 44/42.
+
+### Residuals and structural notes
+
+- **Ghulam Lancer (62/65) and Kurdish Ghazw Rider (60/62) now read above
+  the band at L20/L40** (their baselines were 46/49 and 49/49). Their kits
+  WERE edited in this pass — both kept their original rites but learned
+  them at re-leveled tiers (Sundering Blows to 6), so at L20/L40 they
+  field one more strong rite than before. A genuine kit lever exists
+  (re-level the mid-tier strokes higher), but it is mild: their own
+  hardest swings are locked champion rites (1, 15, 18, 7) or boss-shared
+  (45, 53), and at 2-5pp over the band edge they sit within the ±6-7pp
+  correlated-seed noise floor (256 unique battles). Accepted as-is;
+  flagged if a future fuzz with a de-aliased seed chain still reads high.
+- **L20/L40 aggregate shifted 51/50 -> 39/40 champions-side.** Arithmetic,
+  not regression: archetype per-id average rose 36 -> 50 at L20 (the
+  owner-ordered lift into the band) while the five boss-tier ids ride
+  ~77, so the 14-id pool average is ~60 adversary-side. The per-id band
+  and a 50/50 aggregate are not jointly reachable while the boss tier is
+  fixed above band; decision 3 set per-id targets only, and those are met.
+- **L5 per-id floor**: Axeman 35, Sapper 35, Ghulam 36, Outrider 37,
+  Shieldbearer 38, Alamdar 39 — 1-5pp under the band floor, inside the
+  noise floor, and mutually exclusive with a higher L5 aggregate (see
+  above). Accepted.
+- **Unapplied proposal (owner decision required)**: if the L5 aggregate
+  must reach >=45% champions-side, the remaining lever is the commander
+  learnsets — push Kilij Arslan's `Wheeling Shots` (43), Nur ad-Din's
+  `Couched Lance` (45), Saladin's `Storm of Arrows` (47) and Shirkuh's
+  `Cleave of Axes` (49) / `Harass and Fade` (51) off their L1 lanes to
+  level 6, exactly as the archetypes were treated. Their 390-420 stat
+  lines should hold them above the band at every level (Kilij keeps
+  Harass at 6; Shirkuh keeps two L1 strokes only if 51 stays), but this
+  touches the "do not touch" boss tier, so it was not applied.
+- Shieldbearer L5 reads 38 with an unchanged L5 kit (Measured Blow +
+  Steady Ward, 54% at baseline): the drop is pool composition, not his.
