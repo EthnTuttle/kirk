@@ -54,7 +54,26 @@ button.f.on{background:#F4D35E;color:#0B0E1B}
 
 JS = """
 let NOTES = window.__NOTES__ || {};
+let ANIM = window.__ANIM || {};
 let cur = null;
+let player = null;
+function stopPlayer(){ if(player){ clearInterval(player); player = null;
+  let pc = document.getElementById('playctl'); if(pc) pc.remove(); } }
+function startPlayer(frames){
+  stopPlayer();
+  let i = 0;
+  const img = document.getElementById('mimg');
+  const inner = img.parentElement;
+  const bar = document.createElement('div');
+  bar.id = 'playctl'; bar.style.margin = '.4rem 0'; bar.className = 'small';
+  bar.innerHTML = '<button class="verdbtn" id="pp">pause</button> <span id="fidx"></span> / ' + frames.length + ' frames';
+  img.after(bar);
+  let playing = true;
+  const show = () => { img.src = '/' + frames[i]; document.getElementById('fidx').textContent = 'frame ' + (i+1) + ' [' + frames[i].split('/').pop() + ']'; };
+  document.getElementById('pp').onclick = () => { playing = !playing; document.getElementById('pp').textContent = playing ? 'pause' : 'play'; };
+  player = setInterval(() => { if(playing){ i = (i + 1) % frames.length; show(); } }, 160);
+  show();
+}
 function badgeHTML(p){
   let n = NOTES[p] || {}; let s = '';
   if(n.verdict) s += '<span class="badge b-'+n.verdict+'">'+n.verdict+'</span>';
@@ -63,8 +82,9 @@ function badgeHTML(p){
 }
 function openM(p){
   cur = p;
-  document.getElementById('mimg').src = '/' + p;
   document.getElementById('mtitle').textContent = p;
+  if(ANIM[p]){ startPlayer(ANIM[p]); }
+  else { stopPlayer(); document.getElementById('mimg').src = '/' + p; }
   let n = NOTES[p] || {};
   document.getElementById('mnote').value = n.note || '';
   ['approved','needs-work','rejected'].forEach(v => {
@@ -72,7 +92,7 @@ function openM(p){
   });
   document.getElementById('modal').style.display = 'block';
 }
-function closeM(){ document.getElementById('modal').style.display = 'none'; }
+function closeM(){ stopPlayer(); document.getElementById('modal').style.display = 'none'; }
 function setVerd(v){
   let n = NOTES[cur] || {};
   if(v) n.verdict = v; else delete n.verdict;
@@ -166,8 +186,49 @@ def prune(files: list[str]) -> list[str]:
     return sorted(out)
 
 
+def collect_anims() -> dict[str, list[str]]:
+    """Assemble reviewable animation sequences: shipped per-frame dirs
+    (crusade-app/assets/sprites/anim/<char>/NN_name.png) with the staged
+    channel/brace frames (art/anim-staging/<dir>/13/14) appended when the
+    character matches. Returns {anim-key: [frames in play order]}."""
+    import re
+
+    def num(p: Path) -> int:
+        m = re.match(r"(\d+)", p.name)
+        return int(m.group(1)) if m else 0
+
+    anims: dict[str, list[str]] = {}
+    shipped = ROOT / "crusade-app/assets/sprites/anim"
+    if not shipped.exists():
+        return anims
+    for char_dir in sorted(shipped.iterdir()):
+        if not char_dir.is_dir():
+            continue
+        frames = sorted((p for p in char_dir.glob("*.png")), key=num)
+        if len(frames) < 3:
+            continue
+        toks = set(char_dir.name.split("-")) - {"001"}
+        staging_base = ROOT / "art/anim-staging"
+        if staging_base.exists():
+            for sd in sorted(staging_base.iterdir()):
+                shared = set(sd.name.split("-")) & toks
+                if sd.is_dir() and (shared - {"battle"}):
+                    frames += sorted((p for p in sd.glob("*.png")), key=num)
+        # merge by frame number, shipped copy wins; then play order 01..14
+        bynum: dict[int, Path] = {}
+        for p in frames:
+            bynum.setdefault(num(p), p)
+        frames = [bynum[k] for k in sorted(bynum)]
+        anims[f"anim/{char_dir.name}"] = [
+            str(p.relative_to(ROOT)) for p in frames
+        ]
+    return anims
+
+
 def render() -> bytes:
     notes = load_notes()
+    anims = collect_anims()
+    excluded = {f for frames in anims.values() for f in frames}
     chunks = [
         "<!doctype html><html><head><meta charset='utf-8'>",
         "<title>DEUS VULT — Art Review</title>",
@@ -181,13 +242,32 @@ def render() -> bytes:
         "<button class='f' onclick=filt('rejected',this)>rejected</button>",
         " <span class='small' id='counts'></span></div>",
     ]
+    if anims:
+        chunks.append(
+            f"<h2 onclick='toggle(this)'>Animations (assembled) ({len(anims)})</h2>"
+            "<div class='section'><div class='grid'>"
+        )
+        for key, frames in anims.items():
+            esc = html.escape(frames[0])
+            key_js = key.replace("'", "\\'")
+            verd = html.escape((notes.get(key) or {}).get("verdict", ""))
+            chunks.append(
+                f"<div class='card' id='card-__B64__{html.escape(key)}' data-verd='{verd}' onclick=\"openM('{key_js}')\">"
+                f"<img loading='lazy' src='/{esc}'>"
+                f"<div class='name'>{html.escape(Path(key).name)} — {len(frames)} frames</div>"
+                f"<div class='path'>{html.escape(key)}</div>"
+                f"<span class='badges'>{badge_html(notes.get(key))}</span></div>"
+            )
+        chunks.append("</div></div>")
     for heading, root in LANES:
         base = ROOT / root
         files = []
         if base.exists():
-            files = prune([
-                str(p.relative_to(ROOT)) for p in base.rglob("*") if p.suffix.lower() in EXTS
-            ])
+            files = [
+                f for f in prune([
+                    str(p.relative_to(ROOT)) for p in base.rglob("*") if p.suffix.lower() in EXTS
+                ]) if f not in excluded
+            ]
         if not files:
             chunks.append(f"<h2>{html.escape(heading)}</h2><p class='small'>— empty —</p>")
             continue
@@ -219,7 +299,8 @@ def render() -> bytes:
         "<div style='margin-top:.5rem'><button class='verdbtn' onclick='saveNote()'>Save note</button>",
         "<button class='verdbtn' onclick='closeM()'>Close</button></div>",
         "</div></div>",
-        "<script>window.__NOTES__ = ", json.dumps(notes), ";", JS, "</script></body></html>",
+        "<script>window.__NOTES__ = ", json.dumps(notes), ";",
+        "window.__ANIM = ", json.dumps(anims), ";", JS, "</script></body></html>",
     ]
     return "\n".join(chunks).encode()
 
@@ -256,7 +337,7 @@ class H(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length", 0))
             d = json.loads(self.rfile.read(n) or b"{}")
             path = d.get("path", "")
-            if not path.startswith(("art/", "crusade-app/assets/")):
+            if not path.startswith(("art/", "crusade-app/assets/", "anim/")):
                 return self._send(b"bad path", "text/plain", 400)
             notes = load_notes()
             entry = notes.get(path, {})
