@@ -260,7 +260,10 @@ mod tests {
         let mut world = World::new();
         let root = world.spawn((UiRoot, Node::default())).id();
         let (a, b) = fixture_widgets(&mut world);
-        assert_eq!(world.get::<TooltipText>(a).map(|t| t.0.as_ref()), Some(TIP_A));
+        assert_eq!(
+            world.get::<TooltipText>(a).map(|t| t.0.as_ref()),
+            Some(TIP_A)
+        );
         assert!(popup_entities(&mut world).is_empty(), "no tip before hover");
 
         world.trigger(over_at(a, Vec2::new(120.0, 300.0)));

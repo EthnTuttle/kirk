@@ -297,7 +297,10 @@ fn chance_line(chance_pct: u8, certain: String, maybe: String) -> String {
 fn ailment_verb(ailment: Ailment) -> (&'static str, &'static str) {
     match ailment {
         Ailment::Brand => ("brand the foe (a burning)", "brands the foe (a burning)"),
-        Ailment::Shackled => ("shackle the foe (a slowing)", "shackles the foe (a slowing)"),
+        Ailment::Shackled => (
+            "shackle the foe (a slowing)",
+            "shackles the foe (a slowing)",
+        ),
         Ailment::Venom => ("envenom the foe", "envenoms the foe"),
         Ailment::Slumber => ("lull the foe to slumber", "lulls the foe to slumber"),
         Ailment::Frost => ("freeze the foe", "freezes the foe"),
@@ -514,8 +517,7 @@ pub(crate) fn arc_plan(
     // back-to-back damage events collapse to one recoil as in D6, while
     // consecutive casts (W/S/F, W/S/F) never touch — no two adjacent
     // beats can share a pose there.
-    const ATTACK_ARC: [ArcPose; 3] =
-        [ArcPose::Windup, ArcPose::Strike, ArcPose::Followthrough];
+    const ATTACK_ARC: [ArcPose; 3] = [ArcPose::Windup, ArcPose::Strike, ArcPose::Followthrough];
     let mut poses: Vec<ArcPose> = Vec::new();
     for e in events {
         match e {
@@ -720,7 +722,10 @@ fn champion_arc_paths(species_name: &str) -> Option<ArcFrames> {
 /// `None`, both through the same species-table gate as the arc frames.
 fn champion_verdict_paths(species_name: &str) -> Option<(String, String)> {
     let (_id, dir) = champion_anim_dir(species_name)?;
-    Some((format!("{dir}/11_victory.png"), format!("{dir}/12_defeat.png")))
+    Some((
+        format!("{dir}/11_victory.png"),
+        format!("{dir}/12_defeat.png"),
+    ))
 }
 
 /// The E4 verdict image a battle-over surface shows for one active
@@ -809,7 +814,11 @@ fn verdict_panel(
         style::small_font(),
         style::BONE,
     );
-    let border = if victor { style::GOLD } else { style::PANEL_EDGE };
+    let border = if victor {
+        style::GOLD
+    } else {
+        style::PANEL_EDGE
+    };
     Some(
         cmd.spawn((
             Node {
@@ -1040,7 +1049,12 @@ fn chronicle_panel(cmd: &mut Commands, lines: &[String]) -> Entity {
     )];
     let elided = lines.len().saturating_sub(CHRONICLE_PANEL_LINES);
     for line in &lines[elided..] {
-        kids.push(text_node(cmd, line.clone(), style::small_font(), style::BONE));
+        kids.push(text_node(
+            cmd,
+            line.clone(),
+            style::small_font(),
+            style::BONE,
+        ));
     }
     cmd.spawn((
         Node {
@@ -1297,7 +1311,10 @@ mod tests {
     fn anim_paths_resolve_for_staged_sets_only() {
         assert_eq!(
             champion_anim_paths("Squire Audric"),
-            Some(("sprites/anim/001-squire-audric/01_idle.png".to_string(), None))
+            Some((
+                "sprites/anim/001-squire-audric/01_idle.png".to_string(),
+                None
+            ))
         );
         assert_eq!(
             champion_anim_paths("Serjeant Bastien"),
@@ -1306,7 +1323,10 @@ mod tests {
                 Some("sprites/anim/003-serjeant-bastien/04_idle2.png".to_string()),
             ))
         );
-        for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
+        for sp in data::species::SPECIES
+            .iter()
+            .filter(|sp| matches!(sp.id, 1..=12))
+        {
             assert!(
                 champion_anim_paths(sp.name).is_some(),
                 "champion {} has a staged idle frame",
@@ -1358,7 +1378,10 @@ mod tests {
                 hit: "sprites/anim/001-squire-audric/08_hit.png".to_string(),
             })
         );
-        for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
+        for sp in data::species::SPECIES
+            .iter()
+            .filter(|sp| matches!(sp.id, 1..=12))
+        {
             assert!(
                 champion_arc_paths(sp.name).is_some(),
                 "champion {} has staged arc frames",
@@ -1402,7 +1425,10 @@ mod tests {
             stages: Vec::new(),
             alive_reserves: 2,
         };
-        for sp in data::species::SPECIES.iter().filter(|sp| matches!(sp.id, 1..=12)) {
+        for sp in data::species::SPECIES
+            .iter()
+            .filter(|sp| matches!(sp.id, 1..=12))
+        {
             let (victory, defeat) =
                 champion_verdict_paths(sp.name).expect("champion verdict frames");
             assert!(champion_arc_paths(sp.name).is_some());
@@ -1438,7 +1464,10 @@ mod tests {
         }
         assert_eq!(champion_verdict_paths("Champion #55"), None);
         assert_eq!(verdict_image_path(&view("Champion #55"), true), None);
-        assert_eq!(verdict_image_path(&view("Vigo the Carpathian"), false), None);
+        assert_eq!(
+            verdict_image_path(&view("Vigo the Carpathian"), false),
+            None
+        );
     }
 
     use crusade_core::types::Volatile;
@@ -1688,10 +1717,7 @@ mod tests {
         let other_foe = view(false, "Squire Audric");
         // Mirror: the foe line is tagged, ours is not.
         assert!(mirror_match(&mine, &mirror_foe));
-        assert_eq!(
-            name_line(&mirror_foe, true),
-            "Foe Serjeant Bastien - Lv 25"
-        );
+        assert_eq!(name_line(&mirror_foe, true), "Foe Serjeant Bastien - Lv 25");
         assert_eq!(name_line(&mine, false), "Serjeant Bastien - Lv 25");
         // Distinct species: no tag anywhere.
         assert!(!mirror_match(&mine, &other_foe));
@@ -1749,10 +1775,7 @@ mod tests {
     #[test]
     fn rite_tip_composes_typing_stats_and_effects() {
         let from_slot = |rite_id: u16, zeal_left: u8| {
-            let slot = crusade_core::types::RiteSlot {
-                rite_id,
-                zeal_left,
-            };
+            let slot = crusade_core::types::RiteSlot { rite_id, zeal_left };
             card_for(
                 data::rite_by_id(slot.rite_id).expect("static rite"),
                 slot.zeal_left,
@@ -1798,7 +1821,11 @@ mod tests {
         let mut bad: Vec<String> = Vec::new();
         for rite in data::rites::RITES {
             let tip = rite_tip(&card_for(rite, rite.zeal));
-            assert!(tip.is_ascii(), "{} must stay pure ASCII: {tip:?}", rite.name);
+            assert!(
+                tip.is_ascii(),
+                "{} must stay pure ASCII: {tip:?}",
+                rite.name
+            );
             worst = worst.max(tip.len());
             if tip.len() > TIP_LEN_BUDGET {
                 bad.push(format!("{} ({} chars)", rite.name, tip.len()));
@@ -1841,7 +1868,10 @@ mod tests {
         let audric = data::species_by_id(1).expect("Audric");
         assert_eq!(species_lore_tip("Squire Audric"), Some(audric.lore));
         let wrath = data::species_by_id(105).expect("Wrath");
-        assert!(!wrath.lore.is_empty(), "the table line exists but stays sealed");
+        assert!(
+            !wrath.lore.is_empty(),
+            "the table line exists but stays sealed"
+        );
         assert_eq!(species_lore_tip(wrath.name), None);
         assert_eq!(species_lore_tip("Champion #55"), None);
     }

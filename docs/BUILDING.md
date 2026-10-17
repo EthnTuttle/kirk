@@ -33,6 +33,33 @@ Wayland dev libraries (`libx11-dev`/`libxkbcommon-dev` or
 > `bevy = { version = "0.18", optional = true }` (full defaults) to get
 > sound support back; the shell code does not care either way.
 
+### The Pilgrim Road overworld demo (`--features overworld`)
+
+M8c part 1 (docs/OVERWORLD.md sections 1-2): a Zelda-discipline overworld
+renderer (fixed tile screens, tile-stepped movement, Zelda wipe edge
+transitions, no scrolling) drawing the `crusade-core` screen graph with
+LOCKed-palette placeholder tiles/props/avatar (hand art replaces these
+with the art pass). OFF by default; the shipped game is unchanged without
+it.
+
+- **Demo mode**: with the feature on, the menu grows "The Pilgrim Road
+  (overworld demo)" — spawns a stub party at screen 1 with an honest
+  supplies/morale/day stub state for manual QA (arrows/WASD walk, E
+  engage, Esc leaves).
+- **Engine mode**: during a real trail campaign (`Phase::Trail`), the
+  journey screen's "Take the road on foot" button mirrors the live
+  `TrailView`; edge crossings and choice-encounter engagement issue the
+  ordinary `Travel`/`EngageChoice` client inputs, and the walker hands
+  the stage back whenever the engine leaves the trail phase (gates,
+  battles, journeys end).
+- **ui-shots**: with `--features overworld` the harness gains an
+  `overworld` capture (the demo spawn on screen 1).
+
+```console
+$ cargo run -p crusade-app --features overworld --bin crusade-desktop
+$ cargo run -p crusade-app --features overworld --bin ui-shots -- <outdir>
+```
+
 ### Smoke harness (CI-safe)
 
 ```console

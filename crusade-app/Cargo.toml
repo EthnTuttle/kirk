@@ -10,6 +10,9 @@ license = "MIT"
 # bevy 0.18's `default` features (=2d+3d+ui, fully expanded) MINUS `audio`
 # (`bevy_audio`->cpal links ALSA, whose dev package is not available in CI).
 bevy-ui = ["dep:bevy"]
+# M8c part 1: the Pilgrim Road overworld demo (crusade-app/src/bevy_shell/
+# overworld.rs). OFF by default; the shipped game is unchanged without it.
+overworld = ["bevy-ui"]
 
 [dependencies]
 crusade-bridge = { path = "../crusade-bridge" }

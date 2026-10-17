@@ -8,15 +8,15 @@ use async_trait::async_trait;
 use bevy::prelude::*;
 
 use crusade_app::{
-    ladder_line, ChampionCard, ClientInput, ConversionView, FoeCard, LobbyStage, Phase, SinCard,
+    ladder_line, ChampionCard, ClientInput, FoeCard, LobbyStage, Phase, SinCard,
     TestimonyCard, ViewSnapshot, WitnessCard,
 };
 // The house purse's LNURL-pay switchboard reuses the B3a zaps module
 // (fetch_pay_params + the 64 KiB body cap) exactly as shipped -- the
 // support panel's own additions stay in this file's menu section.
-use crusade_net::zaps::{Http, ZapError};
 #[cfg(target_arch = "wasm32")]
 use crusade_net::zaps;
+use crusade_net::zaps::{Http, ZapError};
 // The gauntlet's boss order, single-sourced at the client (hoisted out of
 // this file — see the comment at `next_boss_species`).
 use crusade_app::client::CAMPAIGN_NODE_SPECIES;
@@ -92,13 +92,15 @@ pub fn rebuild_ui(
                     true,
                 )
             }
-            Phase::ForcedSwitchSelect => {
-                (battle::forced_switch_screen(&mut commands, &duel, assets), false)
-            }
+            Phase::ForcedSwitchSelect => (
+                battle::forced_switch_screen(&mut commands, &duel, assets),
+                false,
+            ),
             _ => (battle::battle_screen(&mut commands, &duel, assets), false),
         },
         _ => match snap.phase {
             Phase::Menu => (menu_screen(&mut commands, ladder, assets, &support), true),
+            Phase::Trail => (trail_screen(&mut commands, snap.trail.as_ref()), true),
             Phase::Roster => (
                 roster_screen(
                     &mut commands,
@@ -118,9 +120,10 @@ pub fn rebuild_ui(
                 true,
             ),
             Phase::InBattle => (battle::battle_screen(&mut commands, &snap, assets), false),
-            Phase::ForcedSwitchSelect => {
-                (battle::forced_switch_screen(&mut commands, &snap, assets), false)
-            }
+            Phase::ForcedSwitchSelect => (
+                battle::forced_switch_screen(&mut commands, &snap, assets),
+                false,
+            ),
             Phase::CampaignRest => (rest_screen(&mut commands, &snap, assets), true),
             Phase::BattleOver => (over_screen(&mut commands, &snap, assets), true),
             Phase::ConversionChoice => (conversion_screen(&mut commands, &snap), true),
@@ -206,6 +209,88 @@ pub(crate) fn log_panel(cmd: &mut Commands, title: &str, lines: &[String]) -> En
     panel(cmd, &kids)
 }
 
+// ---------- The Pilgrim Road journey screen (M8b trail phase) ----------
+
+/// The journey ledger for `Phase::Trail`: the march's numbers as text in
+/// the shell's ordinary discipline (day/supplies/morale, the living and
+/// the Book of the Fallen), with the road's verbs as ordinary buttons —
+/// each `Travel`/`EngageChoice`/`AbandonTrail` rides the same InputQueue
+/// as every battle button. With `feature = "overworld"` (M8c part 1, off
+/// by default) a "Take the road on foot" button also hands the view to
+/// the Zelda walker; without it this screen is the whole trail UI.
+fn trail_screen(cmd: &mut Commands, trail: Option<&crusade_app::TrailView>) -> Vec<Entity> {
+    let Some(t) = trail else {
+        return vec![text_node(
+            cmd,
+            "The road is quiet - no pilgrimage is on the books.".into(),
+            style::body_font(),
+            style::DIM,
+        )];
+    };
+    let mut kids = vec![
+        text_node(
+            cmd,
+            format!("The Pilgrim Road - {}", t.region_name),
+            style::head_font(),
+            style::GOLD,
+        ),
+        text_node(
+            cmd,
+            format!(
+                "day {}  |  supplies {}  |  morale {}  |  {} souls march under {}",
+                t.day, t.supplies, t.morale, t.living, t.champion_name
+            ),
+            style::body_font(),
+            style::BONE,
+        ),
+    ];
+    if t.fallen_count > 0 {
+        kids.push(text_node(
+            cmd,
+            format!("The Book of the Fallen holds {} page(s).", t.fallen_count),
+            style::small_font(),
+            style::GOLD_DIM,
+        ));
+        if !t.last_fallen.is_empty() {
+            kids.push(text_node(cmd, t.last_fallen.clone(), style::small_font(), style::BONE));
+        }
+    }
+    if t.over {
+        kids.push(text_node(
+            cmd,
+            "The road has taken all. The chronicle closes here.".into(),
+            style::body_font(),
+            style::GOLD,
+        ));
+        kids.push(action_button(
+            cmd,
+            "Lay down the staff".into(),
+            ClientInput::AbandonTrail,
+        ));
+        return kids;
+    }
+    for exit in &t.exits {
+        kids.push(action_button(
+            cmd,
+            format!("Take the road (screen {})", exit),
+            ClientInput::Travel { to_screen: *exit },
+        ));
+    }
+    for enc in &t.choice_encounters {
+        kids.push(action_button(
+            cmd,
+            format!("Engage the warband (encounter {})", enc),
+            ClientInput::EngageChoice { encounter_ref: *enc },
+        ));
+    }
+    // M8c-integration seam: the Zelda walker, off by default (feature
+    // `overworld`). Seeded from the very TrailView this screen renders.
+    #[cfg(feature = "overworld")]
+    kids.push(crate::overworld::walk_button(cmd, t));
+    kids.push(action_button(cmd, "Leave the road".into(), ClientInput::AbandonTrail));
+    kids
+}
+
 // ---------- Menu ----------
 
 fn menu_screen(
@@ -236,15 +321,14 @@ fn menu_screen(
                 })
                 .add_children(&[title, subtitle])
                 .id();
-            vec![
-                cmd.spawn(Node {
+            vec![cmd
+                .spawn(Node {
                     column_gap: Val::Px(18.0),
                     align_items: AlignItems::Center,
                     ..default()
                 })
                 .add_children(&[hero, words])
-                .id(),
-            ]
+                .id()]
         }
         None => vec![title, subtitle],
     };
@@ -256,6 +340,22 @@ fn menu_screen(
             ClientInput::StartPractice { level: 25 },
         ),
         action_button(cmd, "Campaign".into(), ClientInput::StartCampaign),
+        // M8b/M8c: begin the Pilgrim Road. (v1: fair charter and standard
+        // provisioning baked in; the Crossing's charter/provisioning
+        // chooser UI lands with its own card — see docs/OVERWORLD.md 6.4.)
+        action_button(
+            cmd,
+            "The Pilgrimage (begin the road)".into(),
+            ClientInput::StartTrail {
+                charter_quality: 128,
+                provisioning_spend: 128,
+            },
+        ),
+        // M8c part 1 (feature `overworld`, off by default): the Pilgrim
+        // Road demo entry. Shell-local like the alms box below — no
+        // ClientInput, no Phase; the observer flips a shell resource.
+        #[cfg(feature = "overworld")]
+        crate::overworld::pilgrim_road_button(cmd),
         // The alms box (card A3, ZAP-MONETIZATION.md surface #1) sits
         // directly under Campaign: the button toggles its shell-local
         // panel (address, QR code, wallet hop, amount chips) in place,
@@ -472,7 +572,11 @@ fn support_panel(cmd: &mut Commands, panel: &SupportPanel) -> Entity {
             style::DIM,
         )),
     }
-    kids.push(support_link_button(cmd, "Open in your wallet", SupportLink::Address));
+    kids.push(support_link_button(
+        cmd,
+        "Open in your wallet",
+        SupportLink::Address,
+    ));
     #[cfg(not(target_arch = "wasm32"))]
     if panel.wallet_note {
         kids.push(text_node(
@@ -516,7 +620,10 @@ fn support_panel(cmd: &mut Commands, panel: &SupportPanel) -> Entity {
         SupportInvoice::Idle => {}
         SupportInvoice::Fetching { amount_msat } => kids.push(text_node(
             cmd,
-            format!("asking the purse for an invoice of {} sats...", amount_msat / 1000),
+            format!(
+                "asking the purse for an invoice of {} sats...",
+                amount_msat / 1000
+            ),
             style::small_font(),
             style::DIM,
         )),
@@ -526,7 +633,10 @@ fn support_panel(cmd: &mut Commands, panel: &SupportPanel) -> Entity {
             style::small_font(),
             style::DIM,
         )),
-        SupportInvoice::Ready { amount_msat, bolt11 } => {
+        SupportInvoice::Ready {
+            amount_msat,
+            bolt11,
+        } => {
             kids.push(text_node(
                 cmd,
                 format!(
@@ -554,8 +664,12 @@ fn support_panel(cmd: &mut Commands, panel: &SupportPanel) -> Entity {
             // 3 px/cell cap: up to version 15 (77 modules, ~412 bytes at
             // EC level M) fits the panel; a longer invoice is text-only
             // there — the capped QR would no longer scan anyway.
-            match qr_code_node(cmd, bolt11.as_bytes(), QR_INVOICE_CELL_PX, QR_INVOICE_MAX_MODULES)
-            {
+            match qr_code_node(
+                cmd,
+                bolt11.as_bytes(),
+                QR_INVOICE_CELL_PX,
+                QR_INVOICE_MAX_MODULES,
+            ) {
                 Some(code) => kids.push(code),
                 None => kids.push(text_node(
                     cmd,
@@ -639,7 +753,6 @@ fn on_support_link(
         }
     }
 }
-
 
 /// An alms chip (the 21/100/1,000-sat chooser precedent of the post-duel
 /// alms box). Live in the browser build — a click arms the one in-flight
@@ -735,8 +848,7 @@ const QR_QUIET_MODULES: usize = 4;
 /// row-major, no quiet zone — the renderer adds that as the white pad).
 /// Pure, so the unit tests pin the geometry without a bevy `Commands`.
 fn qr_matrix(data: &[u8]) -> Option<(usize, Vec<bool>)> {
-    let code =
-        qrcode::QrCode::with_error_correction_level(data, qrcode::EcLevel::M).ok()?;
+    let code = qrcode::QrCode::with_error_correction_level(data, qrcode::EcLevel::M).ok()?;
     let width = code.width();
     let dark = code
         .to_colors()
@@ -865,10 +977,7 @@ fn spawn_support_invoice(shared: Arc<Mutex<SupportShared>>, amount_msat: u64) {
         let done = fetch_support_invoice(amount_msat)
             .await
             .map_err(|err| warn!("support invoice failed ({err}); the static address remains"));
-        shared
-            .lock()
-            .expect("support mailbox mutex poisoned")
-            .done = Some(done);
+        shared.lock().expect("support mailbox mutex poisoned").done = Some(done);
     });
 }
 
@@ -1445,7 +1554,11 @@ fn champion_card_stats(cmd: &mut Commands, card: &ChampionCard) -> Entity {
 /// the well over the card's unconditional text rows. On native, a missing
 /// alt file falls back to the base plate; the browser build trusts the
 /// pick (checking the filesystem pre-load is not a wasm move).
-fn gallery_frame(cmd: &mut Commands, card: &ChampionCard, assets: Option<&AssetServer>) -> Option<Entity> {
+fn gallery_frame(
+    cmd: &mut Commands,
+    card: &ChampionCard,
+    assets: Option<&AssetServer>,
+) -> Option<Entity> {
     let sp = data::species_by_id(card.species_id)?;
     let assets = assets?;
     let path = gallery_plate_path(sp, card.variant);
@@ -1515,8 +1628,14 @@ fn gallery_plate_path(sp: &SpeciesBase, variant: u8) -> String {
         return gallery_sprite_path(sp);
     }
     match variant {
-        1 => format!("{}--alt-a.png", gallery_sprite_path(sp).trim_end_matches(".png")),
-        2 => format!("{}--alt-b.png", gallery_sprite_path(sp).trim_end_matches(".png")),
+        1 => format!(
+            "{}--alt-a.png",
+            gallery_sprite_path(sp).trim_end_matches(".png")
+        ),
+        2 => format!(
+            "{}--alt-b.png",
+            gallery_sprite_path(sp).trim_end_matches(".png")
+        ),
         _ => gallery_sprite_path(sp),
     }
 }
@@ -1543,7 +1662,11 @@ fn gallery_asset_exists(asset_path: &str) -> bool {
 
 // ---------- Campaign rest ----------
 
-fn rest_screen(cmd: &mut Commands, snap: &ViewSnapshot, assets: Option<&AssetServer>) -> Vec<Entity> {
+fn rest_screen(
+    cmd: &mut Commands,
+    snap: &ViewSnapshot,
+    assets: Option<&AssetServer>,
+) -> Vec<Entity> {
     let mut kids = vec![text_node(
         cmd,
         "The company rests.".into(),
@@ -2351,10 +2474,7 @@ fn witness_panel(cmd: &mut Commands, card: &WitnessCard) -> Entity {
 /// client already strips sealed rows' text: sin and lore render only for
 /// `defeated` cards, so a mis-built snapshot cannot leak the allegories.
 fn manuscript_panel(cmd: &mut Commands, sins: &[SinCard], assets: Option<&AssetServer>) -> Entity {
-    let rows: Vec<Entity> = sins
-        .iter()
-        .map(|card| sin_row(cmd, card, assets))
-        .collect();
+    let rows: Vec<Entity> = sins.iter().map(|card| sin_row(cmd, card, assets)).collect();
     // A touch tighter than the stock panel recipe (row_gap 8 -> 4, vertical
     // padding 14 -> 8): seven icon rows must still close their border
     // inside a 720 window.
@@ -2733,7 +2853,10 @@ mod tests {
     #[test]
     fn virtue_matchup_tip_names_the_gauntlet_bosses() {
         let raimbaud = mirror_gallery_card(10);
-        assert_eq!(raimbaud.types_display, vec!["Patience+Kindness".to_string()]);
+        assert_eq!(
+            raimbaud.types_display,
+            vec!["Patience+Kindness".to_string()]
+        );
         let tip = virtue_matchup_tip(raimbaud.species_id).expect("a champion has virtues");
         assert_eq!(
             tip.as_ref(),
@@ -2760,7 +2883,10 @@ mod tests {
             );
         }
         assert!(virtue_matchup_tip(101).is_none(), "sin-spawn never muster");
-        assert!(virtue_matchup_tip(999).is_none(), "unknown ids stay untipped");
+        assert!(
+            virtue_matchup_tip(999).is_none(),
+            "unknown ids stay untipped"
+        );
     }
 
     /// The roster's tooltip consts hold the house contract (ASCII, two
@@ -2921,7 +3047,10 @@ mod tests {
         }
         // The scannability margin: ISO/IEC 18004 requires a four-module
         // quiet zone, which the white pad renders exactly.
-        assert_eq!(QR_QUIET_MODULES, 4, "quiet zone must stay the ISO 4 modules");
+        assert_eq!(
+            QR_QUIET_MODULES, 4,
+            "quiet zone must stay the ISO 4 modules"
+        );
     }
 
     /// The invoice lane's size policy, pinned: a too-long bolt11 (600
@@ -2938,7 +3067,10 @@ mod tests {
         );
         let short = [b'l'; 200];
         let (width, _) = qr_matrix(&short).expect("200 bytes fit");
-        assert!(width <= QR_INVOICE_MAX_MODULES, "a short invoice stays in-lane");
+        assert!(
+            width <= QR_INVOICE_MAX_MODULES,
+            "a short invoice stays in-lane"
+        );
     }
 
     /// The invoice callback's contract, pinned offline against fixed
@@ -2950,8 +3082,8 @@ mod tests {
     fn support_invoice_parsing_offline_fixtures() {
         let pr = parse_support_invoice(r#"{"pr": "lnbc210n1pjexample"}"#).expect("fixture parses");
         assert_eq!(pr, "lnbc210n1pjexample");
-        let err = parse_support_invoice(r#"{"status":"ERROR","reason":"amount too small"}"#)
-            .unwrap_err();
+        let err =
+            parse_support_invoice(r#"{"status":"ERROR","reason":"amount too small"}"#).unwrap_err();
         assert!(matches!(err, ZapError::Lnurl(ref r) if r == "amount too small"));
         for bad in [
             r#"{"pr": 42}"#,                    // wrong type

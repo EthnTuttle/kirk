@@ -18,10 +18,16 @@
 //! `hagiography` (the witness roll + Manuscript of Sins), `battle`,
 //! `battle-over`, `battle-over-net` (post-duel alms CTA via an
 //! offline-seeded mailbox), `campaign`, `lobby` (offline fixture cards).
+//! With `--features overworld` (M8c part 1, off by default) an
+//! `overworld` capture joins: the demo walk spawn on screen 1.
 //! Exits 0 only when every requested capture landed on disk.
 
 mod battle;
 mod input;
+// M8c part 1 (`--features overworld`): the Pilgrim Road demo; adds the
+// `overworld` capture (spawn at screen 1 with the stub TrailState).
+#[cfg(feature = "overworld")]
+mod overworld;
 mod screens;
 // Scripted turn policy is shared verbatim with the desktop smoke driver.
 #[allow(dead_code)]
@@ -64,6 +70,7 @@ use state::{
 /// Default capture size (CSS px = px; scale factor is 1.0 headless).
 const DEFAULT_SIZE: (u32, u32) = (1280, 720);
 /// Every screen name `--screens` may select (also the full pass order).
+#[cfg(not(feature = "overworld"))]
 const ALL_SCREENS: [&str; 9] = [
     "menu",
     "support",
@@ -74,6 +81,21 @@ const ALL_SCREENS: [&str; 9] = [
     "battle-over-net",
     "campaign",
     "lobby",
+];
+/// With `--features overworld` (M8c, off by default) the Pilgrim Road demo
+/// spawn screen joins the pass.
+#[cfg(feature = "overworld")]
+const ALL_SCREENS: [&str; 10] = [
+    "menu",
+    "support",
+    "roster",
+    "hagiography",
+    "battle",
+    "battle-over",
+    "battle-over-net",
+    "campaign",
+    "lobby",
+    "overworld",
 ];
 /// Whole-run frame cap: a hung pipeline must not block CI forever.
 const MAX_TOTAL_FRAMES: u64 = 120_000;
@@ -199,6 +221,10 @@ enum Step {
     /// Toggle the menu's shell-local support panel (offline stand-in for
     /// clicking its button — the observer writes this same resource).
     SupportPanel(bool),
+    /// M8c: enter/leave the Pilgrim Road overworld demo (same write the
+    /// menu button's observer makes).
+    #[cfg(feature = "overworld")]
+    Overworld(bool),
     /// Drop the seeded mailbox so the menu path renders again.
     ClearNet,
     /// Route out of the campaign leg: rest -> abandon, over -> amen.
@@ -236,6 +262,17 @@ impl ShotDriver {
         };
         let mut steps = vec![Step::Settle(BOOT_SETTLE)];
         steps.extend(capture("menu"));
+    // M8c part 1: the overworld demo spawn (screen 1, stub TrailState).
+    // The driver flips the shell-local `Overworld` resource directly —
+    // the same write the menu's Pilgrim Road button observer makes.
+    #[cfg(feature = "overworld")]
+    {
+        steps.push(Step::Overworld(true));
+        steps.push(Step::Settle(12));
+        steps.extend(capture("overworld"));
+        steps.push(Step::Overworld(false));
+        steps.push(Step::Settle(4));
+    }
         // The menu's support panel: a shell-local toggle, fully offline —
         // the code is drawn from the address const and the chips are
         // inert slabs on a native build, so the capture is deterministic.
@@ -419,6 +456,9 @@ fn main() -> ExitCode {
         )
             .chain(),
     );
+    // M8c part 1: the Pilgrim Road demo systems (off-feature compiles out).
+    #[cfg(feature = "overworld")]
+    overworld::register(&mut app);
 
     let exit = app.run();
     drop(app); // let the pipelined renderer join its thread
@@ -431,7 +471,8 @@ fn main() -> ExitCode {
 
 /// Fixed-size offscreen render target + the one camera pointed at it.
 fn setup_target(mut commands: Commands, cfg: Res<ShotConfig>, mut images: ResMut<Assets<Image>>) {
-    let image = Image::new_target_texture(cfg.width, cfg.height, TextureFormat::Rgba8UnormSrgb, None);
+    let image =
+        Image::new_target_texture(cfg.width, cfg.height, TextureFormat::Rgba8UnormSrgb, None);
     debug_assert_eq!(image.asset_usage, RenderAssetUsages::default());
     let target = images.add(image);
     // 0.18: the render target is its own component on the camera entity.
@@ -462,6 +503,7 @@ fn driver(
     mut support: ResMut<screens::SupportPanel>,
     mut drv: ResMut<ShotDriver>,
     saved: Res<SaveLog>,
+    #[cfg(feature = "overworld")] mut ow: Option<ResMut<overworld::Overworld>>,
     mut exit: MessageWriter<AppExit>,
 ) {
     if drv.finished() {
@@ -536,12 +578,18 @@ fn driver(
                     if stash {
                         drv.duel_stash = Some(snap.clone());
                     }
-                    println!("ui-shots: step {} battle settled at {:?}", drv.idx, snap.phase);
+                    println!(
+                        "ui-shots: step {} battle settled at {:?}",
+                        drv.idx, snap.phase
+                    );
                     drv.advance();
                 } else if drv.step_frames >= cap {
                     fail(
                         &mut exit,
-                        format!("battle drive exceeded {cap} frames (phase {:?})", snap.phase),
+                        format!(
+                            "battle drive exceeded {cap} frames (phase {:?})",
+                            snap.phase
+                        ),
                     );
                     return;
                 } else {
@@ -571,6 +619,21 @@ fn driver(
                 version.0 = version.0.wrapping_add(1);
                 drv.advance();
             }
+            #[cfg(feature = "overworld")]
+            Step::Overworld(active) => {
+                // Exactly what the menu button's observer writes. The
+                // overworld's own systems spawn/despawn its tree and the
+                // capture rides the ordinary render path.
+                let state = ow
+                    .as_deref_mut()
+                    .expect("overworld resource is registered with the feature");
+                if active {
+                    state.start_demo();
+                } else {
+                    state.active = false;
+                }
+                drv.advance();
+            }
             Step::LeaveCampaign => {
                 let phase = shell.game.lock().expect("game mutex poisoned").phase();
                 let input = match phase {
@@ -589,7 +652,12 @@ fn driver(
             }
             Step::Capture(name) => {
                 if !drv.capture_pending {
-                    spawn_shot(&mut commands, &target.0, cfg.outdir.join(format!("{name}.png")), name);
+                    spawn_shot(
+                        &mut commands,
+                        &target.0,
+                        cfg.outdir.join(format!("{name}.png")),
+                        name,
+                    );
                     drv.capture_pending = true;
                     println!("ui-shots: [{}] capturing {name}.png", drv.idx);
                     drv.step_frames = 0;
@@ -671,9 +739,11 @@ fn spawn_shot(commands: &mut Commands, target: &Handle<Image>, path: PathBuf, na
     commands
         .spawn(Screenshot::image(target.clone()))
         .observe(save_to_disk(path))
-        .observe(move |_ev: On<ScreenshotCaptured>, mut saved: ResMut<SaveLog>| {
-            saved.0.insert(tag.clone());
-        });
+        .observe(
+            move |_ev: On<ScreenshotCaptured>, mut saved: ResMut<SaveLog>| {
+                saved.0.insert(tag.clone());
+            },
+        );
 }
 
 // =========================================================================
@@ -804,6 +874,7 @@ fn fixture_store() -> RosterStore {
                 alacrity: 0,
             },
             calling_id: 0,
+            typing_override: None,
             rites,
             current_resolve: 0,
             ailment: None,

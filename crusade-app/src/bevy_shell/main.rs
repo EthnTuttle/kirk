@@ -21,6 +21,8 @@
 
 mod battle;
 mod input;
+#[cfg(feature = "overworld")]
+mod overworld;
 mod screens;
 mod smoke;
 mod state;
@@ -98,6 +100,11 @@ fn main() {
     // mailbox drain (the NetBridge pattern at menu size).
     .init_resource::<screens::SupportPanel>()
     .add_systems(Startup, setup);
+    // M8c part 1 (off by default): register the Pilgrim Road overworld
+    // demo systems (own resources, own system set; the shell is unchanged
+    // without the feature).
+    #[cfg(feature = "overworld")]
+    overworld::register(&mut app);
     #[cfg(not(target_arch = "wasm32"))]
     app.insert_resource(state::NetRuntime(
         tokio::runtime::Builder::new_multi_thread()
@@ -1145,6 +1152,7 @@ fn starter_champion(species_id: u16) -> Option<ChampionInstance> {
             alacrity: 0,
         },
         calling_id: 0,
+        typing_override: None,
         rites,
         current_resolve: 0,
         ailment: None,
