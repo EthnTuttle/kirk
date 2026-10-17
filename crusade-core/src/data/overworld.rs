@@ -44,6 +44,18 @@ pub fn region_by_id(id: u8) -> Option<&'static RegionDef> {
 pub struct BattleGate {
     pub battle_ref: u16,
     pub commander_id: Option<u16>,
+    /// The gate commander's level above the mantle
+    /// (docs/GATE-CONTENT.md section 0: +2 the field gates, +3 the right
+    /// horn and the King's-road finale). Serde default keeps any legacy
+    /// serialized gate row loading at the shipped offset.
+    #[serde(default = "default_boss_level_offset")]
+    pub boss_level_offset: u8,
+}
+
+/// The shipped offset: a gate commander stands two levels above the
+/// mantle unless the placement map says otherwise.
+fn default_boss_level_offset() -> u8 {
+    2
 }
 
 /// An elective prop on a screen: the player walks up and engages, or walks
@@ -99,27 +111,28 @@ pub static SCREENS: &[ScreenDef] = &[
     ScreenDef { id: 6, region: 3, tiles_ref: 3, edges: [None, Some(7), None, Some(5)], encounter_zone: Some(3), scripted_gate: None, props: &[] },
     ScreenDef { id: 7, region: 3, tiles_ref: 3, edges: [None, Some(8), None, Some(6)], encounter_zone: Some(3), scripted_gate: None, props: &[PropRef::ChoiceEncounter(301)] },
     ScreenDef { id: 8, region: 3, tiles_ref: 3, edges: [None, Some(9), None, Some(7)], encounter_zone: Some(3), scripted_gate: None, props: &[] },
-    ScreenDef { id: 9, region: 3, tiles_ref: 3, edges: [None, Some(10), None, Some(8)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 101, commander_id: Some(120) }), props: &[] },
+    ScreenDef { id: 9, region: 3, tiles_ref: 3, edges: [None, Some(10), None, Some(8)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 101, commander_id: Some(120), boss_level_offset: 2 }), props: &[] },
     // ---- 4. The Coasts (mixed tables; the Harim gate) ----
     ScreenDef { id: 10, region: 4, tiles_ref: 4, edges: [None, Some(11), None, Some(9)], encounter_zone: Some(4), scripted_gate: None, props: &[PropRef::Shrine] },
     ScreenDef { id: 11, region: 4, tiles_ref: 4, edges: [None, Some(12), None, Some(10)], encounter_zone: Some(4), scripted_gate: None, props: &[] },
     ScreenDef { id: 12, region: 4, tiles_ref: 4, edges: [None, Some(13), None, Some(11)], encounter_zone: Some(4), scripted_gate: None, props: &[PropRef::ChoiceEncounter(302)] },
-    ScreenDef { id: 13, region: 4, tiles_ref: 4, edges: [None, Some(14), None, Some(12)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 102, commander_id: Some(121) }), props: &[] },
+    ScreenDef { id: 13, region: 4, tiles_ref: 4, edges: [None, Some(14), None, Some(12)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 102, commander_id: Some(121), boss_level_offset: 2 }), props: &[] },
     // ---- 5. The Roads of Egypt (Shirkuh gate; heaviest supply drain) ----
     ScreenDef { id: 14, region: 5, tiles_ref: 5, edges: [None, Some(15), None, Some(13)], encounter_zone: Some(5), scripted_gate: None, props: &[] },
     ScreenDef { id: 15, region: 5, tiles_ref: 5, edges: [None, Some(16), None, Some(14)], encounter_zone: Some(5), scripted_gate: None, props: &[PropRef::Caravan] },
-    ScreenDef { id: 16, region: 5, tiles_ref: 5, edges: [None, Some(17), None, Some(15)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 103, commander_id: Some(122) }), props: &[] },
-    // ---- 6. The Horns of Hattin (scripted gauntlet; Gokbori / Taki al-Din wings) ----
+    ScreenDef { id: 16, region: 5, tiles_ref: 5, edges: [None, Some(17), None, Some(15)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 103, commander_id: Some(122), boss_level_offset: 2 }), props: &[] },
+    // ---- 6. The Horns of Hattin (scripted gauntlet; the wing commanders
+    // gate the horns back to back, then the finale) ----
     ScreenDef { id: 17, region: 6, tiles_ref: 6, edges: [None, Some(18), None, Some(16)], encounter_zone: Some(6), scripted_gate: None, props: &[] },
     ScreenDef { id: 18, region: 6, tiles_ref: 6, edges: [None, Some(19), None, Some(17)], encounter_zone: Some(6), scripted_gate: None, props: &[PropRef::ChoiceEncounter(303)] },
-    ScreenDef { id: 19, region: 6, tiles_ref: 6, edges: [None, Some(20), None, Some(18)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 104, commander_id: Some(124) }), props: &[] },
-    ScreenDef { id: 20, region: 6, tiles_ref: 6, edges: [None, Some(21), None, Some(19)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 105, commander_id: Some(123) }), props: &[] },
-    // ---- 7. The Holy Land (Arsuf, Jaffa; the finale gates) ----
+    ScreenDef { id: 19, region: 6, tiles_ref: 6, edges: [None, Some(20), None, Some(18)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 104, commander_id: Some(124), boss_level_offset: 2 }), props: &[] },
+    ScreenDef { id: 20, region: 6, tiles_ref: 6, edges: [None, Some(21), None, Some(19)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 105, commander_id: Some(125), boss_level_offset: 3 }), props: &[] },
+    // ---- 7. The Holy Land (the King's road; the Saladin finale) ----
     ScreenDef { id: 21, region: 7, tiles_ref: 7, edges: [None, Some(22), None, Some(20)], encounter_zone: Some(7), scripted_gate: None, props: &[PropRef::Shrine] },
     ScreenDef { id: 22, region: 7, tiles_ref: 7, edges: [None, Some(23), None, Some(21)], encounter_zone: Some(7), scripted_gate: None, props: &[] },
-    ScreenDef { id: 23, region: 7, tiles_ref: 7, edges: [None, Some(24), None, Some(22)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 106, commander_id: Some(125) }), props: &[] },
-    ScreenDef { id: 24, region: 7, tiles_ref: 7, edges: [None, Some(25), None, Some(23)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 107, commander_id: Some(122) }), props: &[] },
-    ScreenDef { id: 25, region: 7, tiles_ref: 7, edges: [None, None, None, Some(24)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 108, commander_id: Some(123) }), props: &[] },
+    ScreenDef { id: 23, region: 7, tiles_ref: 7, edges: [None, Some(24), None, Some(22)], encounter_zone: None, scripted_gate: None, props: &[] },
+    ScreenDef { id: 24, region: 7, tiles_ref: 7, edges: [None, Some(25), None, Some(23)], encounter_zone: None, scripted_gate: None, props: &[] },
+    ScreenDef { id: 25, region: 7, tiles_ref: 7, edges: [None, None, None, Some(24)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 108, commander_id: Some(123), boss_level_offset: 3 }), props: &[] },
 ];
 
 // ---------- Trail events ----------
@@ -266,14 +279,62 @@ mod tests {
     }
 
     /// docs/OVERWORLD.md region 6: the Hattin gauntlet is flanked by
-    /// Saladin's wing commanders — Gokbori gates screen 19, Taki al-Din
-    /// Umar screen 23 (screens 20/24/25 keep the worker's existing
-    /// 123/122/123 finale mapping).
+    /// Saladin's wing commanders — Gokbori gates the left horn (screen
+    /// 19), Taki al-Din Umar the right (screen 20), back to back before
+    /// the finale.
     #[test]
     fn hattin_wing_gates_reference_the_wing_commanders() {
         let gate = |id: u16| screen_by_id(id).unwrap().scripted_gate.unwrap().commander_id;
         assert_eq!(gate(19), Some(124));
-        assert_eq!(gate(23), Some(125));
+        assert_eq!(gate(20), Some(125));
+    }
+
+    /// docs/GATE-CONTENT.md section 0: the commander-gate placement map,
+    /// row for row — the Kilij reference gate, the four authored gates,
+    /// the Hattin-right escalation to +3, and the cleared M8a stand-ins
+    /// on screens 23/24 (Saladin gates only the finale at 25).
+    #[test]
+    fn gate_placement_matches_the_content_map() {
+        let gate = |id: u16| screen_by_id(id).unwrap().scripted_gate;
+        assert_eq!(
+            gate(9),
+            Some(BattleGate { battle_ref: 101, commander_id: Some(120), boss_level_offset: 2 })
+        );
+        assert_eq!(
+            gate(13),
+            Some(BattleGate { battle_ref: 102, commander_id: Some(121), boss_level_offset: 2 })
+        );
+        assert_eq!(
+            gate(16),
+            Some(BattleGate { battle_ref: 103, commander_id: Some(122), boss_level_offset: 2 })
+        );
+        assert_eq!(
+            gate(19),
+            Some(BattleGate { battle_ref: 104, commander_id: Some(124), boss_level_offset: 2 })
+        );
+        assert_eq!(
+            gate(20),
+            Some(BattleGate { battle_ref: 105, commander_id: Some(125), boss_level_offset: 3 })
+        );
+        assert_eq!(gate(23), None, "the M8a stand-in is cleared, not restaffed");
+        assert_eq!(gate(24), None, "the M8a stand-in is cleared, not restaffed");
+        assert_eq!(
+            gate(25),
+            Some(BattleGate { battle_ref: 108, commander_id: Some(123), boss_level_offset: 3 })
+        );
+    }
+
+    /// A serialized gate row from before the offset field (any legacy
+    /// JSON carrying only `battle_ref`/`commander_id`) still loads, at
+    /// the shipped offset of 2.
+    #[test]
+    fn battle_gate_deserializes_legacy_rows_at_the_default_offset() {
+        let legacy = r#"{"battle_ref":101,"commander_id":120}"#;
+        let gate: BattleGate = serde_json::from_str(legacy).expect("legacy gate row loads");
+        assert_eq!(
+            gate,
+            BattleGate { battle_ref: 101, commander_id: Some(120), boss_level_offset: 2 }
+        );
     }
 
     #[test]

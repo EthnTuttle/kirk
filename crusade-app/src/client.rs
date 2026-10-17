@@ -213,27 +213,84 @@ fn trail_foe_mix(battle_ref: u16, zone: Option<u8>) -> &'static [u16] {
 }
 
 /// Gate escort mix by gate `battle_ref` (1xx): the commander's two
-/// archetype escorts — the battle of record's banner-guard.
+/// archetype escorts — the battle of record's banner-guard. Ids per
+/// docs/GATE-CONTENT.md section 0 (the map's escort column, verbatim).
 fn gate_escort_mix(battle_ref: u16) -> &'static [u16] {
     match battle_ref {
         // 101 Dorylaeum (Kilij Arslan): the Seljuk van.
         101 => &[108, 109],
-        // 102 Harim (Nur ad-Din): ghazw riders and spears.
+        // 102 Harim (Nur ad-Din): ghazw riders around the askar's banners.
         102 => &[114, 116],
-        // 103 Egypt (Shirkuh): the column's core.
+        // 103 Egypt (Shirkuh): the great-shield foot and the column's core.
         103 => &[110, 116],
-        // 104/105 Hattin (wings; Taki al-Din/Gokbori pending M8 review
-        // issue 2 — Shirkuh/Saladin stand in): the horns' pickets.
+        // 104 Hattin, the left horn (Gokbori): tribal Kurdish horse.
         104 => &[116, 114],
+        // 105 Hattin, the right horn (Taki al-Din Umar): the tulb officer
+        // beneath the wing commander.
         105 => &[116, 117],
-        // 106 Arsuf approach (Nur ad-Din per the M8a spine).
-        106 => &[111, 116],
-        // 107 Jaffa (Shirkuh per the M8a spine).
-        107 => &[110, 117],
-        // 108 the finale (Saladin): the Ayyubid guard.
+        // 108 the King's road (Saladin): the Ayyubid guard.
         108 => &[116, 117],
         _ => &[112],
     }
+}
+
+/// The chronicle lines of a gate's battle of record: the pre-battle
+/// warning, the victory routing, and the defeat where-phrase (the Book
+/// of the Fallen `where_fell` family — the cause line plus where the
+/// company broke). Verbatim from docs/GATE-CONTENT.md sections 1-5.
+struct GateText {
+    pre: &'static str,
+    victory: &'static str,
+    defeat: &'static str,
+}
+
+/// Gate text by `battle_ref` (1xx). Gates 102-108 carry the authored
+/// chronicle lines; gate 101 (Kilij Arslan) shipped before the content
+/// doc and keeps its shipped lines, so it reads as `None` and the
+/// generic road text stands.
+fn gate_text(battle_ref: u16) -> Option<&'static GateText> {
+    Some(match battle_ref {
+        // 102 Harim — Nur ad-Din (screen 13).
+        102 => &GateText {
+            pre: "The ridge holds against you: spears in good order, the atabeg's banner above them. Nur ad-Din Mahmud ibn Zengi has ridden out to Harim's ground, and the road will not open while he stands it.",
+            victory: "The askar breaks in good order and withdraws toward Damascus; we count our dead and give thanks. The chroniclers of both hosts call his justice without reproach; the road is open, and a worthy man rides from it unharmed.",
+            defeat: "fell in battle upon the pilgrim road, at the Harim marches before the atabeg Nur ad-Din",
+        },
+        // 103 Egypt roads — Asad al-Din Shirkuh (screen 16).
+        103 => &GateText {
+            pre: "A column upon the march, dust to the horizon - it has outwalked every rumor of itself. Asad al-Din Shirkuh, thrice the master of Egypt's roads, turns his host across yours.",
+            victory: "His tired men scatter into the sands and he leads them without looking back; the road is ours, though the march has cost us dear. Within the year the chronicle records his death in Egypt - in the very seat he won - and the vizierate passing to his nephew Yusuf, called Salah al-Din.",
+            defeat: "fell in battle upon the pilgrim road, upon the roads of Egypt before Asad al-Din Shirkuh",
+        },
+        // 104 Hattin, the left horn — Gokbori (screen 19).
+        104 => &GateText {
+            pre: "Under the waterless hills the King's road narrows, and horsemen dark as the ridge-line wait where it turns. Muzaffar al-Din Gokbori holds the left horn. There is no way around.",
+            victory: "The horn is turned; Gokbori draws his riders off the hill in good order, his banner still uncut, and the company gasps on toward the springs. History remembers him at Hattin a victor; here the road remembers an honorable man outfought, and let go.",
+            defeat: "fell in battle upon the pilgrim road, beneath the Horns of Hattin before Muzaffar al-Din Gokbori",
+        },
+        // 105 Hattin, the right horn — Taqi al-Din Umar (screen 20).
+        105 => &GateText {
+            pre: "The road turns once more, and the horn turns with it: a wall of lances under a master's eye. Taqi al-Din Umar holds the right hand of Hattin's field. None pass the Horns who will not fight both.",
+            victory: "The second horn gives way at the ninth hour; the nephew withdraws to his uncle's command, fighting as he goes. The company passes between the Horns with empty water-skins and whole souls, and does not boast.",
+            defeat: "fell in battle upon the pilgrim road, between the Horns of Hattin before Taqi al-Din Umar",
+        },
+        // 108 the King's road — Saladin (screen 25, the finale).
+        108 => &GateText {
+            pre: "At the last ridge the whole host stands, and above it a man the Latin chronicles themselves honor: Salah al-Din Yusuf ibn Ayyub, uniter of Egypt and Syria, between you and the City. He keeps his safe-conducts and he keeps his word; he will not give you the road. Kneel; pray; then rise and take the field.",
+            victory: "The host of Egypt and Syria yields the field, and its lord withdraws with his banners unbroken and his honor entire, as the chronicles of our own side confess he ever kept it. The road lies open to the City. Let no man boast over him in the telling: he was the worthiest foe this war produced, and the chronicler who is honest sets his virtue beside our own men's, that the rest of the story may be believed.",
+            defeat: "fell in battle upon the pilgrim road, upon the King's road before Salah al-Din Yusuf ibn Ayyub",
+        },
+        _ => return None,
+    })
+}
+
+/// The defeat where-phrase for a gate screen: the map's own words for
+/// where the company broke, keyed through the screen's gate. Only the
+/// battle-dead of a gate screen read it; every other page keeps the
+/// shipped screen-and-cause row.
+fn gate_defeat_phrase(screen: u16) -> Option<&'static str> {
+    let gate = overworld::screen_by_id(screen)?.scripted_gate?;
+    gate_text(gate.battle_ref).map(|t| t.defeat)
 }
 
 /// Mint-or-load the document's pilgrimage seed: deterministic bytes mixed
@@ -315,6 +372,12 @@ pub struct ClientGame {
     /// or choice encounter) — routes `on_battle_end` and the conversion
     /// queue back to the road instead of the gauntlet/practice plumbing.
     trail_battle: bool,
+    /// The `battle_ref` of the live road battle while it is a gate's
+    /// battle of record (None for wilds, ambushes, and elective
+    /// engagements) — routes the gate's own chronicle lines at battle
+    /// end. Not persisted: it lives at most one battle, the same
+    /// lifetime discipline as `battle` itself.
+    trail_gate: Option<u16>,
     /// Lobby render state while in [`Phase::Lobby`]. The async nostr
     /// session it mirrors lives in the UI's bridge task; everything here is
     /// plain data arrived via [`ClientInput::LobbyNet`].
@@ -355,6 +418,7 @@ impl ClientGame {
             campaign: None,
             trail,
             trail_battle: false,
+            trail_gate: None,
             lobby: None,
             nostr_keys: None,
             log: Vec::new(),
@@ -1219,7 +1283,7 @@ impl ClientGame {
         /// What the day leaves behind; routed after the state's borrow ends.
         enum FollowUp {
             Convert(u16),
-            Gate(u16, u16),          // battle_ref, commander id
+            Gate(u16, u16, u8),     // battle_ref, commander id, boss level offset
             Ambush(u16, Option<u8>), // battle_ref, encounter zone
             Wild(u8),                // encounter zone
             Quiet,
@@ -1243,6 +1307,7 @@ impl ClientGame {
                 FollowUp::Gate(
                     gate.battle_ref,
                     gate.commander_id.expect("gate commanders are named adversaries"),
+                    gate.boss_level_offset,
                 )
             } else if let Some(b) = out.battle_ref {
                 FollowUp::Ambush(b, dest.encounter_zone)
@@ -1271,12 +1336,14 @@ impl ClientGame {
                 self.phase = Phase::ConversionChoice;
                 Ok(())
             }
-            FollowUp::Gate(battle_ref, commander) => {
+            FollowUp::Gate(battle_ref, commander, boss_offset) => {
                 // Scripted funnel (OVERWORLD section 2): the battle of
                 // record — one boss commander with two archetype escorts;
-                // no skipping.
+                // no skipping. The commander stands `boss_offset` above
+                // the mantle (the map's data, not a hardcoded +2);
+                // escorts keep the shipped `lv - 2` clamp.
                 let lv = self.trail.as_ref().expect("trail").champion_level;
-                let boss_lv = lv.saturating_add(2).min(MAX_LEVEL);
+                let boss_lv = lv.saturating_add(boss_offset).min(MAX_LEVEL);
                 let escort_lv = lv.saturating_sub(2).clamp(5, MAX_LEVEL);
                 let mut foes = Vec::with_capacity(3);
                 for id in gate_escort_mix(battle_ref).iter().take(2) {
@@ -1286,11 +1353,16 @@ impl ClientGame {
                 let name = data::species_by_id(commander)
                     .map(|s| s.name.to_string())
                     .expect("gate commanders are named adversaries");
+                // Authored gates open with their own chronicle warning
+                // (docs/GATE-CONTENT.md); the shipped Kilij gate keeps
+                // its line.
+                let intro = gate_text(battle_ref).map_or_else(
+                    || format!("{name} bars the road. There is no way around."),
+                    |t| t.pre.to_string(),
+                );
+                self.trail_gate = Some(battle_ref);
                 self.save_trail()?;
-                self.enter_trail_battle(
-                    foes,
-                    format!("{name} bars the road. There is no way around."),
-                )
+                self.enter_trail_battle(foes, intro)
             }
             FollowUp::Ambush(battle_ref, zone) => {
                 let mix = trail_foe_mix(battle_ref, zone);
@@ -1405,6 +1477,7 @@ impl ClientGame {
     /// pilgrimage is over.
     fn on_trail_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
         self.trail_battle = false;
+        let gate_ref = self.trail_gate.take();
         if winner == MY_SIDE {
             self.scan_defeated_foes()?;
             let b = self.battle.as_ref().expect("a battle just ended");
@@ -1429,9 +1502,13 @@ impl ClientGame {
             let t = self.trail.as_mut().expect("trail battle implies trail");
             t.party = survivors;
             t.state.morale = (t.state.morale + TRAIL_VICTORY_MORALE).min(trail_engine::MORALE_MAX);
-            self.push_log(vec![
-                "The road is won; the men take heart and march on.".to_string()
-            ]);
+            // A gate's battle of record closes with its own routing line
+            // (docs/GATE-CONTENT.md); the wild road keeps the shipped one.
+            let line = gate_ref.and_then(gate_text).map_or_else(
+                || "The road is won; the men take heart and march on.".to_string(),
+                |t| t.victory.to_string(),
+            );
+            self.push_log(vec![line]);
             self.battle = None;
             self.phase = if self.pending_calls.is_empty() {
                 Phase::Trail
@@ -2162,6 +2239,14 @@ fn trail_view(t: &TrailCampaign) -> TrailView {
         })
         .unwrap_or_default();
     let last_fallen = t.state.fallen.last().map_or_else(String::new, |f| {
+        // The battle-dead of a gate screen read the map's own
+        // where-phrase (docs/GATE-CONTENT.md defeat lines); every other
+        // page keeps the shipped screen-and-cause row.
+        if f.cause == persist::FallenCause::SlainInBattle.as_str() {
+            if let Some(phrase) = gate_defeat_phrase(f.where_fell) {
+                return format!("{}, day {} — {}", f.name, f.day, phrase);
+            }
+        }
         format!("{}, day {}, at screen {} — {}", f.name, f.day, f.where_fell, f.cause)
     });
     TrailView {
@@ -3292,12 +3377,20 @@ mod trail_tests {
     use super::*;
     use crusade_core::engine::trail as te;
 
-    /// One-champion roster fixture (same shape as the other test mods).
+    /// One-champion roster fixture (same shape as the other test mods),
+    /// with the pilgrimage seed PRE-MINTED to a fixed value: the seed
+    /// hash mixes the roster, and `add_champion` assigns a random uuid
+    /// v4 id, so without a minted key every run would walk a different
+    /// road (the march harness flaked on exactly that — a willing hearer
+    /// would sometimes preempt a gate entry).
     fn fixture_store() -> RosterStore {
         let mut store = RosterStore::new();
         store
             .add_champion(&practice_champion(1, 20).expect("fixture champion"))
             .expect("fixture store accepts the champion");
+        store
+            .set_setting(persist::TRAIL_SEED_KEY, &hex::encode([0x5Eu8; 32]))
+            .expect("fixture pre-mints the pilgrimage seed");
         store
     }
 
@@ -3446,6 +3539,271 @@ mod trail_tests {
         assert_eq!(mask & (1 | 2 | (1 << 12)), 1 | 2 | (1 << 12));
     }
 
+    /// Drive the company onto a gate screen until its battle of record
+    /// stands live. Under the shipped Convert-first routing a willing
+    /// hearer raised the same day PREEMPTS the funnel (the hearer is
+    /// queued, the gate does not fire for that entry); when that
+    /// happens, release him, step back west one screen, and come at the
+    /// gate again on the next day — the gate fires on ENTRY. Approach
+    /// traffic (ambushes, wilds) is settled with auto_win along the way.
+    fn drive_into_gate(game: &mut ClientGame, gate_screen: u16) {
+        assert_eq!(game.phase(), Phase::Trail, "the harness drives from the road");
+        for _ in 0..12 {
+            while game.phase() == Phase::ConversionChoice {
+                game.handle(ClientInput::ReleaseSoul)
+                    .expect("release is legal");
+            }
+            while game.phase() == Phase::InBattle {
+                auto_win(game);
+            }
+            let screen = game.snapshot().trail.expect("trail view").screen;
+            let target = if screen == gate_screen {
+                // A hearer preempted the gate on entry; come again.
+                screen - 1
+            } else {
+                gate_screen
+            };
+            game.handle(ClientInput::Travel { to_screen: target })
+                .expect("the approach march is legal");
+            if target == gate_screen && game.phase() == Phase::InBattle {
+                return;
+            }
+        }
+        panic!("the gate at screen {gate_screen} never fired");
+    }
+
+    /// One gate of the placement map (docs/GATE-CONTENT.md section 0),
+    /// end to end: drive the company onto the gate screen from the
+    /// screen before it, assert the battle of record — escorts first,
+    /// commander last, the commander standing the map's offset above
+    /// the mantle — then route the victory back to the road with the
+    /// map's own chronicle lines.
+    #[allow(clippy::too_many_arguments)]
+    fn assert_gate_battle_of_record(
+        game: &mut ClientGame,
+        from_screen: u16,
+        gate_screen: u16,
+        battle_ref: u16,
+        escorts: [u16; 2],
+        commander: u16,
+        offset: u8,
+        pre_fragment: &str,
+        victory_fragment: &str,
+    ) {
+        craft_trail_on(game, from_screen, &[(255, true), (10, false)], 50);
+        drive_into_gate(game, gate_screen);
+        assert_eq!(game.phase(), Phase::InBattle, "the gate fires on entry");
+        assert_eq!(
+            game.trail_gate, Some(battle_ref),
+            "the battle of record is the map's"
+        );
+        assert!(
+            game.snapshot()
+                .log_tail
+                .iter()
+                .any(|l| l.contains(pre_fragment)),
+            "the pre-battle warning is the map's own"
+        );
+        let b = game.battle.as_ref().expect("the gate battle is live");
+        let foes: Vec<u16> = b.sides[usize::from(FOE_SIDE)]
+            .party
+            .iter()
+            .map(|c| c.species_id)
+            .collect();
+        assert_eq!(
+            foes,
+            vec![escorts[0], escorts[1], commander],
+            "escorts screen, commander last"
+        );
+        let lv = game.trail.as_ref().expect("trail").champion_level;
+        let foep = &b.sides[usize::from(FOE_SIDE)].party;
+        assert_eq!(
+            foep[2].level,
+            lv + offset,
+            "the commander stands the map's offset above the mantle"
+        );
+        assert_eq!(foep[0].level, lv - 2, "escorts keep the shipped clamp");
+        assert_eq!(foep[1].level, lv - 2, "escorts keep the shipped clamp");
+
+        auto_win(game);
+        assert_eq!(game.phase(), Phase::Trail, "the road resumes");
+        assert_eq!(
+            game.snapshot().trail.expect("trail view").screen,
+            gate_screen
+        );
+        assert!(
+            game.snapshot()
+                .log_tail
+                .iter()
+                .any(|l| l.contains(victory_fragment)),
+            "the victory line is the map's own"
+        );
+        assert_eq!(game.trail_gate, None, "the gate marker retires with the battle");
+    }
+
+    #[test]
+    fn the_harim_gate_fields_nur_ad_din_and_escorts_and_routes_back() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_gate_battle_of_record(
+            &mut game,
+            12,
+            13,
+            102,
+            [114, 116],
+            121,
+            2,
+            "spears in good order, the atabeg's banner above them",
+            "The askar breaks in good order and withdraws toward Damascus",
+        );
+    }
+
+    #[test]
+    fn the_egypt_roads_gate_fields_shirkuh_and_escorts_and_routes_back() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_gate_battle_of_record(
+            &mut game,
+            15,
+            16,
+            103,
+            [110, 116],
+            122,
+            2,
+            "thrice the master of Egypt's roads",
+            "His tired men scatter into the sands",
+        );
+    }
+
+    #[test]
+    fn the_left_horn_gate_fields_gokbori_and_escorts_and_routes_back() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_gate_battle_of_record(
+            &mut game,
+            18,
+            19,
+            104,
+            [116, 114],
+            124,
+            2,
+            "Muzaffar al-Din Gokbori holds the left horn",
+            "The horn is turned; Gokbori draws his riders off the hill",
+        );
+    }
+
+    /// The right horn escalates: +3 above the mantle, per the map's
+    /// offset column (the shipped gates all stood at +2).
+    #[test]
+    fn the_right_horn_gate_fields_taqi_al_din_at_the_escalated_offset() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_gate_battle_of_record(
+            &mut game,
+            19,
+            20,
+            105,
+            [116, 117],
+            125,
+            3,
+            "Taqi al-Din Umar holds the right hand of Hattin's field",
+            "The second horn gives way at the ninth hour",
+        );
+    }
+
+    /// The finale escalates the same way: Saladin at +3 on the King's
+    /// road, gates only screen 25.
+    #[test]
+    fn the_kings_road_gate_fields_saladin_at_the_escalated_offset() {
+        let mut game = ClientGame::new(fixture_store());
+        assert_gate_battle_of_record(
+            &mut game,
+            24,
+            25,
+            108,
+            [116, 117],
+            123,
+            3,
+            "Salah al-Din Yusuf ibn Ayyub, uniter of Egypt and Syria",
+            "The host of Egypt and Syria yields the field",
+        );
+    }
+
+    /// Screens 23/24 carried M8a-spine stand-in gates; the content map
+    /// clears them (GATE-CONTENT section 0, orchestrator note 2), so
+    /// both are ordinary screens and Saladin gates only the finale.
+    #[test]
+    fn screens_23_and_24_are_ordinary_screens_the_finale_at_25() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 22, &[(255, true), (10, false)], 50);
+        for ordinary in [23u16, 24] {
+            game.handle(ClientInput::Travel { to_screen: ordinary })
+                .expect("the march is legal");
+            assert!(
+                game.trail_gate.is_none(),
+                "screen {ordinary} raises no scripted gate"
+            );
+            // The day may still raise its ordinary traffic — an ambush,
+            // a willing hearer — which is not a battle of record; settle
+            // it and march on.
+            while game.phase() == Phase::InBattle {
+                auto_win(&mut game);
+            }
+            while game.phase() == Phase::ConversionChoice {
+                game.handle(ClientInput::ReleaseSoul)
+                    .expect("release is legal");
+            }
+            assert_eq!(
+                game.snapshot().trail.expect("trail view").screen,
+                ordinary,
+                "the company stands on the ordinary screen"
+            );
+        }
+        drive_into_gate(&mut game, 25);
+        assert_eq!(game.trail_gate, Some(108), "the finale gate fires at 25");
+        assert_eq!(game.phase(), Phase::InBattle);
+    }
+
+    /// A gate defeat pages the Book of the Fallen with the map's own
+    /// where-phrase (the `where_fell` family); the shipped Kilij gate,
+    /// which predates the content doc, keeps the screen-and-cause row.
+    #[test]
+    fn a_gate_defeat_pages_the_book_with_the_maps_where_phrase() {
+        let mut game = ClientGame::new(fixture_store());
+        // A deep file of rising men: the road into the gate takes its
+        // tithe, and the mantle must still find an heir at the gate.
+        craft_trail_on(
+            &mut game,
+            12,
+            &[(255, true), (250, false), (250, false), (250, false)],
+            50,
+        );
+        drive_into_gate(&mut game, 13);
+        auto_lose(&mut game);
+        assert_eq!(game.phase(), Phase::Trail, "the mantle rises and the road holds");
+        let view = game.snapshot().trail.expect("trail view");
+        assert_eq!(view.screen, 13);
+        assert!(
+            view.last_fallen
+                .contains("at the Harim marches before the atabeg Nur ad-Din"),
+            "the Book keeps the map's where-phrase: {}",
+            view.last_fallen
+        );
+
+        let mut kilij = ClientGame::new(fixture_store());
+        craft_trail_on(
+            &mut kilij,
+            8,
+            &[(255, true), (250, false), (250, false), (250, false)],
+            50,
+        );
+        drive_into_gate(&mut kilij, 9);
+        auto_lose(&mut kilij);
+        let view = kilij.snapshot().trail.expect("trail view");
+        assert!(
+            view.last_fallen
+                .contains("at screen 9 — fell in battle upon the pilgrim road"),
+            "the shipped gate keeps its screen-and-cause row: {}",
+            view.last_fallen
+        );
+    }
+
     #[test]
     fn road_calls_resolve_against_the_mantle_and_return_to_the_road() {
         let mut game = embarked_game();
@@ -3464,8 +3822,15 @@ mod trail_tests {
         assert_eq!(game.phase(), Phase::Trail, "the road resumes after the choice");
     }
 
-    /// Craft a trail state around a game (succession fixtures).
+    /// Craft a trail state around a game (succession fixtures), standing
+    /// on screen 9.
     fn craft_trail(game: &mut ClientGame, devotions: &[(u8, bool)], morale: i8) {
+        craft_trail_on(game, 9, devotions, morale);
+    }
+
+    /// The same fixture, positioned on any screen of the spine (gate
+    /// tests drive onto their screen from the screen before it).
+    fn craft_trail_on(game: &mut ClientGame, screen: u16, devotions: &[(u8, bool)], morale: i8) {
         let men: Vec<te::ManEntry> = devotions
             .iter()
             .enumerate()
@@ -3479,7 +3844,7 @@ mod trail_tests {
         game.trail = Some(TrailCampaign {
             state: TrailState {
                 day: 10,
-                screen: 9,
+                screen,
                 supplies: 100,
                 morale,
                 men,

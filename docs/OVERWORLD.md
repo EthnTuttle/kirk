@@ -61,7 +61,13 @@ he fell, how). Villages/shrines/recruited converts replenish the ranks.
 4. The Coasts (mixed tables; the Harim gate)
 5. The Roads of Egypt (Shirkuh gate; heaviest supply drain)
 6. The Horns of Hattin (scripted gauntlet; Gokbori / Taki al-Din wings)
-7. The Holy Land (Arsuf, Jaffa; Saladin finale; the City's gate)
+7. The Holy Land (the King's road; Saladin's gate before the City)
+
+Commander-gate placement — which screen carries which battle of record,
+with escorts and boss level offsets — is authored in
+docs/GATE-CONTENT.md section 0 (the Hattin triptych of 1187/1192 is
+compressed into the two wing gates and the finale there, per the
+40-screen budget).
 
 Each region = a screen graph + an encounter table + a trail-event table +
 art tileset accent (existing palette slots per region faction accents).
