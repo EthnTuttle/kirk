@@ -428,6 +428,50 @@ featured; wasm32 check clean; harness twice byte-identical (roster.png
 differs from goldens exactly as intended; battle* differ via the new
 Aldwyn-led trio; five screens untouched).
 
+### 4.17 Adversary art lane — M7a (GENERATION DONE 2026-10-16, 15/15, $0.00)
+
+`docs/ART-ADVERSARIES.md` holds the full prompt table for the historical-foes
+lane (10 archetypes 108-117, 4 commander static boss portraits 120-123, 1
+"road east" scene header), descriptors verbatim from HISTORICAL-FOES.md §4
+wardrobe column, sin-depth tiers read from landed `adversaries.rs`, banned
+cliches as the shared negative tail.
+
+Generation run 2026-10-16 on this box via a scratch driver
+(`/tmp/opencode/sprite-bakeoff/adv_batch.py`) built from the ART-ADVERSARIES
+table (STYLE/NEG tails verbatim, plus the 4.5 caption-suppression wording).
+nano-banana-2-1 only; gpt-image-1.5 contingency never needed. **Per-cell
+status:**
+
+| cell | final id | status |
+|---|---|---|
+| 108 turcoman-bowrider | v1 | generated, eyeball OK |
+| 109 ghulam-lancer | v1 | generated, OK |
+| 110 sudani-shieldbearer | v1 | generated, OK |
+| 111 armenian-bowman | v1 | generated, OK |
+| 112 daylamite-axeman | v1 | generated, OK |
+| 113 bedouin-outrider | v1 | generated, OK |
+| 114 kurdish-ghazw-rider | v1 | generated, OK |
+| 115 naffatun-sapper | v1 | generated, OK |
+| 116 askari-alamdar | v1 | generated, OK |
+| 117 muqaddam-of-the-tulb | v1 | generated, OK |
+| 120 kilij-arslan-i | v1 | generated, OK |
+| 121 nur-ad-din | v1 | generated, OK |
+| 122 asad-al-din-shirkuh | v1 | generated, OK |
+| 123 saladin | v1 | generated, OK |
+| road-east-header | **v2** | **regenerated** — v1 foul: sprite framing produced a red-coated figure instead of a landscape; v2 passed with a scene-tile style wrapper |
+
+Zero cells failed twice. No banned motifs (scimitar/turban-helm/barbary
+robes/camel/caricature) in any accepted cell; all faces calm/dignified; read
+is kit-contrast per HF. Mechanical gates: all 15 q128s are 128x128 with **0
+off-palette px and 0 semi-transparent px** (PIL sweep); q64s likewise
+palette-clean. Staged at `art/adversaries-staging/nano-banana-2-1/<subject>/
+{raw,q64,q128}.png` (roster-staging layout + version.txt pin). +15 MANIFEST
+keys `kirk-adv-nano-banana-2-1-<subject>-vN` (207 keys total). Spend
+unchanged at **$0.664**.
+
+stage_sprites.py ADVERSARIES table + icons stay UNWIRED until the HF §8
+human eyeball pass approves cells.
+
 ## 5. Non-art host state at pause time
 
 - v1.0 PWA live at https://ethntuttle.github.io/kirk/ ; deploys serialize

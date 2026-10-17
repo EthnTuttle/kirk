@@ -1761,5 +1761,155 @@
   "src_dims": "1024x1024",
   "cost_usd": 0.0,
   "note": "alt-b vesture plate: LANCZOS of committed master art/roster-staging/**/alt-b-master.png (E5), no palette remap; staged in-tree by the picker lane (E6)"
+ },
+ "nano-banana-2-1/armenian-bowman": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-armenian-bowman-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2214,
+  "q64_bytes": 833,
+  "raw_bytes": 862047,
+  "src_dims": "1024x1024",
+  "subject": "armenian-bowman"
+ },
+ "nano-banana-2-1/asad-al-din-shirkuh": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-asad-al-din-shirkuh-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2482,
+  "q64_bytes": 877,
+  "raw_bytes": 960664,
+  "src_dims": "1024x1024",
+  "subject": "asad-al-din-shirkuh"
+ },
+ "nano-banana-2-1/askari-alamdar": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-askari-alamdar-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2373,
+  "q64_bytes": 886,
+  "raw_bytes": 960629,
+  "src_dims": "1024x1024",
+  "subject": "askari-alamdar"
+ },
+ "nano-banana-2-1/bedouin-outrider": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-bedouin-outrider-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2526,
+  "q64_bytes": 927,
+  "raw_bytes": 911983,
+  "src_dims": "1024x1024",
+  "subject": "bedouin-outrider"
+ },
+ "nano-banana-2-1/daylamite-axeman": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-daylamite-axeman-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1947,
+  "q64_bytes": 740,
+  "raw_bytes": 921495,
+  "src_dims": "1024x1024",
+  "subject": "daylamite-axeman"
+ },
+ "nano-banana-2-1/ghulam-lancer": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-ghulam-lancer-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2606,
+  "q64_bytes": 938,
+  "raw_bytes": 995088,
+  "src_dims": "1024x1024",
+  "subject": "ghulam-lancer"
+ },
+ "nano-banana-2-1/kilij-arslan-i": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-kilij-arslan-i-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 3027,
+  "q64_bytes": 1057,
+  "raw_bytes": 1072831,
+  "src_dims": "1024x1024",
+  "subject": "kilij-arslan-i"
+ },
+ "nano-banana-2-1/kurdish-ghazw-rider": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-kurdish-ghazw-rider-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2177,
+  "q64_bytes": 806,
+  "raw_bytes": 945566,
+  "src_dims": "1024x1024",
+  "subject": "kurdish-ghazw-rider"
+ },
+ "nano-banana-2-1/muqaddam-of-the-tulb": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-muqaddam-of-the-tulb-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2968,
+  "q64_bytes": 1025,
+  "raw_bytes": 1025795,
+  "src_dims": "1024x1024",
+  "subject": "muqaddam-of-the-tulb"
+ },
+ "nano-banana-2-1/naffatun-sapper": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-naffatun-sapper-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 1974,
+  "q64_bytes": 789,
+  "raw_bytes": 835634,
+  "src_dims": "1024x1024",
+  "subject": "naffatun-sapper"
+ },
+ "nano-banana-2-1/nur-ad-din": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-nur-ad-din-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2138,
+  "q64_bytes": 763,
+  "raw_bytes": 942205,
+  "src_dims": "1024x1024",
+  "subject": "nur-ad-din"
+ },
+ "nano-banana-2-1/road-east-header": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-road-east-header-v2",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 4993,
+  "q64_bytes": 1554,
+  "raw_bytes": 1558749,
+  "src_dims": "1024x1024",
+  "subject": "road-east-header"
+ },
+ "nano-banana-2-1/saladin": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-saladin-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2419,
+  "q64_bytes": 884,
+  "raw_bytes": 963630,
+  "src_dims": "1024x1024",
+  "subject": "saladin"
+ },
+ "nano-banana-2-1/sudani-shieldbearer": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-sudani-shieldbearer-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2862,
+  "q64_bytes": 1037,
+  "raw_bytes": 967002,
+  "src_dims": "1024x1024",
+  "subject": "sudani-shieldbearer"
+ },
+ "nano-banana-2-1/turcoman-bowrider": {
+  "client_request_id": "kirk-adv-nano-banana-2-1-turcoman-bowrider-v1",
+  "cost_usd": 0.0,
+  "model": "ppq:nano-banana-2-1",
+  "q128_bytes": 2681,
+  "q64_bytes": 966,
+  "raw_bytes": 913198,
+  "src_dims": "1024x1024",
+  "subject": "turcoman-bowrider"
  }
 }
