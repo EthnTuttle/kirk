@@ -1408,11 +1408,23 @@ impl ClientGame {
         if winner == MY_SIDE {
             self.scan_defeated_foes()?;
             let b = self.battle.as_ref().expect("a battle just ended");
+            // Survivors march on UNRESTED (resolve persists per the
+            // journey's attrition design), but their zeal is refilled:
+            // battle entry validates full-zeal rites (campaign lane does
+            // the same reset on rest — here it is a field-fix, no rest).
             let survivors: Vec<ChampionInstance> = b.sides[usize::from(MY_SIDE)]
                 .party
                 .iter()
                 .filter(|c| c.current_resolve > 0)
                 .cloned()
+                .map(|mut c| {
+                    for slot in c.rites.iter_mut().flatten() {
+                        if let Some(r) = data::rite_by_id(slot.rite_id) {
+                            slot.zeal_left = r.zeal;
+                        }
+                    }
+                    c
+                })
                 .collect();
             let t = self.trail.as_mut().expect("trail battle implies trail");
             t.party = survivors;
@@ -3645,5 +3657,49 @@ mod trail_tests {
         assert_eq!(game.phase(), Phase::InBattle);
         auto_win(&mut game);
         assert_eq!(game.phase(), Phase::Trail);
+    }
+
+    /// STORAGE-SOAK finding (bug fix, 2026-10-17): a road victory spent
+    /// the champion's zeal, and the trail victory path cloned survivors
+    /// unrested-in-zeal, so the next battle entry failed validation.
+    #[test]
+    fn road_victory_refills_zeal_for_the_next_battle_entry() {
+        let mut game = embarked_game();
+        // Reach the Kilij gate (screen 9) live, then fabricate a win in
+        // which the mantle's zeal was genuinely spent.
+        for _ in 0..3 {
+            march_east(&mut game);
+        }
+        game.handle(ClientInput::Travel { to_screen: 9 })
+            .expect("the gate march is legal");
+        assert_eq!(game.phase(), Phase::InBattle);
+        {
+            let b = game.battle.as_mut().expect("gate battle live");
+            let me = &mut b.sides[usize::from(MY_SIDE)].party[0];
+            for slot in me.rites.iter_mut().flatten() {
+                slot.zeal_left = 0;
+            }
+            for f in &mut b.sides[usize::from(FOE_SIDE)].party {
+                f.current_resolve = 0;
+            }
+            b.winner = Some(MY_SIDE);
+        }
+        game.on_battle_end(MY_SIDE).expect("won battle routes");
+        while game.phase() == Phase::ConversionChoice {
+            game.handle(ClientInput::ReleaseSoul)
+                .expect("release is legal");
+        }
+        // Survivors march on unrested in RESOLVE, but their rites are
+        // field-reset to full zeal — the next Battle::new must be legal.
+        let t = game.trail.as_ref().expect("trail underway");
+        for ch in &t.party {
+            for slot in ch.rites.iter().flatten() {
+                let r = data::rite_by_id(slot.rite_id).expect("known rite");
+                assert_eq!(
+                    slot.zeal_left, r.zeal,
+                    "zeal refilled for the next road battle"
+                );
+            }
+        }
     }
 }
