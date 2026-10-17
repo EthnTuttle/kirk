@@ -45,6 +45,8 @@ fn mkchamp(species_id: u16, level: u8, rite_ids: &[u16]) -> ChampionInstance {
         rites,
         current_resolve: 0,
         ailment: None,
+        converted: false,
+        converted_from: None,
     };
     c.current_resolve = data::compute_stats(&c, sp).max_resolve;
     c
@@ -468,9 +470,12 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
 /// Golden digest of a fixed 12-turn script under seed [7;32] (includes a
 /// slumber attempt and stage changes). INTENTIONAL logic changes must
 /// recalibrate the constant (run with --nocapture to see the new value).
+/// Recalibrated at M7: the additive `converted`/`converted_from` instance
+/// fields (serde-defaulted, battle logic unchanged) alter the serialized
+/// Battle blob this digest covers.
 #[test]
 fn golden_digest() {
-    const GOLDEN_DIGEST: u64 = 0xcc09aa9f2b276900;
+    const GOLDEN_DIGEST: u64 = 0xb96cc6525dc772a4;
     // eprintln calibration line; keep it so recalibration stays easy.
     let mut b = Battle::new(
         vec![mkchamp(12, 30, &[5, 1, 26]), audric(20, &[2])],

@@ -52,6 +52,8 @@ fn mkchamp(species_id: u16, level: u8, rite_ids: &[u16]) -> ChampionInstance {
         rites,
         current_resolve: 0,
         ailment: None,
+        converted: false,
+        converted_from: None,
     };
     c.current_resolve = data::compute_stats(&c, sp).max_resolve;
     c

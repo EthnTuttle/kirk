@@ -53,11 +53,18 @@ pub enum Sin {
     Greed,
 }
 
-/// Creature typing: Champions bear virtues (up to two), sin-spawn bear one Sin.
+/// Creature typing: Champions bear virtues (up to two), sin-spawn bear one
+/// Sin, historical adversaries bear Valor ("armed honor", off the chart at
+/// flat 1x both ways; docs/HISTORICAL-FOES.md section 4).
+///
+/// Serde constraint: `Valor` is forwards-only — a build predating this arm
+/// fails deserialization on `"Valor"`; old builds never meet it because
+/// instances serialize `species_id` only (docs/HISTORICAL-FOES.md section 7).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Typing {
     Virtues([Option<Virtue>; 2]),
     Sin(Sin),
+    Valor,
 }
 
 /// Type of a Rite. `Typeless` = never STAB, chart 1x.
@@ -233,6 +240,12 @@ pub struct SpeciesBase {
     pub xp_div: u32,
     /// Flavour line for the Hagiography.
     pub lore: &'static str,
+    /// Conversion hardness 1..=100 (docs/CONVERSION.md section 3). None =
+    /// never convertible (champions, sin-spawn, named commanders).
+    pub obstinacy: Option<u8>,
+    /// Entrenchment tier 0..=3 (docs/CONVERSION.md section 6). None for
+    /// champions and sin-spawn.
+    pub sin_depth: Option<u8>,
 }
 
 /// A Calling (nature analogue): +10% one stat, -10% another; None==neutral.
@@ -261,6 +274,14 @@ pub struct ChampionInstance {
     pub rites: [Option<RiteSlot>; 4],
     pub current_resolve: u16,
     pub ailment: Option<Ailment>,
+    /// Baptized adversary (docs/CONVERSION.md section 4). Additive with
+    /// serde default: old saves deserialize as false.
+    #[serde(default)]
+    pub converted: bool,
+    /// Species the convert was called from; absent pre-M7
+    /// (docs/CONVERSION.md section 7).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub converted_from: Option<u16>,
 }
 
 /// Stat mathematics (exact integer formula, no floats):

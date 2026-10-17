@@ -1119,6 +1119,8 @@ fn practice_champion(species_id: u16, level: u8) -> Result<ChampionInstance, App
             rites,
             current_resolve: 0,
             ailment: None,
+            converted: false,
+            converted_from: None,
         },
         level,
     )
@@ -1295,6 +1297,7 @@ fn typing_display(t: Typing) -> Vec<String> {
             (None, None) => vec![],
         },
         Typing::Sin(s) => vec![format!("Sin of {}", sin_name(s))],
+        Typing::Valor => vec!["Valor".to_string()],
     }
 }
 

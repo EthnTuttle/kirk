@@ -807,6 +807,8 @@ fn fixture_store() -> RosterStore {
             rites,
             current_resolve: 0,
             ailment: None,
+            converted: false,
+            converted_from: None,
         };
         champ.current_resolve = data::compute_stats(&champ, species).max_resolve;
         store

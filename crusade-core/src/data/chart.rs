@@ -35,6 +35,10 @@ fn virtue_vs_virtue(att: Virtue, def: Virtue) -> u32 {
 /// missing second virtue counting as 100. The product is computed in u32 and
 /// saturated to u8::MAX: the 400% case is only reachable if a dual typing
 /// lists the same virtue twice, which SPECIES never does.
+///
+/// `Typing::Valor` (historical adversaries) sits off the virtue/sin wheel at
+/// a flat 100% both ways — the lane is balanced by stats and kits, not by
+/// the chart (docs/HISTORICAL-FOES.md section 4).
 pub fn effectiveness(att: RiteType, def: Typing) -> u8 {
     match att {
         RiteType::Typeless => 100,
@@ -51,6 +55,7 @@ pub fn effectiveness(att: RiteType, def: Typing) -> u8 {
                 let p2 = second.map(|d| virtue_vs_virtue(v, d)).unwrap_or(100);
                 (p1 * p2 / 100).min(u8::MAX as u32) as u8
             }
+            Typing::Valor => 100,
         },
         RiteType::Sin(s) => match def {
             Typing::Sin(d) => {
@@ -67,6 +72,7 @@ pub fn effectiveness(att: RiteType, def: Typing) -> u8 {
                     100
                 }
             }
+            Typing::Valor => 100,
         },
     }
 }
@@ -168,6 +174,25 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn valor_defender_is_flat_100_against_every_rite_type() {
+        for v in Virtue::ALL {
+            assert_eq!(
+                effectiveness(RiteType::Virtue(v), Typing::Valor),
+                100,
+                "{v:?} vs Valor"
+            );
+        }
+        for s in SINS {
+            assert_eq!(
+                effectiveness(RiteType::Sin(s), Typing::Valor),
+                100,
+                "{s:?} vs Valor"
+            );
+        }
+        assert_eq!(effectiveness(RiteType::Typeless, Typing::Valor), 100);
     }
 
     #[test]

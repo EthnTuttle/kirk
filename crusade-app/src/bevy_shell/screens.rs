@@ -2507,6 +2507,7 @@ mod tests {
                 vec![v.join("+")]
             }
             Typing::Sin(s) => vec![format!("Sin of {}", sin_name(s))],
+            Typing::Valor => vec!["Valor".to_string()],
         };
         ChampionCard {
             id: format!("mirror-{species_id}"),

@@ -1148,6 +1148,8 @@ fn starter_champion(species_id: u16) -> Option<ChampionInstance> {
         rites,
         current_resolve: 0,
         ailment: None,
+        converted: false,
+        converted_from: None,
     };
     champ.current_resolve = data::compute_stats(&champ, species).max_resolve;
     Some(champ)

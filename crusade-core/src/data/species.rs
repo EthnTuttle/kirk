@@ -21,6 +21,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A squire who kneels before every dawn and counts his master's errands as prayers.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 2,
@@ -35,6 +37,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A gentle cleric whose alms purse empties as fast as it fills, for she cannot pass a beggar by.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 3,
@@ -49,6 +53,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A serjeant who holds the line in silence long after bolder hearts have fled the field.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 4,
@@ -65,6 +71,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A hospitaller sister who binds wounds under a hail of arrows and asks after the soul before the flesh.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 5,
@@ -80,6 +88,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A pilgrim scout who has walked every road to the holy city thrice and gladly guides strangers along them.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 6,
@@ -96,6 +106,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A canoness whose clear voice in the choir settles even the most restless heart.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 7,
@@ -112,6 +124,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A standard-bearer who plants the pilgrim star's banner and would sooner break than let it fall.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 8,
@@ -127,6 +141,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A humble brother who takes the lowest bench, the heaviest pack, and the last crust without a murmur.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 9,
@@ -142,6 +158,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A cantor whose measured psalms keep the whole company in even step and even temper.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 10,
@@ -158,6 +176,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A chevalier who bears every blow in patience and answers cruelty only with mercy.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 11,
@@ -173,6 +193,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A knight of the long vigil who counts wakeful nights as prayers and duties as blessings.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 12,
@@ -189,6 +211,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A friar who preaches purity of heart in the market square and fears no scorn.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 101,
@@ -203,6 +227,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A crowned shadow that whispers to every champion that he alone deserves the victory.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 102,
@@ -217,6 +243,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A hollow-eyed wretch that covets every virtue it sees and poisons what it cannot have.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 103,
@@ -231,6 +259,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A sweet-voiced fiend whose burning haze unmakes every vow it touches.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 104,
@@ -245,6 +275,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A vast sleeper whose dreams seep outward as a grey mire of idleness.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 105,
@@ -259,6 +291,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A frothing brute whose rage feeds on every wound it gives and every wound it takes.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 106,
@@ -273,6 +307,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A walking maw that devours harvests whole and yet starves the more it eats.",
+        obstinacy: None,
+        sin_depth: None,
     },
     SpeciesBase {
         id: 107,
@@ -287,6 +323,8 @@ pub static SPECIES: &[SpeciesBase] = &[
         xp_slope: 4,
         xp_div: 5,
         lore: "A grasping miser-fiend that hoards even the light and drowns pilgrims in its golden tide.",
+        obstinacy: None,
+        sin_depth: None,
     },
 ];
 
@@ -382,7 +420,7 @@ mod tests {
                 .iter()
                 .filter(|s| match s.typing {
                     Typing::Virtues(vs) => vs.iter().flatten().any(|x| *x == v),
-                    Typing::Sin(_) => false,
+                    Typing::Sin(_) | Typing::Valor => false,
                 })
                 .count();
             assert!(n >= 2, "virtue {v:?} covered only {n} times");
@@ -488,6 +526,8 @@ mod tests {
             rites: [None, None, None, None],
             current_resolve: 1,
             ailment: None,
+            converted: false,
+            converted_from: None,
         }
     }
 
@@ -547,6 +587,8 @@ mod tests {
             ],
             current_resolve: 1,
             ailment: None,
+            converted: false,
+            converted_from: None,
         }
     }
 

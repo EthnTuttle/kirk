@@ -98,10 +98,22 @@ read as spiritual condition, never kit or ethnicity (HF 6.4).
 - `instance`: add `converted: bool` (default false), `converted_from:
   Option<u16>`. Persistence-note: instances already serialize species_id
   u16; the two new fields are additive with serde defaults.
-- New pure fn in crusade-core: `conversion_chance(caller: &InstanceView,
-  foe: &SpeciesBase, foe_level: u8, fervor: u8) -> u8` (percent 3..=85),
-  unit-tested at boundary tiers; the actual draw path reuses the
-  RngFacade. No I/O, wasm-safe.
+- New pure fn in crusade-core (LANDED M7, data::conversion_chance):
+  `conversion_chance(caller_piety: u16, caller_level: u8,
+  caller_used_virtue_kill: bool, fervor_bonus: u8, foe: &SpeciesBase,
+  foe_level: u8) -> Option<u8>` (percent 3..=85; None for
+  non-convertible), unit-tested at boundary tiers; the actual draw path
+  reuses the RngFacade. No I/O, wasm-safe.
+- Scope note: crusade-core seams above are M7 (landed). The crusade-app
+  seams below - the settings keys `campaign.foes_defeated` /
+  `campaign.converts_baptized` (u32) and the post-victory dialog - are
+  DEFERRED to M7b (ROADMAP), matching HF section 9 HF-3/HF-4.
+- M7 balance debt (documented, M1-Sabina precedent): the Sudani
+  Shieldbearer's no-STAB Valor lane puts him below the 40-60% fuzz band;
+  fixing needs a doc-level kit change in HISTORICAL-FOES section 4 or a
+  RiteType::Valor STAB lane - owner decision. Also: `crusade-sim fuzz'
+  pool is champions-only today; widening it for adversaries needs the
+  id-indexed stats array fixed first (crusade-sim main.rs).
 - Client flow (crusade-app): post-victory dialog when a convertible foe
   yielded: [Call to Repentance] [Release his soul] - choosing Release
   directly grants Mercy Shards with no roll.

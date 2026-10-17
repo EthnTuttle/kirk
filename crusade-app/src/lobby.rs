@@ -751,6 +751,8 @@ mod tests {
             rites,
             current_resolve: 0,
             ailment: None,
+            converted: false,
+            converted_from: None,
         };
         c.current_resolve = data::compute_stats(&c, sp).max_resolve;
         c
