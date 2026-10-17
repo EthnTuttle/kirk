@@ -1301,14 +1301,21 @@ impl ClientGame {
             }
             let dest =
                 overworld::screen_by_id(to_screen).expect("travel_day validated the screen");
-            let follow = if let Some(c) = out.convert_ref {
-                FollowUp::Convert(c)
-            } else if let Some(gate) = dest.scripted_gate {
+            // Order of the road: the funnel gate is never missed — a gate
+            // preempts a day's willing hearer (owner ruling 2026-10-17);
+            // the Call still queues and is honored when the gate is
+            // settled (victory joins the road; the queue then surfaces).
+            let follow = if let Some(gate) = dest.scripted_gate {
+                if let Some(c) = out.convert_ref {
+                    self.queue_trail_call(c)?;
+                }
                 FollowUp::Gate(
                     gate.battle_ref,
                     gate.commander_id.expect("gate commanders are named adversaries"),
                     gate.boss_level_offset,
                 )
+            } else if let Some(c) = out.convert_ref {
+                FollowUp::Convert(c)
             } else if let Some(b) = out.battle_ref {
                 FollowUp::Ambush(b, dest.encounter_zone)
             } else if let Some(zone) = dest.encounter_zone {
