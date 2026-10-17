@@ -3,3 +3,4 @@ target/
 crusade-app/web/dist/
 .env
 site/dist/
+__pycache__/
