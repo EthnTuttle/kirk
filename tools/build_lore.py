@@ -34,12 +34,16 @@ h2{color:#F4D35E;border-bottom:1px solid #2a3350;padding-bottom:.3rem;margin-top
 .intro{color:#b9b2a0;font-style:italic;margin-bottom:1.5rem}
 article{display:flex;gap:1.5rem;margin:2.5rem 0;border:1px solid #2a3350;border-radius:8px;padding:1.2rem;background:#101527}
 article:nth-child(even){flex-direction:row-reverse}
-article img{width:280px;max-width:38vw;align-self:flex-start;cursor:pointer;image-rendering:auto;border:1px solid #2a3350;border-radius:4px}
-article img.pixel{image-rendering:pixelated}
+.figwrap{display:flex;flex-direction:column;gap:6px}
+.thumbs{display:flex;gap:5px;flex-wrap:wrap}
+.thumb{width:56px;height:56px;object-fit:cover;border:1px solid #2a3350;border-radius:4px;cursor:pointer;opacity:.75}
+.thumb:hover{opacity:1;border-color:#F4D35E}
+article .figwrap > img{width:280px;max-width:38vw;align-self:flex-start;cursor:pointer;image-rendering:auto;border:1px solid #2a3350;border-radius:4px}
+article .figwrap > img.pixel{image-rendering:pixelated}
 article h3{color:#F4D35E;margin:.1rem 0 .1rem}
 article .sub{color:#9a92a6;font-style:italic;margin-bottom:.7rem}
 article p{margin:.4rem 0}
-@media(max-width:640px){article,article:nth-child(even){flex-direction:column}article img{max-width:100%;width:100%}}
+@media(max-width:640px){article,article:nth-child(even){flex-direction:column}article .figwrap > img{max-width:100%;width:100%}}
 #lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:20;padding:4vh 4vw;cursor:pointer}
 #lb img{display:block;margin:auto;max-height:88vh;max-width:92vw;image-rendering:auto}
 footer{color:#5a6070;font-size:.8rem;padding:2rem 1.5rem;border-top:1px solid #2a3350;margin-top:3rem}
@@ -48,6 +52,7 @@ footer{color:#5a6070;font-size:.8rem;padding:2rem 1.5rem;border-top:1px solid #2
 JS = """
 function zoom(src){let l=document.getElementById('lb');l.querySelector('img').src=src;l.style.display='block';}
 document.getElementById('lb').onclick=function(){this.style.display='none';};
+function swap(slug,src){document.getElementById('fig-'+slug).src=src;}
 """
 
 
@@ -88,18 +93,29 @@ def main() -> None:
         if sec.get("intro"):
             body.append(f"<p class='intro'>{html.escape(sec['intro'])}</p>")
         for e in sec["entries"]:
-            img_src = ROOT / e["img"]
-            if not img_src.exists():
-                raise SystemExit(f"missing art: {e['img']} (entry {e['slug']})")
-            baked = bake_image(img_src, e["slug"])
-            name, kind = baked.split("|")
-            cls = " class='pixel'" if kind == "pixel" else ""
+            imgs = e.get("imgs") or [e["img"]]
+            baked = []
+            for i, rp in enumerate(imgs):
+                img_src = ROOT / rp
+                if not img_src.exists():
+                    raise SystemExit(f"missing art: {rp} (entry {e['slug']})")
+                suff = "" if i == 0 else f"--{i}"
+                baked.append(bake_image(img_src, f"{e['slug']}{suff}"))
+            first_name, first_kind = baked[0].split("|")
+            cls = " class='pixel'" if first_kind == "pixel" else ""
+            thumbs = "".join(
+                f"<img class='thumb' src='img/{b.split(chr(124))[0]}' onclick=\"swap('{e['slug']}',this.src)\">"
+                for b in baked
+            )
             paras = "".join(
                 f"<p>{html.escape(p)}</p>" for p in e["body"].split("\n\n") if p.strip()
             )
             body.append(
                 f"<article id='{html.escape(e['slug'])}'>"
-                f"<img{cls} src='img/{name}' onclick=\"zoom('img/{name}')\" loading='lazy'>"
+                f"<div class='figwrap'><img{cls} id='fig-{html.escape(e['slug'])}' src='img/{first_name}'"
+                f" onclick=\"zoom(document.getElementById('fig-{html.escape(e['slug'])}').src)\">"
+                + (f"<div class='thumbs'>{thumbs}</div>" if len(baked) > 1 else "")
+                + f"</div>"
                 f"<div><h3>{html.escape(e['title'])}</h3>"
                 f"<div class='sub'>{html.escape(e.get('subtitle', ''))}</div>{paras}</div>"
                 f"</article>"

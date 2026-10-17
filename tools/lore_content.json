@@ -1,263 +1,367 @@
 {
-  "sections": [
+ "sections": [
+  {
+   "id": "champions",
+   "title": "The Twelve Champions",
+   "intro": "Here the chronicler sets down the company as he knew them: twelve souls carried on the road, each bearing one virtue as a lamp bears its flame. What is written of them is what the road proved.",
+   "entries": [
     {
-      "id": "champions",
-      "title": "The Twelve Champions",
-      "intro": "Here the chronicler sets down the company as he knew them: twelve souls carried on the road, each bearing one virtue as a lamp bears its flame. What is written of them is what the road proved.",
-      "entries": [
-        {
-          "slug": "squire-audric",
-          "title": "Squire Audric",
-          "subtitle": "the dawn prayer",
-          "img": "art/roster-staging/nano-banana-2-1/audric-battle/alt-c-master.png",
-          "body": "Audric is the least of the company by rank and, the chronicler suspects, the greatest by the only measure heaven keeps. He carries Humility, and it shows not in downcast eyes but in the order of his days: he kneels before every dawn and counts his master's errands as prayers.\n\nThe chronicle records no boast of his. When the company is praised in the villages for deeds done on the road, Audric is found at the back of the telling, seeing to the horses. The other champions have learned to watch him when a hard hour comes, for where the youngest kneels, the ground is somehow firmest.\n\nHe is here so that the reader may know the game's own arithmetic: the smallest name on the roster is not the smallest soul in it."
-        },
-        {
-          "slug": "cleric-mabel",
-          "title": "Cleric Mabel",
-          "subtitle": "the empty purse",
-          "img": "art/roster-staging/nano-banana-2-1/cleric-mabel/alt-c-master.png",
-          "body": "Mabel is a cleric of gentle voice and ruinous generosity, and she carries Charity the way other folk carry breath. Her alms purse empties as fast as it fills, for she cannot pass a beggar by; the company long ago stopped asking whose turn it was to carry the coin, because the answer is always a leper or a widow.\n\nThe chronicle is fond of her and says so plainly. There were roads east where the only sermon preached for a hundred miles was the sight of Mabel stopping, and kneeling, and giving.\n\nIf the reader takes one thing from her page, let it be this: in this company the strongest magic is an open hand."
-        },
-        {
-          "slug": "serjeant-bastien",
-          "title": "Serjeant Bastien",
-          "subtitle": "the line that held",
-          "img": "art/roster-staging/nano-banana-2-1/serjeant-bastien/alt-c-master.png",
-          "body": "Bastien carries Patience, the unglamorous virtue, the one that looks like nothing at all until the day it looks like everything. He is a serjeant, a professional, a man of the shield line; and the chronicle writes of him in a single sentence that cost it a page to earn: he holds the line in silence long after bolder hearts have fled the field.\n\nHe does not rouse. He does not threaten. When the host's courage runs like water, Bastien simply remains, and men who intended to run find themselves ashamed to pass him.\n\nThe company has a saying for bad hours: stand where Bastien stands. It has never yet been wrong."
-        },
-        {
-          "slug": "hospitaller-ysolt",
-          "title": "Hospitaller Ysolt",
-          "subtitle": "sister of the wounds",
-          "img": "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/alt-c-master.png",
-          "body": "Ysolt is a hospitaller sister, and Charity sits on her like a habit. She binds wounds under a hail of arrows and asks after the soul before the flesh, which the wounded think backward until they understand her: a man's body she may only patch, but she has stood at too many deathbeds to confuse the two patients.\n\nThe chronicle records that her hands do not shake. Arrows, fire, the press of the line gone wrong around her  -  the hands do not shake. She has decided what she is for, and terror arrived too late to change it.\n\nShe is the reason the company's dead have died with the last rites and its broken have risen to fight again."
-        },
-        {
-          "slug": "wayfarer-aelis",
-          "title": "Wayfarer Aelis",
-          "subtitle": "thrice the road",
-          "img": "art/roster-staging/nano-banana-2-1/wayfarer-aelis/alt-c-master.png",
-          "body": "Aelis has walked every road to the holy city thrice and gladly guides strangers along them, which is the whole of her character given in one line: she carries Kindness, and her kindness is made of road-dust and water-skins and knowing where the wells lie.\n\nShe is the company's eyes. The guide who has truly walked a road carries it inside her like a liturgy: the ford, the ambush ground, the village where the bread is honest. Men who would not follow a banner will follow Aelis, because she has never once led anyone into harm she could have foreseen.\n\nThe chronicler notes that she asks no payment and is insulted by thanks. The road, she says, is owed to everyone."
-        },
-        {
-          "slug": "canoness-hrothwyn",
-          "title": "Canoness Hrothwyn",
-          "subtitle": "the steadied choir",
-          "img": "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/alt-c-master.png",
-          "body": "Hrothwyn is a canoness and carries Chastity, which the old canons understood less as mere refusal than as a heart ordered entire toward one object. The chronicle's testimony is stranger and sweeter: her clear voice in the choir settles even the most restless heart.\n\nThis is not sentiment. Men have come into her hearing with blood-anger on them, and grief, and the wildness that comes of too much road, and have gone out quiet. The company has stopped pretending not to notice.\n\nShe asks nothing of the road but one office a day sung properly. Wherever the company camps, the hour finds her, and for the length of a psalm the war is a rumor from far away."
-        },
-        {
-          "slug": "vexillor-anchetil",
-          "title": "Vexillor Anchetil",
-          "subtitle": "the planted banner",
-          "img": "art/roster-staging/nano-banana-2-1/vexillor-anchetil/alt-c-master.png",
-          "body": "Anchetil bears the pilgrim star's banner, and he carries Diligence the way he carries the staff: two-handed, all day, without setting it down. The chronicle says of him that he would sooner break than let it fall, and every man who has marched behind that banner knows it is not rhetoric.\n\nThe banner-bearer's trade is the oldest argument in any army: so long as the cloth stands, the host stands. Anchetil understands that he is not carrying fabric but certainty, and he has made himself into the sort of man who is harder to kill than the hope he holds up.\n\nHe oils the rings of the staff each night as other men say their beads. It is the same prayer, the chronicler thinks."
-        },
-        {
-          "slug": "brother-aldwyn",
-          "title": "Brother Aldwyn",
-          "subtitle": "the lowest bench",
-          "img": "art/roster-staging/nano-banana-2-1/brother-aldwyn/alt-c-master.png",
-          "body": "Aldwyn is a humble brother, and Humility is his virtue as it is Audric's, but the road wears it differently on an older man. He takes the lowest bench, the heaviest pack, and the last crust without a murmur; he has arranged his life so that no one else in the company must be last.\n\nThe chronicle confesses it took a year to notice him. That is the nature of what he is: a subtraction, everywhere, of burdens other men would have carried. You only see him by the absences he leaves, and then you cannot stop seeing him.\n\nThe younger champions have begun quietly competing for the heaviest pack. The chronicler declines to name who is winning."
-        },
-        {
-          "slug": "cantor-sabina",
-          "title": "Cantor Sabina",
-          "subtitle": "the even step",
-          "img": "art/roster-staging/nano-banana-2-1/cantor-sabina/alt-c-master.png",
-          "body": "Sabina carries Temperance, the virtue of measure, and she exercises it through music. She is a cantor whose measured psalms keep the whole company in even step and even temper, and the chronicler is precise here: not in good spirits, not in high valor, but even  -  which on a long road is worth far more than either.\n\nMarch discipline and psalmody, she will tell you, are the one art. A host that walks evenly arrives with something left; a soul that prays evenly survives what the road does to it.\n\nIn battle her voice is metronome and anchor. Men report hearing the psalm under the noise of the press and finding, to their surprise, that their arms remember the rhythm."
-        },
-        {
-          "slug": "chevalier-raimbaud",
-          "title": "Chevalier Raimbaud",
-          "subtitle": "blows answered with mercy",
-          "img": "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/alt-c-master.png",
-          "body": "Raimbaud is a chevalier of the old belt, and he carries two virtues where most carry one: Patience and Kindness together, which the chronicle renders as a single sentence it weighed carefully before writing  -  he bears every blow in patience and answers cruelty only with mercy.\n\nThis has been tested. The road east supplies cruelty in abundance, and Raimbaud's answer has become a byword among the company: he receives, he absorbs, and he returns something that was not sent. It is not softness. Nothing about the way he sits a horse is soft. It is a discipline harder than anger.\n\nIf the reader asks what this game believes about strength: it believes Raimbaud is the strongest man on the roster."
-        },
-        {
-          "slug": "vigil-knight-wymar",
-          "title": "Vigil-Knight Wymar",
-          "subtitle": "the wakeful nights",
-          "img": "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/alt-c-master.png",
-          "body": "Wymar keeps the long vigil, and two virtues keep him: Diligence and Temperance, married into a watchfulness that does not end. The chronicle's line on him reads like a psalm turned sideways: he counts wakeful nights as prayers and duties as blessings.\n\nHe is the reason the company is never surprised. While others sleep he walks the perimeter, not from fear but from a settled conviction that love is on duty or it is a sentiment. At dawn he is found awake, at ease, unremarkable; the camp stirs around a safety it never saw being built.\n\nThe years of it have cost him something, the chronicler thinks  -  some ease of daylight that other men keep. He does not seem to miss it."
-        },
-        {
-          "slug": "friar-osbert",
-          "title": "Friar Osbert",
-          "subtitle": "of the market square",
-          "img": "art/roster-staging/nano-banana-2-1/friar-osbert/alt-c-master.png",
-          "body": "Osbert is a friar and carries Chastity as the preaching orders understood it: purity of heart, owned publicly, at personal cost. He preaches purity of heart in the market square and fears no scorn  -  and the scorn has come, the chronicle notes, in every town that considered itself above repentance.\n\nHe is not a fool and does not preach like one. He argues, he answers, he stays after jeering to talk with the jeerer. Men have ridden out to meet the company's caravan intending to mock the friar and ridden home thoughtful, which is the kind of victory no rite can perform.\n\nIn the gauntlet he stands against the sweet-voiced things. He has met them in the market square already, wearing cheaper clothes."
-        }
-      ]
+     "slug": "squire-audric",
+     "title": "Squire Audric",
+     "subtitle": "the dawn prayer",
+     "body": "Audric is the least of the company by rank and, the chronicler suspects, the greatest by the only measure heaven keeps. He carries Humility, and it shows not in downcast eyes but in the order of his days: he kneels before every dawn and counts his master's errands as prayers.\n\nThe chronicle records no boast of his. When the company is praised in the villages for deeds done on the road, Audric is found at the back of the telling, seeing to the horses. The other champions have learned to watch him when a hard hour comes, for where the youngest kneels, the ground is somehow firmest.\n\nHe is here so that the reader may know the game's own arithmetic: the smallest name on the roster is not the smallest soul in it.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/audric-battle/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/audric-battle/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/audric-battle/q128.png"
+     ]
     },
     {
-      "id": "adversaries",
-      "title": "The Road East: Men of the Adversary's Host",
-      "intro": "Between the company and the City stand men, not monsters: the soldiers of Rum, of the atabegs of Syria, and of the sultan of Egypt. They fight for what the chronicle must call a false god, denying the Son; yet they are men for whom Christ died, and the company's first hope for every one of them is the font, not the sword. Here they are set down as they were met, in honor and without flattery.",
-      "entries": [
-        {
-          "slug": "turcoman-bowrider",
-          "title": "Turcoman Bowrider",
-          "subtitle": "the plain that rides",
-          "img": "art/adversaries-staging/nano-banana-2-1/turcoman-bowrider/raw.png",
-          "body": "The horse-archer screen of the Sultanate of Rum and, later, of every host from Anatolia to the Jordan: an unarmored rider in fur kalpak and belted khaftan, composite bow drawn, never still. At Dorylaeum in 1097 such riders very nearly destroyed the crusader vanguard before relief arrived. The chronicle's own line says it best: He loosed from the saddle and was gone before the shaft fell; the plain itself seemed to ride against us.\n\nHe is a tribal auxiliary, loosely held by his creed, and of all the men the company meets he is among the readiest to hear the Call. Let him be defeated honorably, without contempt, and let the word be spoken. The chronicler records it gladly: many of the company's baptized brothers first reached it from the back of a pony on the Anatolian plain."
-        },
-        {
-          "slug": "ghulam-lancer",
-          "title": "Ghulam Lancer",
-          "subtitle": "unhurried at the couch",
-          "img": "art/adversaries-staging/nano-banana-2-1/ghulam-lancer/raw.png",
-          "body": "The ghulam is a household slave-soldier of the askar, bought young and drilled long: maille over khaftan, conical helm and aventail, kite shield, and a lance couched two-handed. He is the heavy cavalry of the Zengid and Ayyubid hosts, the anvil's other half. The chronicle writes of him: the household lancer came on at the couch, unhurried as a man walking to evening prayer; our line bent beneath him.\n\nA professional soldier, his heart is harder to turn than the tribesman's. Yet the Call is made of him as of every man, and the chronicle knows of lancers baptized who now carry the same couch against the sins. His discipline, converted, is a terrible and excellent thing."
-        },
-        {
-          "slug": "sudani-shieldbearer",
-          "title": "Sudani Shieldbearer",
-          "subtitle": "the standing wall",
-          "img": "art/adversaries-staging/nano-banana-2-1/sudani-shieldbearer/raw.png",
-          "body": "In the Fatimid host, before Saladin dissolved it, stood the black African foot behind shields taller than a man: the company's oldest record of the shield-wall made flesh. No metal on him; hide, spear, and patience. The chronicle: behind a shield taller than a man he stood his ground all day; we broke three spears upon his patience.\n\nA conscript of the unglamorous kind, he has little zeal to defend and much dignity to appeal to. The Call finds a hearing with him more often than his masters would like, and the font has made shield-brothers of men the spears could not move."
-        },
-        {
-          "slug": "armenian-bowman",
-          "title": "Armenian Bowman",
-          "subtitle": "rain in turns",
-          "img": "art/adversaries-staging/nano-banana-2-1/armenian-bowman/raw.png",
-          "body": "A foot archer of the long bow, taller than the horseman's, serving in garrison and Fatimid field duty. His art is the volley in turns, and the chronicle grits its teeth in admiration: his arrows fell among us in turns, as regular as rain; by the ninth hour our shields bristled like hedgerows.\n\nMany of his nation are already Christian, of the old churches of the East, pressed into another's war; the company counts his calling as a homecoming more than a conversion. Of all the men on the Road East he is readiest to hear the Call, and the chronicler bids the reader pray for the day his volleys fall for the Cross."
-        },
-        {
-          "slug": "daylamite-axeman",
-          "title": "Daylamite Axeman",
-          "subtitle": "the din of his coming",
-          "img": "art/adversaries-staging/nano-banana-2-1/daylamite-axeman/raw.png",
-          "body": "Hill-foot out of Daylam, south of the Caspian, serving whichever host pays: two tabar axes and the zhupin javelin, knee-length maille, round shield slung on the back. Shock infantry in the old style. The chronicle: he swung two axes as other men swing one, and the din of his coming carried over the whole battle.\n\nHe is a soldier by trade, not conviction, and stands in the middle of the road between sword and font. Defeated with honor, he listens as a professional listens to terms; more than one has taken the water and kept his axes, and the company has found no cause to regret either."
-        },
-        {
-          "slug": "bedouin-outrider",
-          "title": "Bedouin Outrider",
-          "subtitle": "seen at dawn and at dusk",
-          "img": "art/adversaries-staging/nano-banana-2-1/bedouin-outrider/raw.png",
-          "body": "The tribes of the desert ride for every host as scouts and raiders: head-cloth and mantle, lean pony, light lance, a man the army borrows rather than owns. The chronicle: we saw him at dawn and again at dusk and never once at sword's length; the desert seemed to walk with him.\n\nHis allegiance is to his tribe and its honor, thin as water where doctrine is concerned. He is the readiest of all the road's men to hear the Call, and the company has learned that an outrider brought to the font becomes the best guide and the truest friend the road affords. The desert now walks with them."
-        },
-        {
-          "slug": "kurdish-ghazw-rider",
-          "title": "Kurdish Ghazw Rider",
-          "subtitle": "weather out of the mountains",
-          "img": "art/adversaries-staging/nano-banana-2-1/kurdish-ghazw-rider/raw.png",
-          "body": "Tribal horsemen out of the northern hills, lamellar over khaftan, spear over-arm, riding the raids of Nur ad-Din and later of Saladin. The chronicle admits the impression: a rider of the hills, spear over-arm, who came down at us like weather out of the mountains.\n\nHere the entrenchment deepens. Ghazw zeal is in him  -  the raid sanctified by his creed  -  and his heart is set harder than the conscript's or the hireling's. The Call is still made, for the floor of grace is never zero; but the chronicler records, soberly, that these men more often refuse, and their souls are released unto God with grief rather than with surprise."
-        },
-        {
-          "slug": "naffatun-sapper",
-          "title": "Naffatun Sapper",
-          "subtitle": "fire carried in clay",
-          "img": "art/adversaries-staging/nano-banana-2-1/naffatun-sapper/raw.png",
-          "body": "The siege parks of the era fielded men who carried naphtha: padded hood, wet rawhide apron, the clay grenade cradled, the torch held low. The bravest job in any army of either host. The chronicle's line is the register's measure of him: he carried fire in clay and walked through arrows as a man walks through rain; burnt, we hold him no less in honor.\n\nHis calling is craft, not creed, and he hears the Call as a tradesman hears a bid  -  with a hard man's weighing, but he weighs it. The company has baptized sappers. It has also buried its own burned. The chronicle sets both facts down and refuses to make either cancel the other."
-        },
-        {
-          "slug": "askari-alamdar",
-          "title": "Askari Alamdar",
-          "subtitle": "where the banner stood",
-          "img": "art/adversaries-staging/nano-banana-2-1/askari-alamdar/raw.png",
-          "body": "Every lord's askar rallies on its banner, and the alamdar is the man who carries it: half-suit of maille and lamellar, the regimental cloth planted, saif held low because his weapon is the standing. The chronicle: where the banner stood the line stood; while he lived, that host would not be turned.\n\nHe is a pillar of his host's faith as well as its line, a zealot of the drilled kind, and his heart is deeply entrenched. The Call is made of him as of all men  -  the chronicle knows of one, only one, in all the company's years, who laid the banner down at the font. It counts that one among the great wonders of the road."
-        },
-        {
-          "slug": "muqaddam-of-the-tulb",
-          "title": "Muqaddam of the Tulb",
-          "subtitle": "the shepherd's wheel",
-          "img": "art/adversaries-staging/nano-banana-2-1/muqaddam-of-the-tulb/raw.png",
-          "body": "The Ayyubid host grouped its horse into tulbs of seventy to two hundred, and the muqaddam commanded one: full lamellar over maille, mace raised, barded horse, the mini-boss of the Road East. The chronicle does not pretend this was easy: he wheeled his tulb as a shepherd turns one flock; our left horn was spent before the ninth hour.\n\nHe stands at the edge of the commander cadre, and his entrenchment is the deepest among common men. Yet the rule stands absolute: even to the muqaddam the Call is issued, for the company will not decide for God which soul is past reach. Most refuse, and are released unto God. The few who kneel at the water bring whole veterans' worth of knowledge with them  -  and the chronicle keeps their testimonies in the place of honor."
-        }
-      ]
+     "slug": "cleric-mabel",
+     "title": "Cleric Mabel",
+     "subtitle": "the empty purse",
+     "body": "Mabel is a cleric of gentle voice and ruinous generosity, and she carries Charity the way other folk carry breath. Her alms purse empties as fast as it fills, for she cannot pass a beggar by; the company long ago stopped asking whose turn it was to carry the coin, because the answer is always a leper or a widow.\n\nThe chronicle is fond of her and says so plainly. There were roads east where the only sermon preached for a hundred miles was the sight of Mabel stopping, and kneeling, and giving.\n\nIf the reader takes one thing from her page, let it be this: in this company the strongest magic is an open hand.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/cleric-mabel/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/cleric-mabel/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/cleric-mabel/q128.png"
+     ]
     },
     {
-      "id": "commanders",
-      "title": "The Roll of Worthy Adversaries",
-      "intro": "At the gates of the pilgrim road stand men whose names the chronicles of both hosts recorded, and whom the company will not slander. No Call to Repentance is issued to them \u2014 their stations and their obstinacy are of another order, and the game does not pretend otherwise. They are set down here as the chronicles leave them: with honor where honor is attested, and with the hard deeds unsoftened.",
-      "entries": [
-        {
-          "slug": "kilij-arslan-i",
-          "title": "Kilij Arslan I",
-          "subtitle": "the gate at Dorylaeum, 1 July 1097",
-          "img": "art/adversaries-staging/nano-banana-2-1/kilij-arslan-i/raw.png",
-          "body": "Sultan of Rum, r. 1092-1107. Beaten at Nicaea, he nearly destroyed Bohemond's vanguard at Dorylaeum before relief arrived  -  modern accounts grant him only some six or seven thousand horse against the chroniclers' impossible myriads  -  and he rebuilt afterward to crush the crusade of 1101. The chronicle's own report is plain: the Sultan of Rum harried our van from ambush at Dorylaeum; his horsemen ringed the plain, and the day hung in doubt until relief came.\n\nHe is the first gate of the road, the horse-archer lesson taught at full price: a hard, intelligent border prince reading doctrine of the plain. The company does not call him to the font; the chronicle does not call him a coward. It records that the road opened only over a morning of doubt and dead men, and that a worthy prince rode from it to trouble Christendom ten years more."
-        },
-        {
-          "slug": "nur-ad-din",
-          "title": "Nur ad-Din",
-          "subtitle": "the gate at the Harim marches, 1164",
-          "img": "art/adversaries-staging/nano-banana-2-1/nur-ad-din/raw.png",
-          "body": "Nur ad-Din Mahmud ibn Zengi, atabeg of Aleppo and Damascus (d. 1174), son of the taker of Edessa. He reunified Muslim Syria, crushed Antioch's field army at Harim in 1164, and sent Shirkuh into Egypt while raiding to mask him. Both sides' sources record his austerity, his justice, and his night prayer; the chronicle of the company says the same from the field: the atabeg's host came on in good order, horse and foot as one machine; his justice and his night prayers were reported even among our own.\n\nHe stands at the road's middle gate, where it descends from the plateau toward the Antiochene marches  -  the ground Harim was fought on. The company calls no Call over him. The chronicler, bound to truth, sets down what the camp said after: his justice is without reproach, and we would that his confession were ours."
-        },
-        {
-          "slug": "asad-al-din-shirkuh",
-          "title": "Asad al-Din Shirkuh",
-          "subtitle": "the gate on the roads of Egypt, 1164-1169",
-          "img": "art/adversaries-staging/nano-banana-2-1/asad-al-din-shirkuh/raw.png",
-          "body": "Asad al-Din Shirkuh (d. 1169) marched into Egypt three times against Frankish intervention, took Alexandria, and died within two months of winning the vizierate  -  clearing the stage for his nephew Saladin. He is a boss of marches, not set pieces, and the company's chronicle aches with it: the old mountain lion marched us into Egypt and out again thrice; he counted miles as other commanders count swords.\n\nHis gate sits on the longest, driest stretch of the road, where supply fails before courage does. No Call is made of him. The chronicle records his end as the roads record all such men: in the seat he won, within the year, and the vizierate passing to the nephew whose name the whole East would learn."
-        },
-        {
-          "slug": "saladin",
-          "title": "Saladin",
-          "subtitle": "the last gate, the King's road",
-          "img": "art/adversaries-staging/nano-banana-2-1/saladin/raw.png",
-          "body": "Salah al-Din Yusuf ibn Ayyub (d. 1193): a Kurdish officer's son risen to vizier of Egypt, unifier of Egypt and Syria, victor of Hattin on 4 July 1187 where the kingdom's field army was destroyed, recoverer of Jerusalem that October. And the chronicle must set down the rest, because the hostile Latin chronicles set it down: he kept his safe-conducts; his execution of the sworn truce-breaker Reynald of Chatillon is recorded plainly as an execution, not a perfidy; his courteous exchanges with Richard at Jaffa were famous within a generation, and Dante set him among the virtuous in Limbo. The company's own line concurs: the Sultan denied us water at Hattin and broke the kingdom's host; yet he kept his safe-conducts, and at Jaffa his courtesy crossed the lines.\n\nHis is the last gate before the City, and behind him stand the banner and the tulb guard of his own askar. No Call is issued to him; his obstinacy is of the order that only the Judge reads. The chronicler closes his page with the mandate the road itself enforces: let no man boast over him in the telling. He was the worthiest foe this war produced, and the chronicler who is honest sets his virtue beside our own men's, that the rest of the story may be believed."
-        }
-      ]
+     "slug": "serjeant-bastien",
+     "title": "Serjeant Bastien",
+     "subtitle": "the line that held",
+     "body": "Bastien carries Patience, the unglamorous virtue, the one that looks like nothing at all until the day it looks like everything. He is a serjeant, a professional, a man of the shield line; and the chronicle writes of him in a single sentence that cost it a page to earn: he holds the line in silence long after bolder hearts have fled the field.\n\nHe does not rouse. He does not threaten. When the host's courage runs like water, Bastien simply remains, and men who intended to run find themselves ashamed to pass him.\n\nThe company has a saying for bad hours: stand where Bastien stands. It has never yet been wrong.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/serjeant-bastien/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/serjeant-bastien/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/serjeant-bastien/q128.png"
+     ]
     },
     {
-      "id": "sins",
-      "title": "The Seven: Lords of the Gauntlet",
-      "intro": "Now the chronicler leaves the road of men and enters the anagogic country, where the enemies are not sons of Adam but the old Seven themselves, given shape and malice. These are demons, not adversaries: no Call is made of them, no font is drawn; they are fought, and they are burned. Each is set down with the virtue that answers it, for that pairing is the whole lesson of the gauntlet.",
-      "entries": [
-        {
-          "slug": "prince-of-pride",
-          "title": "Prince of Pride",
-          "subtitle": "answered by Humility",
-          "img": "crusade-app/assets/sprites/gallery/101-prince-of-pride.png",
-          "body": "First of the Seven and father of the rest: Pride, the creature setting itself up as judge of God's nature  -  the primal superbia by which, the old doctors teach, the angels fell and every lesser sin finds its door. The gauntlet gives him a crown and a whisper: a crowned shadow that whispers to every champion that he alone deserves the victory.\n\nHe does not strike the body first. He suggests. He tells the knight that the company's other eleven are passengers, that the chronicle should be his chronicle. Where he whispers longest, captains stop praying the dawn office and start rehearsing their own legends.\n\nHis answer is Humility, and it comes in the company's ranks as a squire kneeling in the dark and a brother taking the heaviest pack. Pride cannot read these things; they are written in a language he forgot on purpose."
-        },
-        {
-          "slug": "wretch-of-envy",
-          "title": "Wretch of Envy",
-          "subtitle": "answered by Kindness",
-          "img": "crusade-app/assets/sprites/gallery/102-wretch-of-envy.png",
-          "body": "Envy is the sin that sorrows at another's good  -  the only one of the Seven that never even pretends to give pleasure. The gauntlet draws him honestly: a hollow-eyed wretch that covets every virtue it sees and poisons what it cannot have.\n\nHe works the company by comparison. One man's praise becomes another man's wound; a psalm well sung becomes an insult overheard. The chronicler has watched him ruin plain water by standing it beside wine.\n\nHis answer is Kindness  -  the gladness at another's feast. It walks the road as a guide who hands strangers the best of her water and means it. Envy cannot metabolize joy given away; it starves him faster than any blade."
-        },
-        {
-          "slug": "fiend-of-lust",
-          "title": "Fiend of Lust",
-          "subtitle": "answered by Chastity",
-          "img": "crusade-app/assets/sprites/gallery/103-fiend-of-lust.png",
-          "body": "Lust is the vow's solvent: concupiscence enthroned, the appetite that promises union and delivers use. The gauntlet gives her  -  for she presents sweet  -  a voice and a weather of her own: a sweet-voiced fiend whose burning haze unmakes every vow it touches.\n\nNote the chronicle's care: it is vows she unmakes, not merely rules she breaks. She works in endings  -  the abandoned pilgrimage, the forgotten family, the office left unsung  -  more than in moments. Her haze smells, veterans insist, almost exactly like justification.\n\nHer answer is Chastity, rightly understood: not coldness but a heart ordered whole toward one object. The canoness's clear voice and the friar's preached purity are this armor. The haze blows through and finds nothing loose to catch."
-        },
-        {
-          "slug": "sleeper-of-sloth",
-          "title": "Sleeper of Sloth",
-          "subtitle": "answered by Diligence",
-          "img": "crusade-app/assets/sprites/gallery/104-sleeper-of-sloth.png",
-          "body": "Sloth is not laziness; the old name acedia means a sorrow at the good itself, the soul going grey before the task God set. He is the gauntlet's fourth lord and its most patient: a vast sleeper whose dreams seep outward as a grey mire of idleness.\n\nHe wins by seepage. No battle, no temptation scene  -  only a lengthening between a man and his duties, until the prayers go first, then the watch, then the road. Companies do not fall to him so much as dissolve.\n\nHis answer is Diligence: the planted banner, the wakeful night, the psalm that never once misses its hour. A host that keeps the next small duty whole gives the Sleeper nothing to dream into."
-        },
-        {
-          "slug": "brute-of-wrath",
-          "title": "Brute of Wrath",
-          "subtitle": "answered by Patience",
-          "img": "crusade-app/assets/sprites/gallery/105-brute-of-wrath.png",
-          "body": "Wrath is anger divorced from justice and ration, the red weather that mistakes itself for strength. The chronicle of the era confesses its own side's drinking of it  -  the chroniclers themselves recorded the crusaders' deeds at Jerusalem in 1099 with shame  -  and the gauntlet gives the sin the shape it deserves: a frothing brute whose rage feeds on every wound it gives and every wound it takes.\n\nHe is the only lord of the Seven who grows when struck. Every answer in kind is his meat; the company that fights him in his own temper arms him.\n\nHis answer is Patience  -  the serjeant's silent line, the chevalier who receives the blow and gives back mercy. Wrath beat against that wall spends himself like surf, and the wall is still standing at the ninth hour."
-        },
-        {
-          "slug": "glutton-maw",
-          "title": "Glutton Maw",
-          "subtitle": "answered by Temperance",
-          "img": "crusade-app/assets/sprites/gallery/106-glutton-maw.png",
-          "body": "Gluttony is consumption that cannot be filled, the appetite that eats the harvest and then the eater. The gauntlet does not flatter him with a feast-hall; the age knew famine too intimately. He comes as a walking maw that devours harvests whole and yet starves the more it eats.\n\nHis strategy is want itself. Hungry companies break formation for a rumor of bread; sieges are lost at the granary, not the wall. He understands what Shirkuh understood: a road is walked on the stomach.\n\nHis answer is Temperance  -  the cantor's measured psalm in the body's register: ration kept, fast kept, cup put down. A host in even step and even temper does not chase the Maw's bait wherever it smells food."
-        },
-        {
-          "slug": "grasper-of-greed",
-          "title": "Grasper of Greed",
-          "subtitle": "answered by Charity",
-          "img": "crusade-app/assets/sprites/gallery/107-grasper-of-greed.png",
-          "body": "Greed is the hoard grown sentient, the keeping that forgotten why. The chroniclers of the age knew him in armor  -  they confessed the greed that dragged the First Crusade's own men through corpses at Jerusalem, and this chronicle confesses it too. The gauntlet draws him true: a grasping miser-fiend that hoards even the light and drowns pilgrims in its golden tide.\n\nHe is the last before the City in the old ordering because he is the most respectable. Wrath and Lust announce themselves; Greed arrives looking like provision, like prudence, like somebody's sensible share. He has ended more pilgrimages than any army of the road.\n\nHis answer is Charity  -  the simplest virtue and the one that kills him outright: an alms purse that empties as fast as it fills, a hand that cannot pass a beggar by. There is no rite in the arsenal that grieves the Grasper like a coin given away in God's name."
-        }
-      ]
+     "slug": "hospitaller-ysolt",
+     "title": "Hospitaller Ysolt",
+     "subtitle": "sister of the wounds",
+     "body": "Ysolt is a hospitaller sister, and Charity sits on her like a habit. She binds wounds under a hail of arrows and asks after the soul before the flesh, which the wounded think backward until they understand her: a man's body she may only patch, but she has stood at too many deathbeds to confuse the two patients.\n\nThe chronicle records that her hands do not shake. Arrows, fire, the press of the line gone wrong around her  -  the hands do not shake. She has decided what she is for, and terror arrived too late to change it.\n\nShe is the reason the company's dead have died with the last rites and its broken have risen to fight again.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/q128.png"
+     ]
+    },
+    {
+     "slug": "wayfarer-aelis",
+     "title": "Wayfarer Aelis",
+     "subtitle": "thrice the road",
+     "body": "Aelis has walked every road to the holy city thrice and gladly guides strangers along them, which is the whole of her character given in one line: she carries Kindness, and her kindness is made of road-dust and water-skins and knowing where the wells lie.\n\nShe is the company's eyes. The guide who has truly walked a road carries it inside her like a liturgy: the ford, the ambush ground, the village where the bread is honest. Men who would not follow a banner will follow Aelis, because she has never once led anyone into harm she could have foreseen.\n\nThe chronicler notes that she asks no payment and is insulted by thanks. The road, she says, is owed to everyone.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/wayfarer-aelis/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/wayfarer-aelis/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/wayfarer-aelis/q128.png"
+     ]
+    },
+    {
+     "slug": "canoness-hrothwyn",
+     "title": "Canoness Hrothwyn",
+     "subtitle": "the steadied choir",
+     "body": "Hrothwyn is a canoness and carries Chastity, which the old canons understood less as mere refusal than as a heart ordered entire toward one object. The chronicle's testimony is stranger and sweeter: her clear voice in the choir settles even the most restless heart.\n\nThis is not sentiment. Men have come into her hearing with blood-anger on them, and grief, and the wildness that comes of too much road, and have gone out quiet. The company has stopped pretending not to notice.\n\nShe asks nothing of the road but one office a day sung properly. Wherever the company camps, the hour finds her, and for the length of a psalm the war is a rumor from far away.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/q128.png"
+     ]
+    },
+    {
+     "slug": "vexillor-anchetil",
+     "title": "Vexillor Anchetil",
+     "subtitle": "the planted banner",
+     "body": "Anchetil bears the pilgrim star's banner, and he carries Diligence the way he carries the staff: two-handed, all day, without setting it down. The chronicle says of him that he would sooner break than let it fall, and every man who has marched behind that banner knows it is not rhetoric.\n\nThe banner-bearer's trade is the oldest argument in any army: so long as the cloth stands, the host stands. Anchetil understands that he is not carrying fabric but certainty, and he has made himself into the sort of man who is harder to kill than the hope he holds up.\n\nHe oils the rings of the staff each night as other men say their beads. It is the same prayer, the chronicler thinks.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/vexillor-anchetil/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/vexillor-anchetil/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/vexillor-anchetil/q128.png"
+     ]
+    },
+    {
+     "slug": "brother-aldwyn",
+     "title": "Brother Aldwyn",
+     "subtitle": "the lowest bench",
+     "body": "Aldwyn is a humble brother, and Humility is his virtue as it is Audric's, but the road wears it differently on an older man. He takes the lowest bench, the heaviest pack, and the last crust without a murmur; he has arranged his life so that no one else in the company must be last.\n\nThe chronicle confesses it took a year to notice him. That is the nature of what he is: a subtraction, everywhere, of burdens other men would have carried. You only see him by the absences he leaves, and then you cannot stop seeing him.\n\nThe younger champions have begun quietly competing for the heaviest pack. The chronicler declines to name who is winning.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/brother-aldwyn/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/brother-aldwyn/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/brother-aldwyn/q128.png"
+     ]
+    },
+    {
+     "slug": "cantor-sabina",
+     "title": "Cantor Sabina",
+     "subtitle": "the even step",
+     "body": "Sabina carries Temperance, the virtue of measure, and she exercises it through music. She is a cantor whose measured psalms keep the whole company in even step and even temper, and the chronicler is precise here: not in good spirits, not in high valor, but even  -  which on a long road is worth far more than either.\n\nMarch discipline and psalmody, she will tell you, are the one art. A host that walks evenly arrives with something left; a soul that prays evenly survives what the road does to it.\n\nIn battle her voice is metronome and anchor. Men report hearing the psalm under the noise of the press and finding, to their surprise, that their arms remember the rhythm.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/cantor-sabina/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/cantor-sabina/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/cantor-sabina/q128.png"
+     ]
+    },
+    {
+     "slug": "chevalier-raimbaud",
+     "title": "Chevalier Raimbaud",
+     "subtitle": "blows answered with mercy",
+     "body": "Raimbaud is a chevalier of the old belt, and he carries two virtues where most carry one: Patience and Kindness together, which the chronicle renders as a single sentence it weighed carefully before writing  -  he bears every blow in patience and answers cruelty only with mercy.\n\nThis has been tested. The road east supplies cruelty in abundance, and Raimbaud's answer has become a byword among the company: he receives, he absorbs, and he returns something that was not sent. It is not softness. Nothing about the way he sits a horse is soft. It is a discipline harder than anger.\n\nIf the reader asks what this game believes about strength: it believes Raimbaud is the strongest man on the roster.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/q128.png"
+     ]
+    },
+    {
+     "slug": "vigil-knight-wymar",
+     "title": "Vigil-Knight Wymar",
+     "subtitle": "the wakeful nights",
+     "body": "Wymar keeps the long vigil, and two virtues keep him: Diligence and Temperance, married into a watchfulness that does not end. The chronicle's line on him reads like a psalm turned sideways: he counts wakeful nights as prayers and duties as blessings.\n\nHe is the reason the company is never surprised. While others sleep he walks the perimeter, not from fear but from a settled conviction that love is on duty or it is a sentiment. At dawn he is found awake, at ease, unremarkable; the camp stirs around a safety it never saw being built.\n\nThe years of it have cost him something, the chronicler thinks  -  some ease of daylight that other men keep. He does not seem to miss it.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/q128.png"
+     ]
+    },
+    {
+     "slug": "friar-osbert",
+     "title": "Friar Osbert",
+     "subtitle": "of the market square",
+     "body": "Osbert is a friar and carries Chastity as the preaching orders understood it: purity of heart, owned publicly, at personal cost. He preaches purity of heart in the market square and fears no scorn  -  and the scorn has come, the chronicle notes, in every town that considered itself above repentance.\n\nHe is not a fool and does not preach like one. He argues, he answers, he stays after jeering to talk with the jeerer. Men have ridden out to meet the company's caravan intending to mock the friar and ridden home thoughtful, which is the kind of victory no rite can perform.\n\nIn the gauntlet he stands against the sweet-voiced things. He has met them in the market square already, wearing cheaper clothes.",
+     "imgs": [
+      "art/roster-staging/nano-banana-2-1/friar-osbert/alt-c-master.png",
+      "art/roster-staging/nano-banana-2-1/friar-osbert/heraldry-q128.png",
+      "art/roster-staging/nano-banana-2-1/friar-osbert/q128.png"
+     ]
     }
-  ]
+   ]
+  },
+  {
+   "id": "adversaries",
+   "title": "The Road East: Men of the Adversary's Host",
+   "intro": "Between the company and the City stand men, not monsters: the soldiers of Rum, of the atabegs of Syria, and of the sultan of Egypt. They fight for what the chronicle must call a false god, denying the Son; yet they are men for whom Christ died, and the company's first hope for every one of them is the font, not the sword. Here they are set down as they were met, in honor and without flattery.",
+   "entries": [
+    {
+     "slug": "turcoman-bowrider",
+     "title": "Turcoman Bowrider",
+     "subtitle": "the plain that rides",
+     "body": "The horse-archer screen of the Sultanate of Rum and, later, of every host from Anatolia to the Jordan: an unarmored rider in fur kalpak and belted khaftan, composite bow drawn, never still. At Dorylaeum in 1097 such riders very nearly destroyed the crusader vanguard before relief arrived. The chronicle's own line says it best: He loosed from the saddle and was gone before the shaft fell; the plain itself seemed to ride against us.\n\nHe is a tribal auxiliary, loosely held by his creed, and of all the men the company meets he is among the readiest to hear the Call. Let him be defeated honorably, without contempt, and let the word be spoken. The chronicler records it gladly: many of the company's baptized brothers first reached it from the back of a pony on the Anatolian plain.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/turcoman-bowrider/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/turcoman-bowrider/q128.png"
+     ]
+    },
+    {
+     "slug": "ghulam-lancer",
+     "title": "Ghulam Lancer",
+     "subtitle": "unhurried at the couch",
+     "body": "The ghulam is a household slave-soldier of the askar, bought young and drilled long: maille over khaftan, conical helm and aventail, kite shield, and a lance couched two-handed. He is the heavy cavalry of the Zengid and Ayyubid hosts, the anvil's other half. The chronicle writes of him: the household lancer came on at the couch, unhurried as a man walking to evening prayer; our line bent beneath him.\n\nA professional soldier, his heart is harder to turn than the tribesman's. Yet the Call is made of him as of every man, and the chronicle knows of lancers baptized who now carry the same couch against the sins. His discipline, converted, is a terrible and excellent thing.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/ghulam-lancer/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/ghulam-lancer/q128.png"
+     ]
+    },
+    {
+     "slug": "sudani-shieldbearer",
+     "title": "Sudani Shieldbearer",
+     "subtitle": "the standing wall",
+     "body": "In the Fatimid host, before Saladin dissolved it, stood the black African foot behind shields taller than a man: the company's oldest record of the shield-wall made flesh. No metal on him; hide, spear, and patience. The chronicle: behind a shield taller than a man he stood his ground all day; we broke three spears upon his patience.\n\nA conscript of the unglamorous kind, he has little zeal to defend and much dignity to appeal to. The Call finds a hearing with him more often than his masters would like, and the font has made shield-brothers of men the spears could not move.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/sudani-shieldbearer/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/sudani-shieldbearer/q128.png"
+     ]
+    },
+    {
+     "slug": "armenian-bowman",
+     "title": "Armenian Bowman",
+     "subtitle": "rain in turns",
+     "body": "A foot archer of the long bow, taller than the horseman's, serving in garrison and Fatimid field duty. His art is the volley in turns, and the chronicle grits its teeth in admiration: his arrows fell among us in turns, as regular as rain; by the ninth hour our shields bristled like hedgerows.\n\nMany of his nation are already Christian, of the old churches of the East, pressed into another's war; the company counts his calling as a homecoming more than a conversion. Of all the men on the Road East he is readiest to hear the Call, and the chronicler bids the reader pray for the day his volleys fall for the Cross.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/armenian-bowman/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/armenian-bowman/q128.png"
+     ]
+    },
+    {
+     "slug": "daylamite-axeman",
+     "title": "Daylamite Axeman",
+     "subtitle": "the din of his coming",
+     "body": "Hill-foot out of Daylam, south of the Caspian, serving whichever host pays: two tabar axes and the zhupin javelin, knee-length maille, round shield slung on the back. Shock infantry in the old style. The chronicle: he swung two axes as other men swing one, and the din of his coming carried over the whole battle.\n\nHe is a soldier by trade, not conviction, and stands in the middle of the road between sword and font. Defeated with honor, he listens as a professional listens to terms; more than one has taken the water and kept his axes, and the company has found no cause to regret either.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/daylamite-axeman/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/daylamite-axeman/q128.png"
+     ]
+    },
+    {
+     "slug": "bedouin-outrider",
+     "title": "Bedouin Outrider",
+     "subtitle": "seen at dawn and at dusk",
+     "body": "The tribes of the desert ride for every host as scouts and raiders: head-cloth and mantle, lean pony, light lance, a man the army borrows rather than owns. The chronicle: we saw him at dawn and again at dusk and never once at sword's length; the desert seemed to walk with him.\n\nHis allegiance is to his tribe and its honor, thin as water where doctrine is concerned. He is the readiest of all the road's men to hear the Call, and the company has learned that an outrider brought to the font becomes the best guide and the truest friend the road affords. The desert now walks with them.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/bedouin-outrider/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/bedouin-outrider/q128.png"
+     ]
+    },
+    {
+     "slug": "kurdish-ghazw-rider",
+     "title": "Kurdish Ghazw Rider",
+     "subtitle": "weather out of the mountains",
+     "body": "Tribal horsemen out of the northern hills, lamellar over khaftan, spear over-arm, riding the raids of Nur ad-Din and later of Saladin. The chronicle admits the impression: a rider of the hills, spear over-arm, who came down at us like weather out of the mountains.\n\nHere the entrenchment deepens. Ghazw zeal is in him  -  the raid sanctified by his creed  -  and his heart is set harder than the conscript's or the hireling's. The Call is still made, for the floor of grace is never zero; but the chronicler records, soberly, that these men more often refuse, and their souls are released unto God with grief rather than with surprise.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/kurdish-ghazw-rider/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/kurdish-ghazw-rider/q128.png"
+     ]
+    },
+    {
+     "slug": "naffatun-sapper",
+     "title": "Naffatun Sapper",
+     "subtitle": "fire carried in clay",
+     "body": "The siege parks of the era fielded men who carried naphtha: padded hood, wet rawhide apron, the clay grenade cradled, the torch held low. The bravest job in any army of either host. The chronicle's line is the register's measure of him: he carried fire in clay and walked through arrows as a man walks through rain; burnt, we hold him no less in honor.\n\nHis calling is craft, not creed, and he hears the Call as a tradesman hears a bid  -  with a hard man's weighing, but he weighs it. The company has baptized sappers. It has also buried its own burned. The chronicle sets both facts down and refuses to make either cancel the other.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/naffatun-sapper/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/naffatun-sapper/q128.png"
+     ]
+    },
+    {
+     "slug": "askari-alamdar",
+     "title": "Askari Alamdar",
+     "subtitle": "where the banner stood",
+     "body": "Every lord's askar rallies on its banner, and the alamdar is the man who carries it: half-suit of maille and lamellar, the regimental cloth planted, saif held low because his weapon is the standing. The chronicle: where the banner stood the line stood; while he lived, that host would not be turned.\n\nHe is a pillar of his host's faith as well as its line, a zealot of the drilled kind, and his heart is deeply entrenched. The Call is made of him as of all men  -  the chronicle knows of one, only one, in all the company's years, who laid the banner down at the font. It counts that one among the great wonders of the road.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/askari-alamdar/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/askari-alamdar/q128.png"
+     ]
+    },
+    {
+     "slug": "muqaddam-of-the-tulb",
+     "title": "Muqaddam of the Tulb",
+     "subtitle": "the shepherd's wheel",
+     "body": "The Ayyubid host grouped its horse into tulbs of seventy to two hundred, and the muqaddam commanded one: full lamellar over maille, mace raised, barded horse, the mini-boss of the Road East. The chronicle does not pretend this was easy: he wheeled his tulb as a shepherd turns one flock; our left horn was spent before the ninth hour.\n\nHe stands at the edge of the commander cadre, and his entrenchment is the deepest among common men. Yet the rule stands absolute: even to the muqaddam the Call is issued, for the company will not decide for God which soul is past reach. Most refuse, and are released unto God. The few who kneel at the water bring whole veterans' worth of knowledge with them  -  and the chronicle keeps their testimonies in the place of honor.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/muqaddam-of-the-tulb/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/muqaddam-of-the-tulb/q128.png"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "commanders",
+   "title": "The Roll of Worthy Adversaries",
+   "intro": "At the gates of the pilgrim road stand men whose names the chronicles of both hosts recorded, and whom the company will not slander. No Call to Repentance is issued to them — their stations and their obstinacy are of another order, and the game does not pretend otherwise. They are set down here as the chronicles leave them: with honor where honor is attested, and with the hard deeds unsoftened.",
+   "entries": [
+    {
+     "slug": "kilij-arslan-i",
+     "title": "Kilij Arslan I",
+     "subtitle": "the gate at Dorylaeum, 1 July 1097",
+     "body": "Sultan of Rum, r. 1092-1107. Beaten at Nicaea, he nearly destroyed Bohemond's vanguard at Dorylaeum before relief arrived  -  modern accounts grant him only some six or seven thousand horse against the chroniclers' impossible myriads  -  and he rebuilt afterward to crush the crusade of 1101. The chronicle's own report is plain: the Sultan of Rum harried our van from ambush at Dorylaeum; his horsemen ringed the plain, and the day hung in doubt until relief came.\n\nHe is the first gate of the road, the horse-archer lesson taught at full price: a hard, intelligent border prince reading doctrine of the plain. The company does not call him to the font; the chronicle does not call him a coward. It records that the road opened only over a morning of doubt and dead men, and that a worthy prince rode from it to trouble Christendom ten years more.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/kilij-arslan-i/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/kilij-arslan-i/q128.png"
+     ]
+    },
+    {
+     "slug": "nur-ad-din",
+     "title": "Nur ad-Din",
+     "subtitle": "the gate at the Harim marches, 1164",
+     "body": "Nur ad-Din Mahmud ibn Zengi, atabeg of Aleppo and Damascus (d. 1174), son of the taker of Edessa. He reunified Muslim Syria, crushed Antioch's field army at Harim in 1164, and sent Shirkuh into Egypt while raiding to mask him. Both sides' sources record his austerity, his justice, and his night prayer; the chronicle of the company says the same from the field: the atabeg's host came on in good order, horse and foot as one machine; his justice and his night prayers were reported even among our own.\n\nHe stands at the road's middle gate, where it descends from the plateau toward the Antiochene marches  -  the ground Harim was fought on. The company calls no Call over him. The chronicler, bound to truth, sets down what the camp said after: his justice is without reproach, and we would that his confession were ours.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/nur-ad-din/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/nur-ad-din/q128.png"
+     ]
+    },
+    {
+     "slug": "asad-al-din-shirkuh",
+     "title": "Asad al-Din Shirkuh",
+     "subtitle": "the gate on the roads of Egypt, 1164-1169",
+     "body": "Asad al-Din Shirkuh (d. 1169) marched into Egypt three times against Frankish intervention, took Alexandria, and died within two months of winning the vizierate  -  clearing the stage for his nephew Saladin. He is a boss of marches, not set pieces, and the company's chronicle aches with it: the old mountain lion marched us into Egypt and out again thrice; he counted miles as other commanders count swords.\n\nHis gate sits on the longest, driest stretch of the road, where supply fails before courage does. No Call is made of him. The chronicle records his end as the roads record all such men: in the seat he won, within the year, and the vizierate passing to the nephew whose name the whole East would learn.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/asad-al-din-shirkuh/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/asad-al-din-shirkuh/q128.png"
+     ]
+    },
+    {
+     "slug": "saladin",
+     "title": "Saladin",
+     "subtitle": "the last gate, the King's road",
+     "body": "Salah al-Din Yusuf ibn Ayyub (d. 1193): a Kurdish officer's son risen to vizier of Egypt, unifier of Egypt and Syria, victor of Hattin on 4 July 1187 where the kingdom's field army was destroyed, recoverer of Jerusalem that October. And the chronicle must set down the rest, because the hostile Latin chronicles set it down: he kept his safe-conducts; his execution of the sworn truce-breaker Reynald of Chatillon is recorded plainly as an execution, not a perfidy; his courteous exchanges with Richard at Jaffa were famous within a generation, and Dante set him among the virtuous in Limbo. The company's own line concurs: the Sultan denied us water at Hattin and broke the kingdom's host; yet he kept his safe-conducts, and at Jaffa his courtesy crossed the lines.\n\nHis is the last gate before the City, and behind him stand the banner and the tulb guard of his own askar. No Call is issued to him; his obstinacy is of the order that only the Judge reads. The chronicler closes his page with the mandate the road itself enforces: let no man boast over him in the telling. He was the worthiest foe this war produced, and the chronicler who is honest sets his virtue beside our own men's, that the rest of the story may be believed.",
+     "imgs": [
+      "art/adversaries-staging/nano-banana-2-1/saladin/raw.png",
+      "art/adversaries-staging/nano-banana-2-1/saladin/q128.png"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sins",
+   "title": "The Seven: Lords of the Gauntlet",
+   "intro": "Now the chronicler leaves the road of men and enters the anagogic country, where the enemies are not sons of Adam but the old Seven themselves, given shape and malice. These are demons, not adversaries: no Call is made of them, no font is drawn; they are fought, and they are burned. Each is set down with the virtue that answers it, for that pairing is the whole lesson of the gauntlet.",
+   "entries": [
+    {
+     "slug": "prince-of-pride",
+     "title": "Prince of Pride",
+     "subtitle": "answered by Humility",
+     "body": "First of the Seven and father of the rest: Pride, the creature setting itself up as judge of God's nature  -  the primal superbia by which, the old doctors teach, the angels fell and every lesser sin finds its door. The gauntlet gives him a crown and a whisper: a crowned shadow that whispers to every champion that he alone deserves the victory.\n\nHe does not strike the body first. He suggests. He tells the knight that the company's other eleven are passengers, that the chronicle should be his chronicle. Where he whispers longest, captains stop praying the dawn office and start rehearsing their own legends.\n\nHis answer is Humility, and it comes in the company's ranks as a squire kneeling in the dark and a brother taking the heaviest pack. Pride cannot read these things; they are written in a language he forgot on purpose.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/101-prince-of-pride.png"
+     ]
+    },
+    {
+     "slug": "wretch-of-envy",
+     "title": "Wretch of Envy",
+     "subtitle": "answered by Kindness",
+     "body": "Envy is the sin that sorrows at another's good  -  the only one of the Seven that never even pretends to give pleasure. The gauntlet draws him honestly: a hollow-eyed wretch that covets every virtue it sees and poisons what it cannot have.\n\nHe works the company by comparison. One man's praise becomes another man's wound; a psalm well sung becomes an insult overheard. The chronicler has watched him ruin plain water by standing it beside wine.\n\nHis answer is Kindness  -  the gladness at another's feast. It walks the road as a guide who hands strangers the best of her water and means it. Envy cannot metabolize joy given away; it starves him faster than any blade.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/102-wretch-of-envy.png"
+     ]
+    },
+    {
+     "slug": "fiend-of-lust",
+     "title": "Fiend of Lust",
+     "subtitle": "answered by Chastity",
+     "body": "Lust is the vow's solvent: concupiscence enthroned, the appetite that promises union and delivers use. The gauntlet gives her  -  for she presents sweet  -  a voice and a weather of her own: a sweet-voiced fiend whose burning haze unmakes every vow it touches.\n\nNote the chronicle's care: it is vows she unmakes, not merely rules she breaks. She works in endings  -  the abandoned pilgrimage, the forgotten family, the office left unsung  -  more than in moments. Her haze smells, veterans insist, almost exactly like justification.\n\nHer answer is Chastity, rightly understood: not coldness but a heart ordered whole toward one object. The canoness's clear voice and the friar's preached purity are this armor. The haze blows through and finds nothing loose to catch.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/103-fiend-of-lust.png"
+     ]
+    },
+    {
+     "slug": "sleeper-of-sloth",
+     "title": "Sleeper of Sloth",
+     "subtitle": "answered by Diligence",
+     "body": "Sloth is not laziness; the old name acedia means a sorrow at the good itself, the soul going grey before the task God set. He is the gauntlet's fourth lord and its most patient: a vast sleeper whose dreams seep outward as a grey mire of idleness.\n\nHe wins by seepage. No battle, no temptation scene  -  only a lengthening between a man and his duties, until the prayers go first, then the watch, then the road. Companies do not fall to him so much as dissolve.\n\nHis answer is Diligence: the planted banner, the wakeful night, the psalm that never once misses its hour. A host that keeps the next small duty whole gives the Sleeper nothing to dream into.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/104-sleeper-of-sloth.png"
+     ]
+    },
+    {
+     "slug": "brute-of-wrath",
+     "title": "Brute of Wrath",
+     "subtitle": "answered by Patience",
+     "body": "Wrath is anger divorced from justice and ration, the red weather that mistakes itself for strength. The chronicle of the era confesses its own side's drinking of it  -  the chroniclers themselves recorded the crusaders' deeds at Jerusalem in 1099 with shame  -  and the gauntlet gives the sin the shape it deserves: a frothing brute whose rage feeds on every wound it gives and every wound it takes.\n\nHe is the only lord of the Seven who grows when struck. Every answer in kind is his meat; the company that fights him in his own temper arms him.\n\nHis answer is Patience  -  the serjeant's silent line, the chevalier who receives the blow and gives back mercy. Wrath beat against that wall spends himself like surf, and the wall is still standing at the ninth hour.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/105-brute-of-wrath.png"
+     ]
+    },
+    {
+     "slug": "glutton-maw",
+     "title": "Glutton Maw",
+     "subtitle": "answered by Temperance",
+     "body": "Gluttony is consumption that cannot be filled, the appetite that eats the harvest and then the eater. The gauntlet does not flatter him with a feast-hall; the age knew famine too intimately. He comes as a walking maw that devours harvests whole and yet starves the more it eats.\n\nHis strategy is want itself. Hungry companies break formation for a rumor of bread; sieges are lost at the granary, not the wall. He understands what Shirkuh understood: a road is walked on the stomach.\n\nHis answer is Temperance  -  the cantor's measured psalm in the body's register: ration kept, fast kept, cup put down. A host in even step and even temper does not chase the Maw's bait wherever it smells food.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/106-glutton-maw.png"
+     ]
+    },
+    {
+     "slug": "grasper-of-greed",
+     "title": "Grasper of Greed",
+     "subtitle": "answered by Charity",
+     "body": "Greed is the hoard grown sentient, the keeping that forgotten why. The chroniclers of the age knew him in armor  -  they confessed the greed that dragged the First Crusade's own men through corpses at Jerusalem, and this chronicle confesses it too. The gauntlet draws him true: a grasping miser-fiend that hoards even the light and drowns pilgrims in its golden tide.\n\nHe is the last before the City in the old ordering because he is the most respectable. Wrath and Lust announce themselves; Greed arrives looking like provision, like prudence, like somebody's sensible share. He has ended more pilgrimages than any army of the road.\n\nHis answer is Charity  -  the simplest virtue and the one that kills him outright: an alms purse that empties as fast as it fills, a hand that cannot pass a beggar by. There is no rite in the arsenal that grieves the Grasper like a coin given away in God's name.",
+     "imgs": [
+      "crusade-app/assets/sprites/gallery/107-grasper-of-greed.png"
+     ]
+    }
+   ]
+  }
+ ]
 }
