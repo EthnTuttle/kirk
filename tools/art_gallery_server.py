@@ -143,6 +143,29 @@ def badge_html(n) -> str:
     return s
 
 
+def is_quantized(p: str) -> bool:
+    stem = Path(p).stem.lower()
+    return stem.endswith(("q64", "q128"))
+
+
+def prune(files: list[str]) -> list[str]:
+    """Review raw masters only: quantized outputs (q64/q128) are derived by
+    the bake pipeline, not authored art. q128 is the app-usage size, so in
+    directories that have ONLY quantized output (e.g. anim frames), keep
+    the q128 and drop the q64."""
+    by_dir: dict[str, list[str]] = {}
+    for f in files:
+        by_dir.setdefault(str(Path(f).parent), []).append(f)
+    out = []
+    for _d, group in by_dir.items():
+        raw = [f for f in group if not is_quantized(f)]
+        if raw:
+            out.extend(raw)
+        else:
+            out.extend(f for f in group if Path(f).stem.lower().endswith("q128"))
+    return sorted(out)
+
+
 def render() -> bytes:
     notes = load_notes()
     chunks = [
@@ -162,9 +185,9 @@ def render() -> bytes:
         base = ROOT / root
         files = []
         if base.exists():
-            files = sorted(
+            files = prune([
                 str(p.relative_to(ROOT)) for p in base.rglob("*") if p.suffix.lower() in EXTS
-            )
+            ])
         if not files:
             chunks.append(f"<h2>{html.escape(heading)}</h2><p class='small'>— empty —</p>")
             continue
