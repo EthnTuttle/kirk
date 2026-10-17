@@ -51,6 +51,14 @@ jobs:
         # GitHub Pages serves this repo under /<repo>/, i.e. /kirk/.
         run: trunk build --release --public-url /kirk/
 
+      # The Lore section is a standalone static site (not part of the PWA),
+      # generated from tools/lore_content.json + art masters.
+      - name: Build the static Lore site
+        run: pip install pillow && python3 tools/build_lore.py
+
+      - name: Copy Lore site into the Pages artifact at /lore/
+        run: cp -r site/dist/lore crusade-app/web/dist/lore
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
