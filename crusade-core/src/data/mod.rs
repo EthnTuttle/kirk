@@ -4,6 +4,7 @@
 use crate::types::*;
 
 pub mod adversaries;
+pub mod overworld;
 pub mod callings;
 pub mod chart;
 pub mod rites;

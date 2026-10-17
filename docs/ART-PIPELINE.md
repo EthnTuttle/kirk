@@ -180,6 +180,18 @@ WS-B2; it must serialize after B2 merges** (card-disjointness rule).
 - **Goal:** the 16-colour master palette (LOCKED) + written silhouette/shading rules
   (light top-left, 2-px outline, bone highlights on mail) + Audric and
   Prince of Pride *approved* as anchors.
+
+#### Heraldry canon (2026-10-16, owner direction)
+
+Every CRUSADER champion and crusade-side scene bears the **Jerusalem
+cross** — the fivefold cross (large potent cross with four small crosses
+in the quarters), gold `#c9a227` on bone/white fields — on tabards,
+surcoats, shields, or banners, at least one clearly readable placement per
+cell. A plain Latin cross is NOT sufficient when cloth/shield/banner area
+exists. Armored champions with no cloth visible carry it on the shield or
+a shoulder pauldron badge. Fiends/sin-spawn never bear it; adversaries
+(The Road East) never bear it (their faction accents per ART-ADVERSARIES).
+This clause overrides any older subject descriptor that omits it.
 - **Acceptance:** both anchors pass palette CI check, render at 128×128 with
   ≤16 colours, and survive 3 em-dash-width squint test of style agreement.
 

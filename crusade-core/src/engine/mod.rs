@@ -35,6 +35,7 @@ use crate::types::*;
 
 mod attack;
 mod resolve;
+pub mod trail;
 
 #[cfg(test)]
 mod tests;
