@@ -57,9 +57,12 @@ pub enum Sin {
 /// Sin, historical adversaries bear Valor ("armed honor", off the chart at
 /// flat 1x both ways; docs/HISTORICAL-FOES.md section 4).
 ///
-/// Serde constraint: `Valor` is forwards-only — a build predating this arm
-/// fails deserialization on `"Valor"`; old builds never meet it because
-/// instances serialize `species_id` only (docs/HISTORICAL-FOES.md section 7).
+/// Serde constraint: `Valor` is forwards-only in enum terms — a codec
+/// predating this arm fails `typing_override` deserialization with a
+/// defined `unknown variant` error, never a panic. The old-binary path is
+/// pinned in `data/mod.rs` `serde_tests` (G8): a v1-era reader struct
+/// skips the whole `typing_override` key (serde ignores unknown fields),
+/// so a v1 build loads a v2 save row cleanly.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Typing {
     Virtues([Option<Virtue>; 2]),

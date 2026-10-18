@@ -226,6 +226,85 @@ mod serde_tests {
         assert!(json.contains("typing_override"));
         assert_eq!(serde_json::from_str::<ChampionInstance>(&json).unwrap(), conv);
     }
+
+    /// ROADMAP gap G8 old-codec fixture: a v2.0-era save row carrying the
+    /// new `Typing::Valor` arm (a baptized adversary's override). This is
+    /// the exact shape a v1.0 binary would find in shared localStorage.
+    const VALOR_SAVE: &str = r#"{
+        "species_id": 108,
+        "level": 20,
+        "xp": 0,
+        "grace": {"resolve":0,"valour":0,"piety":0,"guard":0,"aegis":0,"alacrity":0},
+        "devotion": {"resolve":0,"valour":0,"piety":0,"guard":0,"aegis":0,"alacrity":0},
+        "calling_id": 0,
+        "rites": [null,null,null,null],
+        "current_resolve": 1,
+        "ailment": null,
+        "converted": true,
+        "converted_from": 108,
+        "typing_override": "Valor"
+    }"#;
+
+    /// The current codec loads a Valor-typed v2 row losslessly (the arm is
+    /// first-class; the forwards-compat question is only about OLD codecs).
+    #[test]
+    fn valor_instance_save_loads_and_round_trips() {
+        let c: ChampionInstance = serde_json::from_str(VALOR_SAVE).expect("Valor row loads");
+        assert_eq!(c.typing_override, Some(Typing::Valor));
+        let json = serde_json::to_string(&c).unwrap();
+        assert_eq!(serde_json::from_str::<ChampionInstance>(&json).unwrap(), c);
+    }
+
+    /// G8, the old-binary half: a v1.0-era reader — whose `ChampionInstance`
+    /// shape predates `converted` / `converted_from` / `typing_override`
+    /// (the pre-M7 `OLD_SAVE` field set) — reading the v2 VALOR row.
+    /// Proven behavior: serde ignores unknown fields by default (no
+    /// `deny_unknown_fields` anywhere in the tree), so the old codec skips
+    /// the `typing_override` key wholesale, never inspects the `"Valor"`
+    /// string, and loads the row with no error and no panic.
+    #[test]
+    fn a_v1_reader_ignores_a_v2_valor_row() {
+        /// Field-for-field mirror of the pre-M7 instance shape.
+        #[derive(serde::Deserialize)]
+        struct ChampionInstanceV1 {
+            species_id: u16,
+            level: u8,
+            xp: u32,
+            grace: GraceStats,
+            devotion: DevotionStats,
+            calling_id: u8,
+            rites: [Option<RiteSlot>; 4],
+            current_resolve: u16,
+            ailment: Option<Ailment>,
+        }
+        let old: ChampionInstanceV1 =
+            serde_json::from_str(VALOR_SAVE).expect("v1 codec reads a v2 row: unknown keys skipped");
+        assert_eq!(old.species_id, 108);
+    }
+
+    /// G8, the future-proofing half: an UNKNOWN enum arm (a post-v2 arm
+    /// this build predates) or a missing required field is a defined
+    /// deserialization ERROR, never a panic and never UB. serde's derive
+    /// generates exactly this; these tests pin it against a future
+    /// "helpful" catch-all or manual impl changing the contract.
+    #[test]
+    fn unknown_arms_and_missing_fields_fail_as_errors_not_panics() {
+        // Unknown Typing arm, bare and nested inside the instance DTO.
+        let e = serde_json::from_str::<Typing>(r#""Honor""#).expect_err("unknown arm errs");
+        assert!(e.to_string().contains("unknown variant"), "{e}");
+        let novel = VALOR_SAVE.replace("\"Valor\"", "\"Honor\"");
+        let e = serde_json::from_str::<ChampionInstance>(&novel)
+            .expect_err("unknown arm in a save row errs");
+        assert!(e.to_string().contains("unknown variant"), "{e}");
+        // Unknown variant value inside the dual-virtue arm.
+        let e = serde_json::from_str::<Typing>(r#"{"Virtues":["Prudence",null]}"#);
+        assert!(e.is_err());
+        // Missing a required field (no serde default) is an error too.
+        let missing = OLD_SAVE.replace("\"species_id\": 1,", "");
+        let e = serde_json::from_str::<ChampionInstance>(&missing)
+            .expect_err("missing required field errs");
+        assert!(e.to_string().contains("missing field"), "{e}");
+    }
 }
 
 #[cfg(test)]

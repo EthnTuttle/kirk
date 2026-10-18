@@ -130,6 +130,19 @@ the crusader-shield icon. Progress (roster/champions) persists in the
 browser's localStorage under the key `deusvult.roster.v1`; clearing site
 data wipes the save.
 
+Save-format compatibility across builds (proven by the pin tests in
+`crusade-core/src/data/mod.rs` `serde_tests`, ROADMAP gap G8):
+
+- A v1.0 binary reading a v2.0 save row (e.g. a baptized adversary with
+  `typing_override: "Valor"`) **loads it**: the new keys land in fields the
+  old struct never had and serde ignores unknown fields by default. No
+  crash, no error.
+- Any build decoding an enum arm it predates gets a defined
+  `unknown variant` deserialization **error**, never a panic or UB (serde
+  derive default; pinned against regression).
+- A save row missing a required field fails with a defined
+  `missing field` error, never a panic.
+
 What v1 includes, honestly:
 
 - Practice duels vs the deterministic AI team — offline.
