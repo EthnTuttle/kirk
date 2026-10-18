@@ -4,6 +4,7 @@
 use crate::types::*;
 
 pub mod adversaries;
+pub mod baptismal_names;
 pub mod overworld;
 pub mod callings;
 pub mod chart;
@@ -44,6 +45,30 @@ pub fn all_witnesses() -> &'static [witnesses::Witness] {
 
 pub fn witness_by_id(id: u16) -> Option<&'static witnesses::Witness> {
     witnesses::WITNESSES.iter().find(|w| w.id == id)
+}
+
+/// All baptismal-name candidates for a convertible adversary archetype
+/// (CONVERSION 4; ids 108..=117 only — commanders never convert, so the
+/// fallback for them and everyone else is None).
+pub fn baptismal_names(
+    archetype_id: u16,
+) -> Option<&'static [baptismal_names::BaptismalName]> {
+    baptismal_names::BAPTISMAL_NAMES
+        .iter()
+        .find(|a| a.id == archetype_id)
+        .map(|a| a.candidates)
+}
+
+/// Deterministic pick among an archetype's baptismal-name candidates,
+/// keyed off the Call's sealed salt (CONVERSION 3's determinism seam —
+/// no new rng; `salt % len` over 2-3 entries). None outside the
+/// convertible lane, so the caller's tested expect stands as the fallback.
+pub fn baptismal_name_for(
+    archetype_id: u16,
+    salt: u64,
+) -> Option<baptismal_names::BaptismalName> {
+    let names = baptismal_names(archetype_id)?;
+    names.get((salt % names.len() as u64) as usize).copied()
 }
 
 /// Effectiveness percent (25..=400 via dual-type product; see chart rules).

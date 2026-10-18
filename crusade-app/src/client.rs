@@ -28,7 +28,6 @@ use nostr::Keys;
 use crate::conversion as conv;
 use crate::persist::{self, TrailSave};
 use crate::policy::greedy_action;
-use crate::pvp::{record_ladder_result, LADDER_RATING_KEY};
 use crate::view::{
     BattleChampionView, CampaignView, ChampionCard, ClientInput, ConversionView, FoeCard,
     LobbyNet, LobbyStage, LobbyView, Phase, RiteCard, SinCard, TestimonyCard, TrailView,
@@ -2180,7 +2179,7 @@ impl ClientGame {
             let salt = (u64::from(self.foes_defeated_mask()) << 32) | u64::from(issued);
             let roll = conv::conversion_roll(salt);
             if conv::decide_call(pc.chance_pct, roll) {
-                self.baptize(&pc, sp.name)?;
+                self.baptize(&pc, sp.name, salt)?;
             } else {
                 let carried = self
                     .store
@@ -2216,14 +2215,16 @@ impl ClientGame {
     /// the species' Valor until crusade-core grows instance typing. His
     /// baptismal name is seeded from the archetype table into
     /// `roster.baptismal.<id>` — the future rename path rides that key.
-    fn baptize(&mut self, pc: &PendingCall, species_name: &str) -> Result<(), AppError> {
+    /// The pick among the archetype's candidates is keyed off the Call's
+    /// sealed salt (card G6; CONVERSION 3's no-new-rng rule).
+    fn baptize(&mut self, pc: &PendingCall, species_name: &str, salt: u64) -> Result<(), AppError> {
         let level = pc.foe_level.clamp(1, MAX_LEVEL);
         let mut convert = practice_champion(pc.species_id, level)?;
         convert.converted = true;
         convert.converted_from = Some(pc.species_id);
         let id = self.store.add_champion(&convert)?;
-        let name =
-            conv::baptismal_name(pc.species_id).expect("convertible ids carry baptismal names");
+        let name = conv::baptismal_name(pc.species_id, salt)
+            .expect("convertible ids carry baptismal names");
         self.store
             .set_setting(&format!("{}{id}", conv::BAPTISMAL_KEY_PREFIX), name)?;
         let carried = self
@@ -3394,8 +3395,8 @@ mod conversion_tests {
         assert_eq!(convert.level, 20);
         assert_eq!(
             game.baptismal_name_of(rid).as_deref(),
-            conv::baptismal_name(id),
-            "the baptismal name is seeded"
+            conv::baptismal_name(id, decision_salt(1u32 << (id - 108), 1)),
+            "the baptismal name is seeded by the Call's salt"
         );
         // Serde round-trip through the roster store: flags, origin, name
         // and masks all survive a document reload.
@@ -3421,7 +3422,7 @@ mod conversion_tests {
                 .setting(&format!("{}{rid}", conv::BAPTISMAL_KEY_PREFIX))
                 .unwrap()
                 .as_deref(),
-            conv::baptismal_name(id)
+            conv::baptismal_name(id, decision_salt(1u32 << (id - 108), 1))
         );
     }
 

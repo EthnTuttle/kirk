@@ -68,9 +68,11 @@ one batch touch disjoint files; orchestrator commits after each green card.
 - Deps: none. Done-test: existing 53 core tests green unchanged; new chart
   tests pin Valor==100% both ways vs all 15; serde roundtrip test proves
   additive encoding.
-- Note (Gap G8): must prove via test that an *old* binary reading a
-  Valor-typed instance fails gracefully (Serializes-forwards-only claim in
-  HF §7 is asserted, not yet proven).
+- Closed 2026-10-18 by pin tests in `crusade-core/src/data/mod.rs`
+  `serde_tests`: a field-exact v1-codec shadow struct loads the v2
+  `"Valor"` row (serde skips unknown keys), and unknown arms / missing
+  fields are defined errors, never panics. Behavior documented in
+  docs/BUILDING.md "Save-format compatibility".
 
 **M7-2 — Adversary table** — *M*
 - Files: `crusade-core/src/data/adversaries.rs` (new): `pub static
@@ -325,7 +327,7 @@ workflows. Deps: none. Done-test: gates red on a deliberately broken PR.
 | G5 | **Settings bitmask width.** `campaign.sins_defeated` is u8 (7 bits used). `campaign.foes_defeated` needs 14 bits (108–117 + 120–123); `campaign.converts_baptized` needs 10. u8 masks overflow. | M7b-2 | Use u32 masks in new keys (settings map stores strings, so width is a display choice, not a format break); or key per archetype (`campaign.foe.<id>`). Decide at M7b-2 contract time; audit that no sibling key ever reuses a bit position (separate keys today — latent width bug only). |
 | G6 | **`baptismal_names` data table** referenced by CONVERSION §4 but never specified (sources, register, per-archetype forms). | M7-4 (soft; stub ships) | Proposal: stub one generic default ("Brother " + office-stem) at M7-4; author the real table as a content card with register review, pre-v2.0. |
 | G7 | ~~**Shard economy naming conflict.**~~ RESOLVED 2026-10-16 (owner: keep Firstfruits/Mercy split; "Commendation" retired; HF §7/§10 updated). CONVERSION §4–§5 mints "Firstfruits Shards" + "Mercy Shards"; HF §7/§10-q4 mints "Commendation Shards". Three new item types unresolved. | M7-4 | Owner: one shard type (reuse Contrition economy) or three? Proposal: two — Firstfruits (baptism) and Mercy (release) — and edit HF §7's "Commendation" mention to match; document the economy delta in the item table. |
-| G8 | **Serde forwards-compat claim unproven.** `Typing::Valor` new arm — old builds "never meet it", but no test proves a new save can't hard-crash an old binary (matters for v1.0→v2.0 players on the same origin/localStorage). | M7-1 | Add an explicit old-codec fixture test in M7-1 verifying defined behavior (error, not UB); document "v2 saves not loadable by v1" in BUILDING/SHIPPING. |
+| G8 | **Serde forwards-compat claim unproven.** `Typing::Valor` new arm — old builds "never meet it", but no test proves a new save can't hard-crash an old binary (matters for v1.0→v2.0 players on the same origin/localStorage). | M7-1 | **CLOSED 2026-10-18.** Pin tests in `crusade-core/src/data/mod.rs` `serde_tests` prove: a v1-codec shadow reader loads a v2 Valor row (unknown keys skipped, no panic); unknown enum arms / missing required fields are defined `Err`s, never panics/UB. Behavior documented in docs/BUILDING.md. |
 | G9 | **TrailRng future-sync claim.** OVERWORLD §5 says per-day seeds are "PvP/coop-syncable later" but no protocol exists; risk of designing the seed chain wrong for a future lane. | None today | Accept as aspiration; spec only that the day-seed derivation is a pure function of (campaign_root_seed, day), so any future sync lane can replay. Pin in the M8a-2 contract. |
 | G10 | **New engine primitives for rites 43+.** HF §4 kits need multi-hit, evade, priority, flinch, protect, buff, Brand clauses — most likely covered by existing `Secondary` machinery (42 rites already exercise it) but unverified until M7-3. | M7-3 (discovery) | M7-3 begins with an audit: map each [NEW] rite to existing effect kinds; any missing primitive gets a small engine card before the rite table lands. |
 | G11 | **Register discipline at scale.** M7/M8 adds ~14 adversary prose sets + codex pages + trail-event text + Book of the Fallen lines — the largest register surface yet, under HF §6 and CONVERSION §8 banned-register rules, with DOCTRINAL-SINS-2 (untracked, unreviewed in-tree) as the grounding volume. | All content cards | Owner: ratify DOCTRINAL-SINS/2 as canon references (commit decision rides with G1). Proposal: a machine-checkable banned-terms list in `tools/` run as a CI gate over `crusade-core/src/data/**` and codex tables; every prose card gets kimi-k3#high register review in addition to code review. |

@@ -8,8 +8,9 @@
 //!   bigger grant; Mercy is smaller but nonzero),
 //! - the `campaign.foes_defeated` / `campaign.converts_baptized` u32
 //!   settings keys and their bit packing,
-//! - the baptismal-name table (per CONVERSION 4, a 12th-c. Christian name
-//!   per convertible archetype),
+//! - the baptismal-name access fns (per CONVERSION 4, 12th-c. Christian
+//!   names per convertible archetype — the table itself lives in
+//!   `crusade_core::data::baptismal_names`; card G6),
 //! - the Testimonies of the Baptized texts (first-person, chronicle
 //!   register per HF section 6),
 //! - the sealed post-battle draw (`conversion_roll` + `decide_call`) —
@@ -96,24 +97,14 @@ pub fn conversion_roll(salt: u64) -> u8 {
 }
 
 /// A 12th-c. Christian name for a baptized archetype (CONVERSION 4: "a
-/// Christian name form of his office"), one per convertible id. Apostolic
-/// and commonly-attested Frankish baptismal names; the man's own people
-/// are never mocked by it. Renaming (when a rename path lands) edits the
-/// `roster.baptismal.<id>` setting this seed value is written to.
-pub fn baptismal_name(archetype_id: u16) -> Option<&'static str> {
-    Some(match archetype_id {
-        108 => "Peter",
-        109 => "John",
-        110 => "Andrew",
-        111 => "Philip",
-        112 => "Thomas",
-        113 => "Stephen",
-        114 => "James",
-        115 => "Barnabas",
-        116 => "Mark",
-        117 => "Paul", // as Saul the persecutor became Paul (CONVERSION 1)
-        _ => return None,
-    })
+/// Christian name form of his office"), picked deterministically from the
+/// archetype's candidates (`crusade_core::data::baptismal_names`, card
+/// G6) by the same sealed salt the call draw uses — no new rng. The man's
+/// own people are never mocked by it. Renaming (when a rename path lands)
+/// edits the `roster.baptismal.<id>` setting this seed value is written
+/// to. None outside the convertible lane is the tested fallback.
+pub fn baptismal_name(archetype_id: u16, salt: u64) -> Option<&'static str> {
+    crusade_core::data::baptismal_name_for(archetype_id, salt).map(|n| n.name)
 }
 
 /// The Testimonies of the Baptized (CONVERSION 4's hagiography unlock):
@@ -208,19 +199,21 @@ mod tests {
         assert!(decide_call(85, 85) && !decide_call(85, 86));
     }
 
-    /// Every convertible archetype has exactly one baptismal name and one
+    /// Every convertible archetype has salt-seeded baptismal names and one
     /// testimony; commanders and non-adversaries have neither.
     #[test]
     fn tables_cover_exactly_the_convertible_lane() {
         for id in 108u16..=117 {
-            assert!(baptismal_name(id).is_some(), "name for {id}");
+            for salt in 0..8u64 {
+                assert!(baptismal_name(id, salt).is_some(), "name for {id} salt {salt}");
+            }
             let text = testimony(id).expect("testimony for {id}");
             assert!(text.is_ascii(), "testimony {id}");
             let sentences = text.matches('.').count();
             assert!((2..=4).contains(&sentences), "testimony {id}: 2-3 beats, not a homily");
         }
         for id in [1u16, 101, 118, 120, 123] {
-            assert_eq!(baptismal_name(id), None);
+            assert_eq!(baptismal_name(id, 0), None);
             assert_eq!(testimony(id), None);
         }
     }
@@ -234,7 +227,10 @@ mod tests {
         const BANNED: [&str; 5] = ["saracen", "infidel", "heathen", "gibber", "forced convert"]; // reglint:allow exonym, gore-thrill, coercion — this test's own banned-terms const (the Rust-side register gate)
         let mut corpus: Vec<String> = Vec::new();
         for id in 108u16..=117 {
-            corpus.push(baptismal_name(id).unwrap().to_string());
+            for c in data::baptismal_names(id).expect("convertible ids carry names") {
+                corpus.push(c.name.to_string());
+                corpus.push(c.namesake.to_string());
+            }
             corpus.push(testimony(id).unwrap().to_string());
         }
         for text in &corpus {
