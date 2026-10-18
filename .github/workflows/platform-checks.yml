@@ -1,0 +1,36 @@
+# V13-3: wasm/mobile compile gates. The Pages workflow only builds the web
+# bundle on crusade-* pushes; this gate fails PRs that break the wasm target
+# (and the android-facing target for the app crates) regardless of which
+# files were touched.
+name: Platform checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: wasm32 check (app + core + bridge, bevy-ui feature)
+        run: |
+          cargo check -p crusade-app --target wasm32-unknown-unknown --features bevy-ui
+
+  android-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      # Compile-check only: no NDK link step (V13-1 owns the real build).
+      - name: aarch64-linux-android cargo check (non-app crates)
+        run: |
+          cargo check -p crusade-core -p crusade-data -p crusade-sim -p crusade-bridge --target aarch64-linux-android
