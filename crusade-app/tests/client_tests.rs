@@ -320,8 +320,10 @@ fn practice_foes_never_mirror_the_party() {
             .nth(1)
             .expect("facing clause")
             .trim_end_matches('.'),
-        "Squire Audric, Cleric Mabel, Hospitaller Ysolt",
-        "all-theme party: theme fully backfilled from the pool in id order"
+        "Askari Alamdar, Squire Audric, Cleric Mabel",
+        "party holding 3+8: the rotated adversary stands, colliders \
+         backfill from the pool in id order (a full mirror is impossible: \
+         116 cannot be fielded by a roster)"
     );
     let foe = snap.foe.expect("in-battle snapshot shows the foe");
     assert_ne!(
@@ -341,7 +343,7 @@ fn practice_foes_never_mirror_the_party() {
         .expect("the opening line names the foes")
         .clone();
     assert!(
-        facing.contains("facing Brother Aldwyn, Chevalier Raimbaud, Squire Audric."),
+        facing.contains("facing Brother Aldwyn, Askari Alamdar, Squire Audric."),
         "colliders-only replacement keeps theme order: {facing}"
     );
 }

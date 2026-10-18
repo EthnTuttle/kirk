@@ -48,7 +48,10 @@ const FRESH_EVENTS_CAP: usize = 512;
 /// Practice battles use a fixed seed; real duels arrive via commit-reveal.
 const PRACTICE_SEED: [u8; 32] = [0x50; 32];
 /// Deterministic practice theme team (ids into the species table).
-const PRACTICE_FOE_SPECIES: [u16; 3] = [3, 8, 10];
+/// V12-3 taste (v1.2, docs/HISTORICAL-FOES.md §9): one Road-East adversary
+/// rotates in — the Askari Alamdar (116), the rank-and-file line infantryman
+/// the company learns to read. No story, no unlocks.
+const PRACTICE_FOE_SPECIES: [u16; 3] = [3, 8, 116];
 /// A battle party fields at most 6 champions.
 const PARTY_CAP: usize = 6;
 
@@ -2945,11 +2948,17 @@ mod practice_tests {
     fn party_holding_the_whole_theme_yields_a_disjoint_trio() {
         // A company fielding exactly Bastien, Aldwyn, Raimbaud (the theme
         // ids) must never spar itself.
-        let team = practice_foe_team(&[3, 8, 10]);
+        // A company fielding exactly Bastien, Aldwyn, Raimbaud (the theme
+        // ids) must never spar itself. Note 116 is an adversary id and
+        // cannot appear on a roster, so the mirror case is only 3+8.
+        let team = practice_foe_team(&[3, 8, 116]);
         assert_eq!(team.len(), 3);
         for id in team {
-            assert!((1..=12).contains(&id), "foe {id} is a champion id");
-            assert!(![3, 8, 10].contains(&id), "foe {id} never mirrors");
+            assert!(
+                (1..=12).contains(&id) || id == 116,
+                "foe {id} is a champion id or the rotated adversary"
+            );
+            assert!(![3, 8, 116].contains(&id), "foe {id} never mirrors");
         }
         // All three distinct, and the stable backfill order is 1, 2, 4.
         assert_eq!(team, [1, 2, 4]);
@@ -2961,12 +2970,28 @@ mod practice_tests {
     }
 
     #[test]
+    fn the_rotated_adversary_is_a_road_east_archetype() {
+        // V12-3 bounds pin: exactly one member of the theme is an adversary,
+        // it sits in the 108..=117 archetype band (never a named commander),
+        // and it resolves in the species table.
+        let adv: Vec<u16> = PRACTICE_FOE_SPECIES
+            .iter()
+            .copied()
+            .filter(|id| !(1..=12).contains(id))
+            .collect();
+        assert_eq!(adv.len(), 1, "exactly one rotated adversary");
+        let id = adv[0];
+        assert!((108..=117).contains(&id), "foe {id} out of archetype band");
+        assert!(data::species_by_id(id).is_some(), "foe {id} unresolved");
+    }
+
+    #[test]
     fn partial_overlap_replaces_only_the_colliders() {
         // Party fields Bastien only: Bastien leaves, Aldwyn and Raimbaud
         // keep their theme order, and the smallest free pool id appends.
-        assert_eq!(practice_foe_team(&[3]), [8, 10, 1]);
+        assert_eq!(practice_foe_team(&[3]), [8, 116, 1]);
         // Duplicated party species change nothing; nor do surplus members.
-        assert_eq!(practice_foe_team(&[10, 10, 3, 5]), [8, 1, 2]);
+        assert_eq!(practice_foe_team(&[10, 10, 3, 5]), [8, 116, 1]);
     }
 }
 
