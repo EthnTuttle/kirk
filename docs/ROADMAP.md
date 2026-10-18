@@ -260,11 +260,14 @@ shell card*
 
 ### v1.2 — PvP ladder hardening + wager escrow (open items, parallel lane)
 
-**V12-1 — Ladder service** — *M*: replace self-scored honor-system Elo
-(SHIPPING limitation 4) with a relay-signed/rolling attestation-aggregated
-ladder; files: `crusade-app/src/pvp.rs`, `crusade-bridge`, new ladder doc
-kind. Deps: none. Done-test: Sybil/forgery test — unsigned or replayed
-attestations cannot move a rating.
+**V12-1 — Ladder service** — *M*: **DONE (2026-10-18).** Replaced the
+self-scored honor-system Elo (SHIPPING limitation 4) with a
+relay-published, mutually-signed attestation ladder
+(`crusade-bridge/src/ladder.rs` fold, `pvp::settle_ladder`, docs/LADDER.md;
+kind 9265 extended in-place, no new kind). Done-test landed:
+unsigned/tampered, replayed, self-signed, stale, disagreeing, and
+mobbed attestations are all proven inert; honest two-client folds
+converge byte-for-byte.
 
 **V12-2 — Wager escrow** — *L*: escrow via existing kirk token flow,
 settlement via the replay adapter (M6, already mint-visible). Files:
@@ -272,7 +275,7 @@ settlement via the replay adapter (M6, already mint-visible). Files:
 decision** (who runs a production GameMint) — the only true blocker.
 Done-test: end-to-end test-mint escrow→settle→slash roundtrip.
 
-**V12-3 (v1.2 taste)** — *S*: rotate one adversary id into
+**V12-3 (DONE 2026-10-18, b75bd7f)** — *S*: rotate one adversary id into
 `PRACTICE_FOE_SPECIES` (HF §9, two lines + a bounds test). Deps: M7-2.
 
 ### v1.3 — Mobile shells + CI
@@ -284,7 +287,7 @@ hardware runs smoke-equivalent leg.
 **V13-2 — iOS shell** — *L*: Xcode + signing identity (owner-provided).
 Done-test: TestFlight build.
 
-**V13-3 — wasm/mobile CI lanes** — *M*: wasm32 check is currently covered
+**V13-3 (DONE 2026-10-18, d79da89) — wasm/mobile CI lanes** — *M*: wasm32 check is currently covered
 only by the pages workflow deploy build; add a dedicated `cargo check
 --target wasm32-unknown-unknown` CI gate + android `cargo check
 --target aarch64-linux-android` (no SDK link step). Files: `.github/`
