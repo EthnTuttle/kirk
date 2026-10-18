@@ -93,6 +93,26 @@ function openM(p){
   document.getElementById('modal').style.display = 'block';
 }
 function closeM(){ stopPlayer(); document.getElementById('modal').style.display = 'none'; }
+function visibleKeys(){
+  return [...document.querySelectorAll('.card')]
+    .filter(c => c.style.display !== 'none')
+    .map(c => atob(c.id.slice(5)));
+}
+function navM(dir){
+  let ks = visibleKeys();
+  let i = ks.indexOf(cur);
+  if(i < 0) return;
+  let j = i + dir;
+  if(j < 0 || j >= ks.length) return; // stay: do not wrap silently
+  openM(ks[j]);
+}
+document.addEventListener('keydown', e => {
+  if(document.getElementById('modal').style.display !== 'block') return;
+  if(e.target && e.target.id === 'mnote') return; // arrows inside the note edit text
+  if(e.key === 'ArrowRight'){ e.preventDefault(); navM(1); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); navM(-1); }
+  else if(e.key === 'Escape'){ closeM(); }
+});
 function setVerd(v){
   let n = NOTES[cur] || {};
   if(v) n.verdict = v; else delete n.verdict;
@@ -289,6 +309,10 @@ def render() -> bytes:
         chunks.append("</div></div>")
     chunks += [
         "<div id='modal'><div class='inner'>",
+        "<div style='display:flex;justify-content:space-between;align-items:center;gap:.5rem'>",
+        "<button class='verdbtn' onclick='navM(-1)'>&#8249; Prev</button>",
+        "<span style='color:#9a92a6;font-size:.85rem'>&#8592;/&#8594; step through the queue &middot; Esc closes</span>",
+        "<button class='verdbtn' onclick='navM(1)'>Next &#8250;</button></div>",
         "<img id='mimg'><div id='mtitle' style='margin:.5rem 0'></div>",
         "<div style='margin:.6rem 0'>",
         "<button class='verdbtn' id='v-approved' onclick=setVerd('approved')>Approved</button>",
