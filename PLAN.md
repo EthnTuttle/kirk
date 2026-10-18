@@ -156,7 +156,10 @@ Launch roster: 12 Champions, 42 rites (incl. 2 per sin for sin-spawn),
   art LANDED (2bf27ed; owner QA pending in the review gallery).
   M8a/M8b/M8c ALL LANDED (78dc917, 4f5e2a7, b2c1640): trail engine +
   client/persist/UI + Bevy tile renderer behind `overworld` flag; the
-  renderer drives the real TrailView (Travel/EngageChoice). IN FLIGHT:
+  renderer drives the real TrailView (Travel/EngageChoice). LANDED
+  2026-10-17: commander gates on the road (39f924b) + gate-preempts-Call
+  routing (38210e2) + battle-depth A3 with Make Camp (b8ffcff; sims in
+  docs/TRAIL-BATTLE-DEPTH.md / RECOVERY-SIM.md; review SHIP). IN FLIGHT:
   GLM balance-tuning card off docs/FUZZ-ADVERSARIES.md (Shieldbearer kit
   change per owner; L5 pool trim; lift below-band 111/112/113/115/116),
   kimi-k3#high review to follow. Remaining: owner art QA + sprite wiring
