@@ -2,3 +2,5 @@ grid 3x2 row-major: 01 idle / 02 step / 03 pray / 04 idle2 (idle variant) / 05 l
 | D6 combat arc per-frame (4.3 hybrid): 07 strike / 08 hit | src frames kirk-anim-frame-vigil-knight-wymar-strike-v2 + kirk-anim-frame-vigil-knight-wymar-hit-v1 (nano-banana-2-1, 1024x1024 raw, $0.00; strike retried v2: v1 foul, red sash off-identity; hit kept v1) | staged 2026-10-15
 | E4 extended combat arc per-frame: 09 windup / 10 followthrough / 11 victory / 12 defeat | src frames kirk-anim-frame-vigil-knight-wymar-{windup,followthrough,victory,defeat}-v1 (nano-banana-2-1, 1024x1024 raw, $0.00; D6 no-red identity pin applied from v1 on all 4 (0 red px verified)) | staged 2026-10-15
 | F1 status/guard frames: 13 channel / 14 brace | src frames kirk-anim-frame-vigil-knight-wymar-{channel,brace}-v1 (nano-banana-2-1, 1024x1024 raw, $0.00) | staged 2026-10-16
+
+Masters preserved under masters/ (restored 2026-10-17 from sprite-bakeoff scratch; re-derivation of every staged q128 spot-verified byte-identical via slice+quant).
