@@ -94,3 +94,7 @@ required-features = ["bevy-ui"]
 tokio = { version = "1.0", features = ["full"] }
 # Embedded relay fixture for lobby tests (same dev-dep crusade-net uses).
 nostr-relay-builder = "0.35"
+# Ignored measurement lanes (tests/l5_commander_sim.rs): same pinned RNG
+# versions crusade-core/crusade-sim already carry.
+rand = { version = "0.8", features = ["small_rng"] }
+rand_chacha = "0.3"
