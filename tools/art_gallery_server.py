@@ -43,9 +43,9 @@ button.f.on{background:#F4D35E;color:#0B0E1B}
 .badge{display:inline-block;font-size:.6rem;padding:1px 6px;border-radius:8px;margin-top:4px;margin-left:2px}
 .b-approved{background:#2d6a4f}.b-needs-work{background:#A62639}.b-rejected{background:#555}
 .b-noted{background:#F4D35E;color:#0B0E1B}
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10;padding:4vh 4vw;overflow:auto}
-#modal .inner{background:#141928;border:1px solid #F4D35E;max-width:920px;margin:auto;padding:1.2rem;border-radius:8px}
-#modal img{image-rendering:pixelated;width:512px;max-width:100%;background:#0B0E1B}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10;padding:4vh 4vw;overflow:auto;box-sizing:border-box}
+#modal .inner{background:#141928;border:1px solid #F4D35E;max-width:920px;margin:auto;padding:1.2rem;border-radius:8px;overflow:hidden}
+#modal img{image-rendering:pixelated;width:512px;max-width:100%;max-height:62vh;height:auto;object-fit:contain;background:#0B0E1B;display:block}
 #modal textarea{width:100%;height:90px;background:#0B0E1B;color:#E8E3D3;border:1px solid #2a3350}
 .verdbtn{margin-right:.5rem;padding:.4rem .9rem;cursor:pointer;border-radius:4px;border:1px solid #2a3350;background:#141928;color:#E8E3D3}
 .sel-approved{background:#2d6a4f!important}.sel-needs-work{background:#A62639!important}.sel-rejected{background:#555!important}
@@ -105,7 +105,7 @@ function flushNote(){
 function visibleKeys(){
   return [...document.querySelectorAll('.card')]
     .filter(c => c.style.display !== 'none')
-    .map(c => atob(c.id.slice(5)));
+    .map(c => c.getAttribute('data-key'));
 }
 function navM(dir){
   let ks = visibleKeys();
@@ -150,7 +150,7 @@ function persist(){
   let n = NOTES[cur] || {};
   fetch('/api/note', {method:'POST', body: JSON.stringify({path: cur, verdict: n.verdict||'', note: n.note||''})})
     .then(() => {
-      let host = document.getElementById('card-' + btoa(cur));
+      let host = document.querySelector(".card[data-key='" + CSS.escape(cur) + "']");
       if(host){
         host.setAttribute('data-verd', n.verdict || '');
         let old = host.querySelector('.badges'); if(old) old.remove();
@@ -296,7 +296,7 @@ def render() -> bytes:
             key_js = key.replace("'", "\\'")
             verd = html.escape((notes.get(key) or {}).get("verdict", ""))
             chunks.append(
-                f"<div class='card' id='card-__B64__{html.escape(key)}' data-verd='{verd}' onclick=\"openM('{key_js}')\">"
+                f"<div class='card' data-key='{html.escape(key, quote=True)}' data-verd='{verd}' onclick=\"openM('{key_js}')\">"
                 f"<img loading='lazy' src='/{esc}'>"
                 f"<div class='name'>{html.escape(Path(key).name)} — {len(frames)} frames</div>"
                 f"<div class='path'>{html.escape(key)}</div>"
@@ -324,7 +324,7 @@ def render() -> bytes:
             esc_js = p.replace("\\", "\\\\").replace("'", "\\'")
             verd = html.escape((notes.get(p) or {}).get("verdict", ""))
             chunks.append(
-                f"<div class='card' id='card-__B64__{esc}' data-verd='{verd}' onclick=\"openM('{esc_js}')\">"
+                f"<div class='card' data-key='{html.escape(esc, quote=True)}' data-verd='{verd}' onclick=\"openM('{esc_js}')\">"
                 f"<img loading='lazy' src='/{esc}'>"
                 f"<div class='name'>{html.escape(Path(p).stem)}</div>"
                 f"<div class='path'>{esc}</div>"
