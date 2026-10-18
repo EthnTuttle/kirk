@@ -125,13 +125,17 @@ stateless daemon + DNS record.
 
 - **Matchmaking**: nostr lobby (9259/9260) per V1-SHIP-PLAN WS-B — no
   central server, relay-mediated. Fine.
-- **Ladder**: Elo lives in the *player's own automerge store*
-  (`pvp.rs: record_ladder_result`, `ladder.rating` setting, default 1000)
-  = self-scored honor system (SHIPPING limitation 4). A credible public
-  ladder needs an aggregator: read kind-9265 attestations (both pubkeys,
-  consistent digests/winner) from the retention relay and recompute Elo —
-  that is a **small read-only cron/worker against our relay, not a trusted
-  service**: it publishes a signed ranking event anyone can recompute.
+- **Ladder**: V12-1 shipped the attested fold (docs/LADDER.md): Elo state
+  lives in the player's own automerge store as ONE atomic value
+  (`pvp.rs: settle_ladder` writes `ladder.state` = full ratings table +
+  settlement cursor + per-pair damping counters, default rating 1000) and
+  moves ONLY on a verified kind-9265 seal + counter-seal pair, folded by
+  `crusade-bridge/src/ladder.rs` over that persisted state (rolling ==
+  genesis on ratings; equivocation voids, mob seals are inert extras).
+  `ladder.rating`/`ladder.folded` are legacy migration seeds. An
+  independent public standings board remains a **small read-only
+  recomputation over the relay's 9265 stream**, not a trusted service:
+  anyone can recompute the same table from genesis.
   Do not build an API with private ladder state; it would violate the
   trust model's spirit and create an oracle players must trust.
 - **Transcript archive**: for mint-side replay arbitration (v1.2), the

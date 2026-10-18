@@ -40,8 +40,15 @@ a Bevy front-end shell:
 3. **Browser runtime was verified headless** (build + asset presence + smokes).
    First real-browser run should sanity-check font rendering, wgpu
    (WebGL2/WebGPU fallback) and audio.
-4. **Leaderboard is self-scored** Elo in the player store (honor system until
-   the mint arbitration path is live).
+4. **Leaderboard settles only on relay-published, mutually signed
+   attestations** (V12-1; docs/LADDER.md): kind-9265 seal + counter-seal,
+   folded with replay/self-sign/stale/equivocation gates, inert mob
+   extras, persisted same-pair damping, and an atomic rolling state that
+   equals the genesis fold. Remaining soft spots (all in
+   docs/LADDER.md): a peer can forfeit the settle by never
+   countersigning; the counter-seal fetch retries up to ~26 s worst case on a
+   live duel (3 attempts, 6 s relay timeout each, 4 s gaps); an equivocator's retro-poison voids the battle for fresh
+   auditors while the participants' stores keep the prompt settle.
 5. Balance debt: "Cantor Sabina" underperforms in fuzz data (M6 content pass).
 
 ## Roadmap to full ship

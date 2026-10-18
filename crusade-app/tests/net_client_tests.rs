@@ -6,7 +6,8 @@
 //! host/join with `snapshot()` emitting the same in-battle `ViewSnapshot`
 //! shapes the Bevy renderer draws verbatim. Covered assertions: challenge
 //! posted -> listed, accept -> identical outcomes, outcome -> duel phase,
-//! full duel -> matching transcripts, signed attestations, ladder writes.
+//! full duel -> matching transcripts, signed attestations, and the V12-1
+//! counter-seal fetch + attested ladder settle over the relay.
 
 use std::time::Duration;
 
@@ -79,7 +80,7 @@ fn greedy_input(d: &NetDuelDriver) -> ClientInput {
 }
 
 /// Play one side to the end exactly as the shell's duel task does.
-async fn drive_to_end(d: &mut NetDuelDriver, store: &mut RosterStore) -> Result<(), AppError> {
+async fn drive_to_end(d: &mut NetDuelDriver) -> Result<(), AppError> {
     let mut turns = 0u32;
     while d.battle_result().is_none() {
         turns += 1;
@@ -94,7 +95,7 @@ async fn drive_to_end(d: &mut NetDuelDriver, store: &mut RosterStore) -> Result<
             d.my_turn(greedy_input(d)).await?;
         }
     }
-    d.finalize(store).await?;
+    let _ = d.finalize().await?;
     Ok(())
 }
 
@@ -223,6 +224,8 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
             transport,
             outcome.seed,
             outcome.battle_id,
+            outcome.peer, // the host's pubkey, named in the 9265 content
+            outcome.peer, // and our counterparty IS the host
             Some(&join_keys),
         )
         .expect("join driver");
@@ -232,7 +235,7 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
         assert!(snap.me.is_some() && snap.foe.is_some());
         assert!(snap.lobby.is_none(), "a duel snapshot carries no lobby");
         let mut store = RosterStore::new();
-        drive_to_end(&mut driver, &mut store).await?;
+        drive_to_end(&mut driver).await?;
         joiner.disconnect().await;
         Ok::<_, AppError>((driver, store, outcome))
     });
@@ -258,6 +261,8 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
         .await?,
         host_out.seed,
         host_out.battle_id,
+        host_pk,
+        host_out.peer, // our counterparty: the joiner
         Some(&host_keys),
     )
     .expect("host driver");
@@ -270,8 +275,8 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
 
     // 5) Full duel over the relay; the joiner task runs concurrently.
     let mut host_store = RosterStore::new();
-    drive_to_end(&mut host_driver, &mut host_store).await?;
-    let (join_driver, _join_store, join_out) = join_task.await.expect("join task")?;
+    drive_to_end(&mut host_driver).await?;
+    let (join_driver, mut join_store, join_out) = join_task.await.expect("join task")?;
 
     assert_eq!(host_out.battle_id, join_out.battle_id);
     assert_eq!(host_out.seed, join_out.seed);
@@ -291,8 +296,8 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
     assert_eq!(host_driver.snapshot().phase, Phase::BattleOver);
     assert_eq!(join_driver.snapshot().phase, Phase::BattleOver);
     assert!(
-        host_driver.ladder_rating().is_some() && join_driver.ladder_rating().is_some(),
-        "finalize ran the ladder math on both sides"
+        host_driver.attestation_event().is_some() && join_driver.attestation_event().is_some(),
+        "finalize signed both kind-9265 seals"
     );
 
     // 6) Both attestations verify and agree (B3b publishes them; here we
@@ -311,6 +316,69 @@ async fn run_lobby_to_settled_duel() -> Result<(), AppError> {
     )
     .expect("join attestation verifies");
     assert!(crusade_bridge::digests_agree(&host_att, &join_att));
+    // The host seal names the host pubkey so the ladder can map `winner`
+    // (a side index) to a player.
+    assert_eq!(host_att.host.as_deref(), Some(host_pk.to_hex().as_str()));
+    assert_eq!(join_att.host.as_deref(), Some(host_pk.to_hex().as_str()));
+    // Mutual peer-naming binds each seal to the duel (V12-1r).
+    assert_eq!(host_att.peer.as_deref(), Some(join_pk.to_hex().as_str()));
+    assert_eq!(join_att.peer.as_deref(), Some(host_pk.to_hex().as_str()));
+
+    // 7) V12-1 end-to-end settle over the relay: BOTH sides publish
+    //    their seals (as the shell does), each side then fetches the
+    //    counter-seal exactly as the shell's fetch_counter_seal does, and
+    //    the fold writes host 1016 / joiner 984 into each side's OWN
+    //    store. Two honest clients, one agreed roll.
+    use crusade_app::pvp::settle_ladder;
+    use nostr_sdk::prelude::Filter;
+    let host_seal = host_driver.attestation_event().expect("host seal");
+    let join_seal = join_driver.attestation_event().expect("join seal");
+    host.client()
+        .send_event(host_seal.clone())
+        .await
+        .expect("host seal publishes");
+    join_driver; // (driver already returned; seals in hand)
+    let join_client = {
+        // The joiner task disconnected its lobby client; the seals carry
+        // everything the fold needs, so fetch via the HOST's client for
+        // both sides — the stream is public relay data either way.
+        host.client().clone()
+    };
+    join_client
+        .send_event(join_seal.clone())
+        .await
+        .expect("join seal publishes");
+    let fetch = |author: nostr::PublicKey| {
+        let c = join_client.clone();
+        async move {
+            let filter = Filter::new()
+                .author(author)
+                .kind(nostr::Kind::from_u16(crusade_bridge::ATTEST_KIND))
+                .identifier(hex::encode(host_out.battle_id));
+            c.get_events_of(
+                vec![filter],
+                nostr_sdk::EventSource::relays(Some(Duration::from_secs(10))),
+            )
+            .await
+            .expect("counter-seal fetch")
+            .into_iter()
+            .filter(|e| e.verify().is_ok())
+            .max_by_key(|e| e.created_at)
+        }
+    };
+    let fetched_host = fetch(host_pk).await.expect("host's own seal is on the relay");
+    let fetched_join = fetch(join_pk).await.expect("the counter-seal is on the relay");
+    let stream = vec![fetched_host, fetched_join];
+    assert_eq!(
+        settle_ladder(&mut host_store, &host_pk, &stream).expect("host settles"),
+        Some(1016),
+        "host's attested roll: +16 off the default"
+    );
+    assert_eq!(
+        settle_ladder(&mut join_store, &join_pk, &stream).expect("join settles"),
+        Some(984),
+        "joiner's attested roll: -16 off the default"
+    );
 
     host.disconnect().await;
     relay.shutdown();

@@ -562,10 +562,11 @@ async fn accept_challenge(
 /// (it stays connected until this function returns), construct the
 /// NetDuelDriver for our role, then drive turns until the duel settles or
 /// dies; `finalize` runs exactly as the driver defines (verified digest,
-/// signed attestation kept with the driver, ladder math) against a scratch
-/// store — the ONLY durable ladder write is applied by the client itself
-/// when it handles [`LobbyNet::DuelFinished`], so the store never crosses
-/// the async boundary.
+/// signed attestation kept with the driver). The duel reports
+/// [`LobbyNet::DuelFinished`] first; the ladder write happens later and
+/// separately, when the peer's counter-seal folds into
+/// [`LobbyNet::LadderSettled`] (V12-1), so no ladder math crosses the
+/// async boundary except as already-signed events.
 async fn run_duel(
     lobby: &Lobby,
     keys: &Keys,
@@ -600,6 +601,16 @@ async fn run_duel(
     };
     // Role dispatch: engine side 0 is the challenge author (host). Both
     // replicas build the identical Battle from the same seed + rosters.
+    // The host's nostr pubkey is named inside the kind-9265 content so the
+    // ladder fold can map `winner` (a side index) to a player.
+    let host_pubkey = if outcome.we_host {
+        keys.public_key()
+    } else {
+        outcome.peer
+    };
+    // The counterparty named in our kind-9265 seal: the lobby outcome's
+    // peer, either way (V12-1r mutual-peer ladder gate).
+    let peer_pubkey = outcome.peer;
     let built = if outcome.we_host {
         NetDuelDriver::host(
             outcome.our_roster,
@@ -607,6 +618,8 @@ async fn run_duel(
             transport,
             outcome.seed,
             outcome.battle_id,
+            host_pubkey,
+            peer_pubkey,
             Some(keys),
         )
     } else {
@@ -616,6 +629,8 @@ async fn run_duel(
             transport,
             outcome.seed,
             outcome.battle_id,
+            host_pubkey,
+            peer_pubkey,
             Some(keys),
         )
     };
@@ -683,14 +698,15 @@ async fn run_duel(
             return Some(());
         }
         if driver.battle_result().is_some() {
-            // The duel is decided: FinalDigest exchange + attestation +
-            // scratch-store ladder math, then report the settlement.
-            let mut scratch = RosterStore::new();
-            let Some(res) = driven(rx, buffered, driver.finalize(&mut scratch)).await else {
+            // The duel is decided: FinalDigest exchange + attestation.
+            // The ladder does NOT move here (V12-1); it moves when the
+            // peer's counter-seal is folded by the client's LadderSettled
+            // arm below.
+            let Some(res) = driven(rx, buffered, driver.finalize()).await else {
                 return None;
             };
             match res {
-                Ok(()) => {
+                Ok(_seal) => {
                     let won = driver.we_won().unwrap_or(false);
                     if driver.attestation_event().is_none() {
                         warn!("net duel: finalized without an attestation event");
@@ -714,10 +730,29 @@ async fn run_duel(
                     // (a) publish the attestation to the duel's relay set and
                     // (b) resolve the victor's alms purse. Cosmetic; aborting
                     // mid-way unwinds exactly like any driven() op.
-                    let settle = settle_alms(lobby, won, peer, attestation, relays, &shared);
+                    let settle = settle_alms(lobby, won, peer, attestation.clone(), relays, &shared);
                     let Some(alms) = driven(rx, buffered, settle).await else {
                         return None;
                     };
+                    // (c) V12-1 ladder settle: fetch the PEER's counter-seal
+                    // (kind 9265, author = peer, d = this battle) off the
+                    // relay set now that we have published ours, and hand
+                    // BOTH seals to the client; every verification gate runs
+                    // in the client's fold arm.
+                    if let Some(ours) = attestation {
+                        if let Some(theirs) =
+                            fetch_counter_seal(lobby.client(), peer, outcome.battle_id).await
+                        {
+                            shared
+                                .lock()
+                                .expect("net mailbox mutex poisoned")
+                                .update(|s| {
+                                    s.events.push(LobbyNet::LadderSettled { ours, theirs });
+                                });
+                        } else {
+                            warn!("the counter-seal never arrived; the roll stays unmarked this session");
+                        }
+                    }
                     // Serve alms-invoice choices until the player walks back
                     // to the menu (Abort / channel close), then unwind.
                     post_duel_alms_loop(keys, alms, rx, buffered, shared).await;
@@ -812,6 +847,64 @@ async fn publish_attestation(
         }
     };
     set_alms(shared, |a| a.attestation = Some(post));
+}
+
+/// How long one counter-seal fetch attempt may take.
+const COUNTER_SEAL_FETCH_TIMEOUT: Duration = Duration::from_secs(6);
+/// Counter-seal fetch attempts: the peer signs its seal seconds after we
+/// sign ours (its FinalDigest verify lands later in the same handshake),
+/// so a single-shot fetch races the peer's writer and settles the two
+/// honest sides asymmetrically. Bounded retry closes that window; the
+/// ladder fold itself is idempotent, so a late success can never
+/// double-apply.
+const COUNTER_SEAL_ATTEMPTS: u32 = 3;
+/// Gap between attempts (wasm-safe pacing via `async_utility`).
+const COUNTER_SEAL_RETRY_GAP: Duration = Duration::from_secs(4);
+
+/// Sleep without tokio (wasm-safe): a never-completing future under a
+/// timeout — the same pattern `crusade_app::lobby` uses for its pacing.
+async fn net_sleep(d: Duration) {
+    let _ = nostr_sdk::async_utility::time::timeout(Some(d), std::future::pending::<()>()).await;
+}
+
+/// Fetch the PEER's kind-9265 counter-seal for this duel off the relay set
+/// (author = peer, `d` = this battle id), retrying briefly to cover the
+/// peer's publish delay. V12-1: the ladder folds only a matched seal +
+/// counter-seal pair, and every verification gate lives in the client's
+/// `LadderSettled` arm — here we only pre-screen the relay's answer for a
+/// valid event signature, honoring the newest if a replay turned up
+/// several.
+async fn fetch_counter_seal(
+    client: &nostr_sdk::Client,
+    peer: PublicKey,
+    battle_id: [u8; 32],
+) -> Option<Event> {
+    let filter = Filter::new()
+        .author(peer)
+        .kind(Kind::from_u16(crusade_bridge::ATTEST_KIND))
+        .identifier(hex::encode(battle_id));
+    for attempt in 1..=COUNTER_SEAL_ATTEMPTS {
+        let events = client
+            .get_events_of(
+                vec![filter.clone()],
+                EventSource::relays(Some(COUNTER_SEAL_FETCH_TIMEOUT)),
+            )
+            .await
+            .map_err(|err| warn!("counter-seal fetch failed: {err}"))
+            .ok()?;
+        if let Some(seal) = events
+            .into_iter()
+            .filter(|e| e.verify().is_ok())
+            .max_by_key(|e| e.created_at)
+        {
+            return Some(seal);
+        }
+        if attempt < COUNTER_SEAL_ATTEMPTS {
+            warn!("counter-seal not on the relays yet (attempt {attempt}); retrying");
+            net_sleep(COUNTER_SEAL_RETRY_GAP).await;
+        }
+    }
+    None
 }
 
 /// Fetch the victor's newest kind-0 profile from the duel's relays and read

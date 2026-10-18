@@ -7,7 +7,17 @@
 //! learnset-legal rites, zero grace/devotion, full zeal, resolve at the
 //! computed maximum.
 
-use crusade_app::pvp::{record_ladder_result, NetDuelDriver};
+use crusade_app::pvp::{settle_ladder, NetDuelDriver};
+
+/// Read one player's rating out of the atomic `ladder.state` value.
+fn rating_of(store: &RosterStore, pk: &nostr::PublicKey) -> Option<u64> {
+    let json = store.setting(crusade_app::pvp::LADDER_STATE_KEY).ok()??;
+    serde_json::from_str::<serde_json::Value>(&json)
+        .ok()?
+        .get("ratings")?
+        .get(pk.to_hex())?
+        .as_u64()
+}
 use crusade_app::{AppError, ClientInput, Phase};
 use crusade_core::data;
 use crusade_core::engine::Action;
@@ -87,12 +97,9 @@ struct DriveStats {
 }
 
 /// Play one side to the end with the greedy policy: forced switches resolve
-/// via `my_switch` (first legal target), then `finalize` settles into
-/// `store`. Drives ONLY this side — the peer must run concurrently.
-async fn drive_to_end(
-    d: &mut NetDuelDriver,
-    store: &mut RosterStore,
-) -> Result<DriveStats, AppError> {
+/// via `my_switch` (first legal target), then `finalize` signs the
+/// attestation. Drives ONLY this side — the peer must run concurrently.
+async fn drive_to_end(d: &mut NetDuelDriver) -> Result<DriveStats, AppError> {
     let mut stats = DriveStats::default();
     while d.battle_result().is_none() {
         stats.turns += 1;
@@ -108,7 +115,7 @@ async fn drive_to_end(
             d.my_turn(greedy_input(d)).await?;
         }
     }
-    d.finalize(store).await?;
+    d.finalize().await?;
     Ok(stats)
 }
 
@@ -131,6 +138,8 @@ async fn full_duel_host_vs_join_converges_attests_and_rates() {
         t_host,
         SEED,
         BATTLE_ID,
+        host_keys.public_key(),
+        join_keys.public_key(),
         Some(&host_keys),
     )
     .expect("host driver");
@@ -140,22 +149,17 @@ async fn full_duel_host_vs_join_converges_attests_and_rates() {
         t_join,
         SEED,
         BATTLE_ID,
+        host_keys.public_key(),
+        host_keys.public_key(),
         Some(&join_keys),
     )
     .expect("join driver");
 
-    let mut host_store = RosterStore::new();
-    let mut join_store = RosterStore::new();
-
     let join_task = tokio::spawn(async move {
-        drive_to_end(&mut join, &mut join_store)
-            .await
-            .map(|stats| (stats, join, join_store))
+        drive_to_end(&mut join).await.map(|stats| (stats, join))
     });
-    let host_stats = drive_to_end(&mut host, &mut host_store)
-        .await
-        .expect("host drive");
-    let (_join_stats, join, join_store) = join_task.await.expect("join task").expect("join drive");
+    let host_stats = drive_to_end(&mut host).await.expect("host drive");
+    let (_join_stats, join) = join_task.await.expect("join task").expect("join drive");
 
     assert_eq!(
         host.battle_result(),
@@ -199,24 +203,60 @@ async fn full_duel_host_vs_join_converges_attests_and_rates() {
     assert_eq!(host_att.digest, hex::encode(host.transcript_hash()));
     assert_eq!(host_att.winner, 0);
 
-    // Ladder: both stores moved off the default 1000 by exactly +/-16.
-    assert_eq!(host.ladder_rating(), Some(1016));
-    assert_eq!(join.ladder_rating(), Some(984));
+    // V12-1 ladder: nothing has moved yet — finalize signed seals but no
+    // counter-seal pair has been folded.
+    let mut host_store = RosterStore::new();
+    let mut join_store = RosterStore::new();
+
+    // Self-only fold (own seal alone, the old honor-scoring position) is
+    // inert: a rating needs BOTH seals.
     assert_eq!(
-        host_store.setting("ladder.rating").unwrap().as_deref(),
-        Some("1016")
+        settle_ladder(&mut host_store, &host_keys.public_key(), &[host_event.clone()])
+            .expect("self-only settle"),
+        None
+    );
+    assert_eq!(rating_of(&host_store, &host_keys.public_key()), None);
+
+    // Honest two-client settlement: each side folds the same seal +
+    // counter-seal pair into its OWN store, and both agree (host +16,
+    // joiner -16 off the default 1000) — the convergent-fold done-test.
+    assert_eq!(
+        settle_ladder(
+            &mut host_store,
+            &host_keys.public_key(),
+            &[host_event.clone(), join_event.clone()]
+        )
+        .expect("host settle"),
+        Some(1016)
     );
     assert_eq!(
-        join_store.setting("ladder.rating").unwrap().as_deref(),
-        Some("984")
+        settle_ladder(
+            &mut join_store,
+            &join_keys.public_key(),
+            &[join_event.clone(), host_event.clone()]
+        )
+        .expect("join settle"),
+        Some(984)
+    );
+    assert_eq!(rating_of(&host_store, &host_keys.public_key()), Some(1016));
+    assert_eq!(rating_of(&join_store, &join_keys.public_key()), Some(984));
+
+    // Replay: folding the same pair again cannot move anything.
+    assert_eq!(
+        settle_ladder(
+            &mut host_store,
+            &host_keys.public_key(),
+            &[host_event.clone(), join_event.clone()]
+        )
+        .expect("replay settle"),
+        Some(1016),
+        "refolding the identical stream is idempotent"
     );
 
-    // finalize consumed its protocol step: re-entry is a store-untouched no-op.
-    host.finalize(&mut host_store).await.expect("idempotent");
-    assert_eq!(
-        host_store.setting("ladder.rating").unwrap().as_deref(),
-        Some("1016")
-    );
+    // finalize consumed its protocol step: re-entry is a no-op returning
+    // the same attestation.
+    let again = host.finalize().await.expect("idempotent");
+    assert_eq!(again.as_ref().map(|e| e.id), Some(host_event.id));
 }
 
 /// The Prince's Flail of Penance KOs level-5 Audrics while their mate waits:
@@ -234,23 +274,25 @@ async fn forced_switch_duel_over_net_completes() {
         t_host,
         SEED,
         BATTLE_ID,
+        Keys::generate().public_key(),
+        Keys::generate().public_key(),
         None,
     )
     .expect("host driver");
-    let mut join = NetDuelDriver::join(join_party, host_party, t_join, SEED, BATTLE_ID, None)
-        .expect("join driver");
+    let mut join = NetDuelDriver::join(
+        join_party,
+        host_party,
+        t_join,
+        SEED,
+        BATTLE_ID,
+        Keys::generate().public_key(),
+        Keys::generate().public_key(),
+        None,
+    )
+    .expect("join driver");
 
-    let mut host_store = RosterStore::new();
-    let mut join_store = RosterStore::new();
-
-    let join_task = tokio::spawn(async move {
-        drive_to_end(&mut join, &mut join_store)
-            .await
-            .map(|stats| (stats, join))
-    });
-    drive_to_end(&mut host, &mut host_store)
-        .await
-        .expect("host drive");
+    let join_task = tokio::spawn(async move { drive_to_end(&mut join).await.map(|stats| (stats, join)) });
+    drive_to_end(&mut host).await.expect("host drive");
     let (join_stats, join) = join_task.await.expect("join task").expect("join drive");
 
     assert!(
@@ -279,11 +321,22 @@ async fn disconnect_mid_duel_surfaces_closed_no_panic() {
         t_host,
         SEED,
         BATTLE_ID,
+        Keys::generate().public_key(),
+        Keys::generate().public_key(),
         None,
     )
     .expect("host driver");
-    let mut join = NetDuelDriver::join(join_party, host_party, t_join, SEED, BATTLE_ID, None)
-        .expect("join driver");
+    let mut join = NetDuelDriver::join(
+        join_party,
+        host_party,
+        t_join,
+        SEED,
+        BATTLE_ID,
+        Keys::generate().public_key(),
+        Keys::generate().public_key(),
+        None,
+    )
+    .expect("join driver");
 
     let join_task = tokio::spawn(async move {
         // Two honest turns, then vanish (transport drops with the driver)
@@ -312,30 +365,184 @@ async fn disconnect_mid_duel_surfaces_closed_no_panic() {
     assert_eq!(err, AppError::Net(NetError::Closed));
 }
 
-/// Ladder Elo math with fixed numbers: fresh stores start at 1000, K=32.
+/// Sign one kind-9265 attestation for the settle battery below (host is
+/// always `host_keys`; the maps `winner` to a player).
+fn seal(keys: &Keys, host: &Keys, peer: &Keys, battle: [u8; 32], winner: u8) -> nostr::Event {
+    crusade_bridge::sign_attestation(
+        keys,
+        &crusade_bridge::Attestation {
+            digest: hex::encode([0xD1; 32]),
+            battle: hex::encode(battle),
+            winner,
+            host: Some(host.public_key().to_hex()),
+            peer: Some(peer.public_key().to_hex()),
+        },
+    )
+    .expect("seal signs")
+}
+
+/// V12-1 store-level settle battery: only a verified seal + counter-seal
+/// pair moves the persisted rating; forge/self/replay shapes are inert,
+/// and a verified second duel rolls forward off the stored checkpoint.
 #[test]
-fn ladder_rating_records_and_updates_exact() {
-    // Win vs equal rating: +16 exactly.
-    let mut store = RosterStore::new();
-    let new = record_ladder_result(&mut store, true, None).expect("record win");
-    assert_eq!(new, 1016);
-    assert_eq!(
-        store.setting("ladder.rating").unwrap().as_deref(),
-        Some("1016")
-    );
-    // Follow-up loss vs 1000 from 1016: expected score ~0.523 -> -16.74,
-    // rounds to -17 -> 999.
-    let new = record_ladder_result(&mut store, false, Some(1000)).expect("record loss");
-    assert_eq!(new, 999);
+fn settle_ladder_writes_only_on_verified_pairs() {
+    let host_keys = Keys::generate();
+    let join_keys = Keys::generate();
+    let pair = |battle: [u8; 32]| {
+        vec![
+            seal(&host_keys, &host_keys, &join_keys, battle, 0),
+            seal(&join_keys, &host_keys, &host_keys, battle, 0),
+        ]
+    };
 
-    // Loss vs equal rating from default: -16 exactly.
-    let mut store = RosterStore::new();
-    assert_eq!(record_ladder_result(&mut store, false, None).unwrap(), 984);
-
-    // Win vs a 1600 opponent: expected ~0.0306 -> gain ~30.98 -> 1031.
-    let mut store = RosterStore::new();
+    // Verified pair, host won: +16/-16 off the defaults, persisted.
+    let mut host_store = RosterStore::new();
+    let mut join_store = RosterStore::new();
+    let events = pair([0xE1; 32]);
     assert_eq!(
-        record_ladder_result(&mut store, true, Some(1600)).unwrap(),
-        1031
+        settle_ladder(&mut host_store, &host_keys.public_key(), &events).unwrap(),
+        Some(1016)
     );
+    assert_eq!(
+        settle_ladder(&mut join_store, &join_keys.public_key(), &events).unwrap(),
+        Some(984)
+    );
+
+    // Forge: tamper the counter-seal after signing. Store untouched.
+    let mut bad = events.clone();
+    bad[1].content = bad[1].content.replacen(":0}", ":1}", 1);
+    let before = rating_of(&host_store, &host_keys.public_key());
+    assert_eq!(
+        settle_ladder(&mut host_store, &host_keys.public_key(), &bad).unwrap(),
+        Some(1016),
+        "the stored checkpoint still seeds the fold, but the forged pair adds nothing"
+    );
+    assert_eq!(rating_of(&host_store, &host_keys.public_key()), before);
+
+    // Self-sign: one key sealing both sides. Untouched.
+    let solo = vec![
+        seal(&host_keys, &host_keys, &host_keys, [0xE2; 32], 0),
+        seal(&host_keys, &host_keys, &host_keys, [0xE2; 32], 0),
+    ];
+    let mut solo_store = RosterStore::new();
+    assert_eq!(
+        settle_ladder(&mut solo_store, &host_keys.public_key(), &solo).unwrap(),
+        None
+    );
+    assert!(solo_store
+        .setting(crusade_app::pvp::LADDER_STATE_KEY)
+        .unwrap()
+        .is_none());
+
+    // Replay: the SAME events again — idempotent, no extra movement.
+    assert_eq!(
+        settle_ladder(&mut host_store, &host_keys.public_key(), &events).unwrap(),
+        Some(1016)
+    );
+
+    // Missing counter-seal: only our own half. Untouched.
+    let half = vec![events[0].clone()];
+    let mut half_store = RosterStore::new();
+    assert_eq!(
+        settle_ladder(&mut half_store, &host_keys.public_key(), &half).unwrap(),
+        None
+    );
+    assert!(half_store
+        .setting(crusade_app::pvp::LADDER_STATE_KEY)
+        .unwrap()
+        .is_none());
+
+    // Rolling: a second honest duel folds off the persisted checkpoint
+    // exactly as both battles folded from scratch would rate us.
+    let second = pair([0xE3; 32]);
+    let rolled = settle_ladder(&mut host_store, &host_keys.public_key(), &second).unwrap();
+    let mut all = events.clone();
+    all.extend(second.iter().cloned());
+    let fresh_store_rating = crusade_bridge::fold_attestations(
+        all.iter(),
+        &[],
+        &std::collections::BTreeSet::new(),
+        &std::collections::BTreeMap::new(),
+    )
+    .rating(&host_keys.public_key());
+    assert_eq!(rolled, fresh_store_rating);
+
+    // A rating claim tendered for the WRONG identity moves nothing of ours.
+    let stranger = Keys::generate();
+    let mut stranger_store = RosterStore::new();
+    assert_eq!(
+        settle_ladder(&mut stranger_store, &stranger.public_key(), &events).unwrap(),
+        None
+    );
+    assert!(stranger_store
+        .setting(crusade_app::pvp::LADDER_STATE_KEY)
+        .unwrap()
+        .is_none());
+}
+
+/// Two devices, one account: each settles a DIFFERENT duel while forked
+/// from the same document, the automerge docs merge (ladder.state is one
+/// LWW value — the winner's state arrives whole, never a mixed
+/// rating/cursor), and each device then re-presents the seals it holds.
+/// Both must converge to the genesis fold of both duels.
+#[test]
+fn two_devices_converge_after_merge_and_resettle() {
+    let me = Keys::generate();
+    let foe = Keys::generate();
+    let battle1 = vec![
+        seal(&me, &me, &foe, [0xF1; 32], 0),
+        seal(&foe, &me, &me, [0xF1; 32], 0),
+    ];
+    let battle2 = vec![
+        seal(&me, &me, &foe, [0xF2; 32], 0),
+        seal(&foe, &me, &me, [0xF2; 32], 0),
+    ];
+
+    // One account, two devices forked from the same document.
+    let base = RosterStore::new().save_bytes().expect("base doc saves");
+    let mut dev_a = RosterStore::load_bytes(&base).expect("device A loads");
+    let mut dev_b = RosterStore::load_bytes(&base).expect("device B loads");
+
+    // Each device settles its own duel while offline from the other.
+    let ra1 = settle_ladder(&mut dev_a, &me.public_key(), &battle1).unwrap();
+    let rb2 = settle_ladder(&mut dev_b, &me.public_key(), &battle2).unwrap();
+    assert_eq!(ra1, Some(1016));
+    assert_eq!(rb2, Some(1016));
+
+    // Merge both ways: the docs converge to ONE ladder.state blob
+    // (automerge LWW on the single atomic key; which side wins is the
+    // CRDT's call, but both devices hold the SAME blob afterwards).
+    let a_bytes = dev_a.save_bytes().expect("A saves");
+    let b_bytes = dev_b.save_bytes().expect("B saves");
+    dev_a.merge_bytes(&b_bytes).expect("A merges B");
+    dev_b.merge_bytes(&a_bytes).expect("B merges A");
+    let sa = dev_a
+        .setting(crusade_app::pvp::LADDER_STATE_KEY)
+        .unwrap()
+        .unwrap();
+    let sb = dev_b
+        .setting(crusade_app::pvp::LADDER_STATE_KEY)
+        .unwrap()
+        .unwrap();
+    assert_eq!(sa, sb, "merged devices hold the identical state blob");
+
+    // Both re-present every seal either device holds (the retry/rescan
+    // lane re-folds full local history; the cursor makes it idempotent).
+    let all: Vec<nostr::Event> = battle1.iter().chain(battle2.iter()).cloned().collect();
+    let fa = settle_ladder(&mut dev_a, &me.public_key(), &all).unwrap();
+    let fb = settle_ladder(&mut dev_b, &me.public_key(), &all).unwrap();
+    assert_eq!(fa, fb, "both devices converge after re-settle");
+
+    // And the convergence point IS the genesis fold of both duels.
+    let genesis = crusade_bridge::fold_attestations(
+        all.iter(),
+        &[],
+        &std::collections::BTreeSet::new(),
+        &std::collections::BTreeMap::new(),
+    );
+    assert_eq!(fa, genesis.rating(&me.public_key()));
+    // The second duel prices the FOE at their folded 984 (the persisted
+    // full table — not a hardcoded 1000): expected ~0.546 -> +14.5 ->
+    // +15 -> 1031. (The pre-fix rolling path would have said 1033.)
+    assert_eq!(fa, Some(1031));
 }

@@ -72,7 +72,7 @@ Systems that must NEVER observe zap existence, amounts, or senders:
 |---|---|---|
 | Battle RNG / seed derivation | kirk commit-reveal → `crusade-bridge` → `Battle::new(seed)` | Outcomes must be reproducible from seed + actions by any observer. A money input is a hidden input. |
 | Matchmaking / challenge flow | kirk kinds 9259–9263 | Pairing on wealth destroys competitive integrity and invites griefing-through-free-matches. |
-| Elo ladder | `crusade-app/src/pvp.rs` `record_ladder_result` | Already self-scored/honor-system (SHIPPING limitation 4); adding purchasable signal makes it a vanity metric, not a rating. |
+| Elo ladder | `crusade-app/src/pvp.rs` `settle_ladder` + crusade-bridge `ladder.rs` | Attestation-folded since V12-1 (docs/LADDER.md); adding purchasable signal makes it a vanity metric, not a rating. |
 | Arbitration / mint replay | kirk `Game` adapter, `crusade-bridge` replay | The arbiter replays transcripts to verdict. Its verdicts must depend only on the transcript — that is the whole trust model (PLAN §5). |
 
 Rule of thumb: **zaps may influence what a player SEES (supporter badge,

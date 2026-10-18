@@ -680,19 +680,27 @@ impl ClientGame {
         self.nostr_keys.clone()
     }
 
-    /// The honor-system ladder Elo, read from the store key
-    /// [`record_ladder_result`] writes (SHIPPING.md limitation 4). `None`
-    /// (key absent or unparseable) is the unranked state the menu/lobby
-    /// render. Exposed as an accessor like [`Self::roster_cards`] rather
-    /// than a [`ViewSnapshot`] field: the net-duel driver builds its own
-    /// snapshot literal, and the rating is menu/lobby chrome, not battle
-    /// data.
+    /// The attested ladder standing, read from the atomic `ladder.state`
+    /// value [`crate::pvp::settle_ladder`] writes on a verified
+    /// counter-seal fold (V12-1; docs/LADDER.md). `None` (state absent,
+    /// unparseable, or without our row) is the unranked state the
+    /// menu/lobby render. Exposed as an accessor like
+    /// [`Self::roster_cards`] rather than a [`ViewSnapshot`] field: the
+    /// net-duel driver builds its own snapshot literal, and the rating is
+    /// menu/lobby chrome, not battle data.
     pub fn ladder_rating(&self) -> Option<u64> {
+        let me = self.nostr_keys.as_ref()?.public_key();
         self.store
-            .setting(LADDER_RATING_KEY)
+            .setting(crate::pvp::LADDER_STATE_KEY)
             .ok()
             .flatten()
-            .and_then(|s| s.parse::<u64>().ok())
+            .and_then(|json| {
+                serde_json::from_str::<serde_json::Value>(&json)
+                    .ok()?
+                    .get("ratings")?
+                    .get(me.to_hex())?
+                    .as_u64()
+            })
     }
 
     /// A champion's persisted gallery vesture pick (0 base, 1 alt-a,
@@ -1086,16 +1094,39 @@ impl ClientGame {
                         self.phase
                     )));
                 }
-                let rating = record_ladder_result(&mut self.store, won, None)?;
-                self.push_log(vec![format!(
-                    "{} The honor ladder records a standing of {rating} (kept on good faith).",
+                // V12-1: no rating write here. The honor ladder is gone;
+                // the standing moves only when the peer's counter-seal
+                // arrives and the LadderSettled fold verifies (below).
+                self.push_log(vec![
                     if won {
-                        "Victory - Deo Gratias!"
+                        "Victory - Deo Gratias!".to_string()
                     } else {
-                        "Defeat - pray and regroup."
-                    }
-                )]);
+                        "Defeat - pray and regroup.".to_string()
+                    },
+                    "Your seal is on the roll; the lists await the counter-seal.".to_string(),
+                ]);
                 self.phase = Phase::BattleOver;
+                Ok(())
+            }
+            LobbyNet::LadderSettled { ours, theirs } => {
+                if self.phase != Phase::BattleOver {
+                    return Err(illegal(format!(
+                        "no settled duel to rate from {:?}",
+                        self.phase
+                    )));
+                }
+                let Some(keys) = &self.nostr_keys else {
+                    return Err(illegal("no nostr identity to rate"));
+                };
+                let me = keys.public_key();
+                match crate::pvp::settle_ladder(&mut self.store, &me, &[ours, theirs])? {
+                    Some(rating) => self.push_log(vec![format!(
+                        "The attested roll records a standing of {rating}."
+                    )]),
+                    None => self.push_log(vec![
+                        "The counter-seal did not hold; the roll stands unmarked.".to_string(),
+                    ]),
+                }
                 Ok(())
             }
             LobbyNet::DuelAborted { text } => {
@@ -3123,22 +3154,34 @@ mod lobby_tests {
         assert_eq!(
             game.ladder_rating(),
             None,
-            "absent key reads unranked (menu/lobby render 'Ladder: unranked')"
+            "without a nostr identity there is no 'our row' to read"
         );
+        game.handle(ClientInput::EnterLobby).expect("enter");
+        let me = game.net_identity().expect("seal minted").public_key();
 
+        // Absent state reads unranked.
+        assert_eq!(game.ladder_rating(), None);
+
+        // State with our row reads back.
+        let state = format!(r#"{{"ratings":{{"{}":1212}}}}"#, me.to_hex());
         game.store()
-            .set_setting(LADDER_RATING_KEY, "1212")
-            .expect("rating writable");
+            .set_setting(crate::pvp::LADDER_STATE_KEY, &state)
+            .expect("state writable");
         assert_eq!(game.ladder_rating(), Some(1212));
 
+        // Unparseable state degrades to unranked, never to a crash.
         game.store()
-            .set_setting(LADDER_RATING_KEY, "not-a-rating")
-            .expect("rating writable");
-        assert_eq!(
-            game.ladder_rating(),
-            None,
-            "unparseable rating degrades to unranked, never to a crash"
-        );
+            .set_setting(crate::pvp::LADDER_STATE_KEY, "not-json")
+            .expect("state writable");
+        assert_eq!(game.ladder_rating(), None);
+
+        // SOMEONE ELSE's row alone does not dress as ours.
+        let stranger = nostr::Keys::generate();
+        let state = format!(r#"{{"ratings":{{"{}":1212}}}}"#, stranger.public_key().to_hex());
+        game.store()
+            .set_setting(crate::pvp::LADDER_STATE_KEY, &state)
+            .expect("state writable");
+        assert_eq!(game.ladder_rating(), None);
     }
 
     #[test]
@@ -3170,9 +3213,56 @@ mod lobby_tests {
             .expect("settle");
         assert_eq!(game.phase(), Phase::BattleOver);
         assert_eq!(
-            game.store().setting("ladder.rating").unwrap().as_deref(),
-            Some("1016"),
-            "win off the default rating is +16"
+            game.ladder_rating(),
+            None,
+            "V12-1: DuelFinished alone moves no rating — the honor book is closed"
+        );
+        assert!(game
+            .store()
+            .setting(crate::pvp::LADDER_STATE_KEY)
+            .unwrap()
+            .is_none());
+
+        // The counter-seal arrives and verifies: NOW the fold writes.
+        let my_keys = game.net_identity().expect("lobby minted our seal");
+        let joiner = nostr::Keys::generate();
+        // Mutual peer-naming, exactly as a live duel's seals carry it.
+        let seal = |keys: &nostr::Keys, peer: &nostr::Keys, winner: u8| {
+            crusade_bridge::sign_attestation(
+                keys,
+                &crusade_bridge::Attestation {
+                    digest: hex::encode([0xD1; 32]),
+                    battle: hex::encode([0xB1; 32]),
+                    winner,
+                    host: Some(my_keys.public_key().to_hex()),
+                    peer: Some(peer.public_key().to_hex()),
+                },
+            )
+            .expect("seal signs")
+        };
+        // winner == 0 names the host — us — so the fold writes +16.
+        game.handle(ClientInput::LobbyNet(LobbyNet::LadderSettled {
+            ours: seal(&my_keys, &joiner, 0),
+            theirs: seal(&joiner, &my_keys, 0),
+        }))
+        .expect("counter-seal settles");
+        assert_eq!(
+            game.ladder_rating(),
+            Some(1016),
+            "verified pair: +16 off the default"
+        );
+
+        // A forged second settlement (the peer re-signed claiming THEY
+        // won; valid signature, disagreeing claim) cannot move it.
+        game.handle(ClientInput::LobbyNet(LobbyNet::LadderSettled {
+            ours: seal(&my_keys, &joiner, 0),
+            theirs: seal(&joiner, &my_keys, 1),
+        }))
+        .expect("forged counter-seal handled inertly");
+        assert_eq!(
+            game.ladder_rating(),
+            Some(1016),
+            "disagreeing seals are inert"
         );
 
         game.handle(ClientInput::AcknowledgeResult)
@@ -3208,11 +3298,7 @@ mod lobby_tests {
         }))
         .expect("abort");
         assert_eq!(game.phase(), Phase::BattleOver);
-        assert!(game
-            .store()
-            .setting("ladder.rating")
-            .expect("readable")
-            .is_none());
+        assert_eq!(game.ladder_rating(), None);
         game.handle(ClientInput::AcknowledgeResult)
             .expect("acknowledge");
         assert_eq!(game.phase(), Phase::Menu);

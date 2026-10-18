@@ -2028,7 +2028,7 @@ fn net_over_screen(
         text_node(
             cmd,
             if won.is_some() {
-                "The transcript is sealed and the honor ladder has recorded the standing."
+                "The transcript is sealed; the attested roll awaits the counter-seal."
             } else {
                 "Sealing the result with the heralds..."
             }

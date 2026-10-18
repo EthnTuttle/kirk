@@ -262,14 +262,19 @@ shell card*
 
 ### v1.2 — PvP ladder hardening + wager escrow (open items, parallel lane)
 
-**V12-1 — Ladder service** — *M*: **DONE (2026-10-18).** Replaced the
-self-scored honor-system Elo (SHIPPING limitation 4) with a
-relay-published, mutually-signed attestation ladder
+**V12-1 — Ladder service** — *M*: **DONE (2026-10-18; reviewed, FIXED
+2026-10-18).** Replaced the self-scored honor-system Elo (SHIPPING
+limitation 4) with a relay-published, mutually-signed attestation ladder
 (`crusade-bridge/src/ladder.rs` fold, `pvp::settle_ladder`, docs/LADDER.md;
-kind 9265 extended in-place, no new kind). Done-test landed:
-unsigned/tampered, replayed, self-signed, stale, disagreeing, and
-mobbed attestations are all proven inert; honest two-client folds
-converge byte-for-byte.
+kind 9265 extended in-place, no new kind). Rolling state is the complete
+fold state (full ratings table + settlement cursor + per-pair damping
+counters) persisted atomically as one `ladder.state` value; rolling folds
+== genesis folds on mixed history, forge/replay/self-sign/stale/
+equivocation (retro-poison) are all inert or void in every fold view,
+and mutual peer-naming in the 9265 content (`peer` tail) means no
+candidate pair containing a third-party seal — agreeing, disagreeing,
+or backdated — can ever form. Two merged devices converge. Review:
+docs/LADDER-REVIEW.md (incl. R1 sockpuppet-laundering closure).
 
 **V12-2 — Wager escrow** — *L*: escrow via existing kirk token flow,
 settlement via the replay adapter (M6, already mint-visible). Files:

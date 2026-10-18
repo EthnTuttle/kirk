@@ -16,10 +16,12 @@
 
 pub mod adapter;
 pub mod attest;
+pub mod ladder;
 pub mod seed;
 
 pub use adapter::*;
 pub use attest::*;
+pub use ladder::*;
 pub use seed::*;
 
 use thiserror::Error;

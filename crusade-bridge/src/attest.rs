@@ -22,6 +22,21 @@ pub struct Attestation {
     /// hex(32-byte battle id)
     pub battle: String,
     pub winner: u8,
+    /// hex pubkey of the duel HOST (engine side 0). V12-1 ladder tail:
+    /// `winner` is a side index, so a stream reader cannot tell WHO won
+    /// without this. `#[serde(default)]`: attestations written before the
+    /// ladder service existed still sign/verify (the ladder simply
+    /// declines to fold them — see crusade-bridge/src/ladder.rs).
+    #[serde(default)]
+    pub host: Option<String>,
+    /// hex pubkey of the COUNTERPARTY (the other duelist). V12-1r ladder
+    /// tail: the fold settles a battle only when BOTH seals mutually name
+    /// each other's author, which retires the whole sockpuppet/mob class
+    /// (an agreeing third-party seal names a counterparty the honest
+    /// seal never names back). Same serde-default tail pattern as `host`:
+    /// seals lacking `peer` never fold.
+    #[serde(default)]
+    pub peer: Option<String>,
 }
 
 /// Serialize `att` as JSON and sign it into a kind-9265 event. The battle
@@ -83,6 +98,8 @@ mod tests {
             digest: hex::encode([0xABu8; 32]),
             battle: hex::encode([0x42u8; 32]),
             winner: 0,
+            host: None,
+            peer: None,
         }
     }
 
@@ -165,6 +182,8 @@ mod tests {
             digest: hex::encode([0x5Au8; 32]),
             battle: "00".repeat(32),
             winner: 1,
+            host: None,
+            peer: None,
         };
         let event = sign_attestation(&keys, &att).unwrap();
         let back = verify_attestation(&event, &keys.public_key(), &att.battle).unwrap();

@@ -27,8 +27,9 @@
 //!
 //! End of duel: [`NetDuelDriver::finalize`] exchanges the FinalDigest; once
 //! that verified, it signs a `crusade_bridge` transcript attestation (when
-//! nostr keys were supplied at construction) and applies the Elo ladder
-//! result to the store.
+//! nostr keys were supplied). The ladder moves ONLY when [`settle_ladder`]
+//! later folds that seal together with the peer's relay-published
+//! counter-seal (V12-1; docs/LADDER.md) — never on a local say-so.
 
 use std::cell::RefCell;
 
@@ -44,33 +45,127 @@ use crate::client::{champion_view, render_events, rite_cards, species_name, LOG_
 use crate::view::{ClientInput, Phase, ViewSnapshot};
 use crate::AppError;
 
-/// Settings key the ladder Elo rating lives under (u64 as decimal string).
+/// Settings key the attested ladder rating lives under (u64 as decimal
+/// string). LEGACY since V12-1r: superseded by [`LADDER_STATE_KEY`]; read
+/// only as a migration seed for the local player's rating.
 pub const LADDER_RATING_KEY: &str = "ladder.rating";
+/// LEGACY: the pre-atomic rolling cursor; read only as a migration seed.
+pub const LADDER_FOLDED_KEY: &str = "ladder.folded";
+/// The attested ladder's rolling state, ONE automerge settings value
+/// (JSON): full ratings table (hex pubkey -> rating), settlement cursor
+/// (folded battle ids), and per-pair damping counters. Written atomically
+/// by [`settle_ladder`] in a single `set_setting`, so automerge's
+/// per-key LWW can never pair a new rating with an old cursor.
+pub const LADDER_STATE_KEY: &str = "ladder.state";
 /// A fresh store's implicit ladder rating.
-pub const DEFAULT_LADDER_RATING: u64 = 1000;
-/// Elo K factor; a win/loss against an equal-rated opponent moves K/2 = 16.
-const ELO_K: f64 = 32.0;
+pub use crusade_bridge::DEFAULT_LADDER_RATING;
 
-/// Record one finished ladder duel into the store's settings and return the
-/// new rating. Elo: `new = old + K * (score - 1/(1 + 10^((opp-old)/400)))`,
-/// rounded to the nearest integer and floored at 0; score is 1.0 on a win,
-/// 0.0 on a loss. A missing or unparseable stored rating starts from
-/// [`DEFAULT_LADDER_RATING`], as does an unknown `opponent_rating`.
-pub fn record_ladder_result(
-    store: &mut RosterStore,
-    my_win: bool,
-    opponent_rating: Option<u64>,
-) -> Result<u64, StoreError> {
-    let mine = store
+/// Serde shape of the `ladder.state` JSON. All collections sort
+/// canonically on write and defaults make every field a tail: a legacy
+/// doc with no ladder state parses as empty.
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct LadderState {
+    /// hex pubkey -> folded rating (every rated player, not just ours).
+    #[serde(default)]
+    ratings: std::collections::BTreeMap<String, u64>,
+    /// Settled battle ids (64-hex) the ratings already reflect.
+    #[serde(default)]
+    folded: std::collections::BTreeSet<String>,
+    /// Per-(unordered pair, epoch) settlement counts:
+    /// (hex pubkey a < b, epoch, count).
+    #[serde(default)]
+    damping: Vec<(String, String, u64, u32)>,
+}
+
+/// Load the rolling state, migrating the legacy split keys
+/// (`ladder.rating`/`ladder.folded`, pre-atomic V12-1) on first read:
+/// the legacy rating seeds `my_pubkey`'s row, the legacy cursor the
+/// folded set. Absent or unparseable state reads as a fresh ladder
+/// (fail-open to unranked — a corrupt blob can never mint rating).
+fn load_ladder_state(
+    store: &RosterStore,
+    my_pubkey: &PublicKey,
+) -> Result<LadderState, StoreError> {
+    if let Some(json) = store.setting(LADDER_STATE_KEY)? {
+        return Ok(serde_json::from_str(&json).unwrap_or_default());
+    }
+    let mut state = LadderState::default();
+    if let Some(r) = store
         .setting(LADDER_RATING_KEY)?
         .and_then(|s| s.parse::<u64>().ok())
-        .unwrap_or(DEFAULT_LADDER_RATING);
-    let theirs = opponent_rating.unwrap_or(DEFAULT_LADDER_RATING);
-    let expected = 1.0 / (1.0 + 10f64.powf((theirs as f64 - mine as f64) / 400.0));
-    let score = if my_win { 1.0 } else { 0.0 };
-    let next = (mine as f64 + ELO_K * (score - expected)).round().max(0.0) as u64;
-    store.set_setting(LADDER_RATING_KEY, &next.to_string())?;
-    Ok(next)
+    {
+        state.ratings.insert(my_pubkey.to_hex(), r);
+    }
+    if let Some(cur) = store.setting(LADDER_FOLDED_KEY)? {
+        state.folded = cur
+            .split(',')
+            .filter(|b| !b.is_empty())
+            .map(str::to_string)
+            .collect();
+    }
+    // There is no legacy damping state to migrate (it never persisted —
+    // the very bug this rework fixes); it starts empty exactly once.
+    Ok(state)
+}
+
+/// Settle the ladder from a batch of kind-9265 attestation events (the
+/// V12-1 ladder, docs/LADDER.md): fold the stream with
+/// [`crusade_bridge::fold_attestations`] over the full persisted rolling
+/// state (every rated player's rating, the settlement cursor, and the
+/// per-pair damping counters), then write the result back ATOMICALLY as
+/// one `ladder.state` JSON value. Returns the local player's folded
+/// rating, or `None` when the fold did not rate them (unsigned,
+/// replayed, stale, disagreeing, equivocated, or self-signed
+/// attestations are all inert by construction — the store then keeps
+/// its prior state).
+pub fn settle_ladder(
+    store: &mut RosterStore,
+    my_pubkey: &PublicKey,
+    events: &[Event],
+) -> Result<Option<u64>, StoreError> {
+    let state = load_ladder_state(store, my_pubkey)?;
+    let mut base = Vec::new();
+    for (hex, r) in &state.ratings {
+        match PublicKey::from_hex(hex) {
+            Ok(pk) => base.push((pk, *r)),
+            Err(_) => continue, // a corrupt row drops out; never fatal
+        }
+    }
+    let mut damping = std::collections::BTreeMap::new();
+    for (a, b, epoch, n) in &state.damping {
+        match (PublicKey::from_hex(a), PublicKey::from_hex(b)) {
+            (Ok(pa), Ok(pb)) => {
+                damping.insert((pa, pb, *epoch), *n);
+            }
+            _ => continue,
+        }
+    }
+    let table = crusade_bridge::fold_attestations(events.iter(), &base, &state.folded, &damping);
+    if table.rating(my_pubkey).is_none() {
+        // The fold did not rate us (we are no author here, or every seal
+        // was inert): never write another party's table into our store.
+        return Ok(None);
+    }
+    if table.newly_settled().is_empty() {
+        // Nothing settled: inert batch. Return the already-folded rating
+        // (base passthrough) without touching the document.
+        return Ok(table.rating(my_pubkey));
+    }
+    let mut next = LadderState::default();
+    for (pk, r) in table.ratings_all() {
+        next.ratings.insert(pk.to_hex(), r);
+    }
+    next.folded = state.folded;
+    next.folded.extend(table.newly_settled());
+    next.damping = table
+        .damping_counts()
+        .into_iter()
+        .map(|(a, b, e, n)| (a.to_hex(), b.to_hex(), e, n))
+        .collect();
+    let json = serde_json::to_string(&next)
+        .map_err(|e| StoreError::Json(format!("ladder state: {e}")))?;
+    store.set_setting(LADDER_STATE_KEY, &json)?;
+    Ok(table.rating(my_pubkey))
 }
 
 /// One live network duel from a single side's point of view.
@@ -88,6 +183,12 @@ pub struct NetDuelDriver {
     side: u8,
     /// Attestation battle id (the challenge flow supplies it from above).
     battle_id: [u8; 32],
+    /// The duel host's pubkey (engine side 0), named in the kind-9265
+    /// content so the ladder fold can map `winner` to a player.
+    host_pubkey: PublicKey,
+    /// The COUNTERPARTY's pubkey, named in the kind-9265 content so the
+    /// ladder's mutual-peer gate can bind our seal to exactly this duel.
+    peer_pubkey: PublicKey,
     /// Cloned at construction; used once at finalize to sign the transcript.
     keys: Option<Keys>,
     /// Set once finalize has signed; handed out via `attestation_event()`.
@@ -103,8 +204,6 @@ pub struct NetDuelDriver {
     seen_events: usize,
     /// Per-side active party index cursor for event rendering.
     actives: [usize; 2],
-    /// Ladder rating after finalize's update, if that step ran.
-    ladder_rating: Option<u64>,
 }
 
 impl std::fmt::Debug for NetDuelDriver {
@@ -123,15 +222,21 @@ impl NetDuelDriver {
     ///
     /// `seed` and `battle_id` arrive from the challenge flow above this
     /// layer (the seed_R0 for M6 wiring is simply the `seed` parameter).
-    /// `attestation_keys`, when supplied, sign the transcript attestation
-    /// at finalize; without them the duel still runs and settles unrated by
-    /// attestation (the ladder still moves on a verified FinalDigest).
+    /// `host_pubkey` is OUR pubkey (we host); the joiner passes ours in
+    /// from the lobby. `peer_pubkey` is the joiner's pubkey (the lobby's
+    /// accept outcome carries it). `attestation_keys`, when supplied, sign the
+    /// transcript attestation at finalize; without them the duel still
+    /// runs but no kind-9265 seal is produced (and therefore no ladder
+    /// settlement can ever fold — the ladder moves ONLY on folds of
+    /// mutually signed attestations; see [`settle_ladder`]).
     pub fn host(
         my_party: Vec<ChampionInstance>,
         peer_party: Vec<ChampionInstance>,
         transport: impl Transport + 'static,
         seed: [u8; 32],
         battle_id: [u8; 32],
+        host_pubkey: PublicKey,
+        peer_pubkey: PublicKey,
         attestation_keys: Option<&Keys>,
     ) -> Result<Self, AppError> {
         Self::build(
@@ -141,19 +246,25 @@ impl NetDuelDriver {
             transport,
             seed,
             battle_id,
+            host_pubkey,
+            peer_pubkey,
             attestation_keys,
         )
     }
 
     /// Join a duel: we are engine side 1, so the HOST's party is `party_a`.
-    /// `peer_party` is the host's party, `my_party` our own. Same seed +
-    /// same parties as the host => identical battle replicas.
+    /// `peer_party` is the host's party, `my_party` our own; `host_pubkey`
+    /// is the host's (the peer's) nostr pubkey as sealed by the lobby and
+    /// `peer_pubkey` the same key again (the host IS our counterparty).
+    /// Same seed + same parties as the host => identical battle replicas.
     pub fn join(
         my_party: Vec<ChampionInstance>,
         peer_party: Vec<ChampionInstance>,
         transport: impl Transport + 'static,
         seed: [u8; 32],
         battle_id: [u8; 32],
+        host_pubkey: PublicKey,
+        peer_pubkey: PublicKey,
         attestation_keys: Option<&Keys>,
     ) -> Result<Self, AppError> {
         Self::build(
@@ -163,6 +274,8 @@ impl NetDuelDriver {
             transport,
             seed,
             battle_id,
+            host_pubkey,
+            peer_pubkey,
             attestation_keys,
         )
     }
@@ -174,6 +287,8 @@ impl NetDuelDriver {
         transport: impl Transport + 'static,
         seed: [u8; 32],
         battle_id: [u8; 32],
+        host_pubkey: PublicKey,
+        peer_pubkey: PublicKey,
         attestation_keys: Option<&Keys>,
     ) -> Result<Self, AppError> {
         // Both replicas must build the identical Battle: party_a is always
@@ -189,6 +304,8 @@ impl NetDuelDriver {
             transport: Box::new(transport),
             side,
             battle_id,
+            host_pubkey,
+            peer_pubkey,
             keys: attestation_keys.cloned(),
             attestation: None,
             finalized: false,
@@ -196,7 +313,6 @@ impl NetDuelDriver {
             fresh_events: RefCell::new(Vec::new()),
             seen_events: 0,
             actives: [0, 0],
-            ladder_rating: None,
         })
     }
 
@@ -235,11 +351,6 @@ impl NetDuelDriver {
     /// True after [`NetDuelDriver::finalize`] consumed the FinalDigest round.
     pub fn is_finalized(&self) -> bool {
         self.finalized
-    }
-
-    /// The ladder rating written by finalize, if that step ran.
-    pub fn ladder_rating(&self) -> Option<u64> {
-        self.ladder_rating
     }
 
     /// Our signed transcript attestation; `Some` only when keys were
@@ -361,25 +472,27 @@ impl NetDuelDriver {
     }
 
     /// Exchange FinalDigest with the peer, then — on verified agreement —
-    /// sign the transcript attestation (if keys were supplied) and apply the
-    /// Elo ladder result to `store`. Runs its protocol step exactly once:
-    /// the FinalDigest exchange is single-shot, a mid-exchange failure
-    /// desynchronizes the pair and ENDS the session (never retry after an
-    /// error), and calls after success are no-ops.
+    /// sign the transcript attestation (if keys were supplied). Runs its
+    /// protocol step exactly once: the FinalDigest exchange is single-shot,
+    /// a mid-exchange failure desynchronizes the pair and ENDS the session
+    /// (never retry after an error), and calls after success are no-ops.
     ///
-    /// M6-wire simplifications, to unwind when the kirk challenge flow lands:
-    /// ratings move on a verified FinalDigest alone (mutual attestation
-    /// publication/checks live above this layer), and the peer's rating
-    /// isn't carried in-band yet, so it defaults to 1000.
-    pub async fn finalize(&mut self, store: &mut RosterStore) -> Result<(), AppError> {
+    /// V12-1 (docs/LADDER.md): the ladder no longer moves here. The signed
+    /// kind-9265 attestation is published to the relays by the shell; the
+    /// store's rating changes only when [`settle_ladder`] folds OUR seal
+    /// together with the peer's COUNTER-seal off the relay set. A peer who
+    /// never countersigns leaves both ratings unmoved — but also keeps no
+    /// untainted claim of their own.
+    pub async fn finalize(&mut self) -> Result<Option<Event>, AppError> {
         if self.finalized {
-            return Ok(());
+            return Ok(self.attestation.clone());
         }
-        let Some(winner) = self.battle_result() else {
+        if self.battle_result().is_none() {
             return Err(AppError::IllegalTransition(
                 "the duel is still running".into(),
             ));
-        };
+        }
+        let winner = self.battle_result().expect("checked above");
         self.session.finalize(&*self.transport).await?;
         // Single-shot: the FinalDigest exchange was just consumed, so the
         // error return above ends the session rather than allowing a retry
@@ -391,11 +504,12 @@ impl NetDuelDriver {
                 digest: hex::encode(self.session.transcript_hash()),
                 battle: hex::encode(self.battle_id),
                 winner,
+                host: Some(self.host_pubkey.to_hex()),
+                peer: Some(self.peer_pubkey.to_hex()),
             };
             self.attestation = Some(sign_attestation(keys, &att)?);
         }
-        self.ladder_rating = Some(record_ladder_result(store, winner == self.side, None)?);
-        Ok(())
+        Ok(self.attestation.clone())
     }
 
     // ---------- view adapter ----------
@@ -542,6 +656,8 @@ mod alms_tests {
                 digest: hex::encode([0xD1; 32]),
                 battle: hex::encode([0xB1; 32]),
                 winner: 1,
+                host: None,
+                peer: None,
             },
         )
         .expect("attestation signs")

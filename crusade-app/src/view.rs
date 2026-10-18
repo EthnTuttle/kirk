@@ -2,6 +2,7 @@
 
 use crusade_core::engine::BattleEvent;
 use crusade_core::types::Ailment;
+use nostr::Event;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -197,8 +198,16 @@ pub enum LobbyNet {
     /// lobby into net-battle space.
     DuelReady,
     /// The duel settled: digest exchanged, attestation signed by the
-    /// driver. The client applies the ladder result to its own store.
+    /// driver and published to the relays by the shell. The ladder does
+    /// NOT move on this report alone — only [`LobbyNet::LadderSettled`]
+    /// (the verified counter-seal fold) writes a rating.
     DuelFinished { won: bool },
+    /// The peer's counter-seal was recovered from the duel's relay set and
+    /// both kind-9265 attestations verified and agreed: fold them into the
+    /// attested ladder and write the result to the store (V12-1;
+    /// docs/LADDER.md). `ours` is the attestation the driver signed at
+    /// finalize, `theirs` the peer's.
+    LadderSettled { ours: Event, theirs: Event },
     /// The duel died out of band (peer fled, link timed out mid-turn).
     DuelAborted { text: String },
     /// A lobby-stage failure (connect/list/post/accept/complete); the
@@ -351,13 +360,12 @@ pub struct ViewSnapshot {
     pub fresh_events: Vec<BattleEvent>,
 }
 
-/// The honor-system ladder Elo line for the menu and lobby screens
-/// (SHIPPING.md limitation 4: self-scored until mint arbitration ships —
-/// the "(self-kept)" honesty suffix stays). `None` (no rating in the store
-/// yet) reads as unranked. One helper so both screens agree verbatim.
+/// The attested ladder line for the menu and lobby screens (V12-1;
+/// docs/LADDER.md). `None` (no rating in the store yet) reads as
+/// unranked. One helper so both screens agree verbatim.
 pub fn ladder_line(rating: Option<u64>) -> String {
     match rating {
-        Some(r) => format!("Ladder: {r} (self-kept)"),
+        Some(r) => format!("Ladder: {r} (attested)"),
         None => "Ladder: unranked".to_string(),
     }
 }
@@ -505,7 +513,7 @@ mod tests {
 
     #[test]
     fn ladder_line_marks_a_rating_self_kept_and_absent_as_unranked() {
-        assert_eq!(ladder_line(Some(1200)), "Ladder: 1200 (self-kept)");
+        assert_eq!(ladder_line(Some(1200)), "Ladder: 1200 (attested)");
         assert_eq!(ladder_line(None), "Ladder: unranked");
     }
 

@@ -179,7 +179,7 @@ const CONCEDE_TIP_PRACTICE: &str =
     "Yield the field and end the bout; practice asks no penance and yields no shame.";
 /// Concede, in a sworn net duel: the attested loss is the whole stake.
 const CONCEDE_TIP_DUEL: &str =
-    "Yield the field. A sworn duel settles as your attested defeat, and the honor ladder records it.";
+    "Yield the field. A sworn duel settles as your attested defeat, and the attested roll records it.";
 /// Concede, mid-crusade: the run ends as a node defeat (client.rs:
 /// yielding hands the node to the boss); shards already earned are kept.
 const CONCEDE_TIP_CAMPAIGN: &str =
