@@ -6,6 +6,15 @@ WS-D cards); this file is the live state. Everything art-bake-off now lives in
 
 ## 1. Decisions (locked by user 2026-10-14)
 
+**Master-first doctrine (owner ruling 2026-10-17):** every generated lane —
+stills AND animation frames — stages the raw master in-repo and derives
+q64/q128 from it. Animation masters live at
+`art/anim-staging/<subject>/masters/` (`sheet_raw_vN.png` +
+`NN_pose_raw_vN.png`); the original 4.3–4.5/D6/E4/F1 passes staged q128s
+only, and the 101 masters were restored from the sprite-bakeoff scratch and
+verified byte-identical against the staged frames (commit efcedea). New
+animation work: generate raw → stage the master → quantize → ship.
+
 - **Winners of Round 2:** `nano-banana-2-1` (Google, **$0.00/img** free tier) and
   `gpt-image-1.5` (OpenAI, **$0.023/img** at quality=low) — both via PayPerQ
   (`https://api.ppq.ai/v1/images/generations`).
