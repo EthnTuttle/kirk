@@ -95,6 +95,10 @@ pub enum FallenCause {
     /// this page itself before `champion_falls` runs — the engine's mantle
     /// deliberately does not, M8A review issue 6).
     SlainInBattle,
+    /// App-lane: a named vanguardsman fell where the line stood (A3,
+    /// docs/TRAIL-BATTLE-DEPTH.md section 3 — the road's battle deaths
+    /// land on the companions who stood beside the captain).
+    SlainInTheVan,
 }
 
 /// App-lane cause strings, keyed to the engine's literals verbatim.
@@ -108,6 +112,9 @@ impl FallenCause {
             Self::TheRoadTookHim => "the road took him",
             Self::RoutAfterCaptain => "lost in the rout after their captain fell",
             Self::SlainInBattle => "fell in battle upon the pilgrim road",
+            Self::SlainInTheVan => {
+                "fell in battle upon the pilgrim road, shoulder to shoulder in the van"
+            }
         }
     }
 
@@ -122,9 +129,22 @@ impl FallenCause {
             "the road took him" => Self::TheRoadTookHim,
             "lost in the rout after their captain fell" => Self::RoutAfterCaptain,
             "fell in battle upon the pilgrim road" => Self::SlainInBattle,
+            "fell in battle upon the pilgrim road, shoulder to shoulder in the van" => {
+                Self::SlainInTheVan
+            }
             _ => return None,
         })
     }
+}
+
+/// DTO shadow of a standing vanguardsman (A3, docs/TRAIL-BATTLE-DEPTH.md
+/// section 3): his roster identity and his battle body, wounds on. The
+/// roster (`men`) remains the truth of who lives; this vec is the
+/// battle-body cache, keyed by name.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VanguardSave {
+    pub name: String,
+    pub instance: ChampionInstance,
 }
 
 /// DTO shadow of the engine's `FallenEntry` (owned + enum cause).
@@ -159,6 +179,12 @@ pub struct TrailSave {
     /// The pilgrimage ended (whole company gone). Terminal rows persist so
     /// the Book of the Fallen remains openable after the run.
     pub over: bool,
+    /// The standing vanguard: the named men (and their battle bodies) who
+    /// fight beside the captain on road battles (A3). Serde tail: a v2
+    /// document written before the van must still load (empty default —
+    /// the next road battle's sync re-mints from the roster anyway).
+    #[serde(default)]
+    pub vanguard: Vec<VanguardSave>,
 }
 
 impl TrailSave {
@@ -167,6 +193,7 @@ impl TrailSave {
     pub fn capture(
         state: &TrailState,
         party: &[ChampionInstance],
+        vanguard: Vec<VanguardSave>,
         champion_level: u8,
         over: bool,
     ) -> Result<Self, String> {
@@ -193,6 +220,7 @@ impl TrailSave {
             party: party.to_vec(),
             champion_level,
             over,
+            vanguard,
         })
     }
 
@@ -273,7 +301,7 @@ mod trail_save_tests {
     #[test]
     fn trail_save_round_trip_is_lossless() {
         let state = fixture_state();
-        let save = TrailSave::capture(&state, &[], 20, false).expect("capture");
+        let save = TrailSave::capture(&state, &[], vec![], 20, false).expect("capture");
         assert_eq!(save.save_version, TRAIL_SAVE_VERSION);
         let json = serde_json::to_string(&save).expect("serialize");
         let back: TrailSave = serde_json::from_str(&json).expect("deserialize");
@@ -313,7 +341,7 @@ mod trail_save_tests {
         // v1: no key at all.
         assert_eq!(load_trail(&store).expect("load"), None);
 
-        let save = TrailSave::capture(&fixture_state(), &[], 20, false).expect("capture");
+        let save = TrailSave::capture(&fixture_state(), &[], vec![], 20, false).expect("capture");
         save_trail(&mut store, &save).expect("save");
         let back = load_trail(&store).expect("load").expect("lane present");
         assert_eq!(back, save);
@@ -330,7 +358,7 @@ mod trail_save_tests {
         assert_eq!(load_trail(&store).expect("load"), None);
 
         // And the lane survives a document save/load (bytes) round trip.
-        let save = TrailSave::capture(&fixture_state(), &[], 20, false).expect("capture");
+        let save = TrailSave::capture(&fixture_state(), &[], vec![], 20, false).expect("capture");
         save_trail(&mut store, &save).expect("save");
         let bytes = store.save_bytes().expect("document saves");
         let reloaded = RosterStore::load_bytes(&bytes).expect("document loads");
@@ -338,5 +366,29 @@ mod trail_save_tests {
             load_trail(&reloaded).expect("load").expect("lane present"),
             save
         );
+    }
+
+    /// Legacy-load pin: a version-2 document written BEFORE the vanguard
+    /// tail existed (no `vanguard` key at all) still loads, yielding an
+    /// empty van — the next road battle's sync re-mints from the roster
+    /// (A3 review ride-along; tells a future field reorder or a
+    /// `deny_unknown_fields` accident).
+    #[test]
+    fn a_pre_vanguard_v2_document_loads_with_an_empty_van() {
+        let save = TrailSave::capture(&fixture_state(), &[], vec![], 20, false).expect("capture");
+        let mut value = serde_json::to_value(&save).expect("serialize");
+        value
+            .as_object_mut()
+            .expect("document is an object")
+            .remove("vanguard")
+            .expect("the new tail is present to strip");
+        let raw = serde_json::to_string(&value).expect("legacy json");
+        let mut store = RosterStore::new();
+        store.set_setting(TRAIL_SAVE_KEY, &raw).expect("write");
+        let back = load_trail(&store).expect("load").expect("v2 lane loads");
+        assert!(back.vanguard.is_empty(), "the missing tail deserializes empty");
+        // The fixture's own van is empty, so the loaded document equals
+        // the modern capture row for row.
+        assert_eq!(back, save);
     }
 }

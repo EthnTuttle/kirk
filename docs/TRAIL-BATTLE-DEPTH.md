@@ -1,7 +1,38 @@
 # TRAIL-BATTLE-DEPTH — the fighting line of the pilgrimage
 
-Status: measurement complete, recommendation made, 2026-10-17. No code
-shipped; the sims live in `crusade-app/tests/trail_depth_sim.rs`, every
+Status: SHIPPED post-implementation, 2026-10-17. A3 is wired in
+crusade-app (van cache on `TrailCampaign`, `sync_vanguard`, road-battle
+party `[mantle, van...]`, gates captain-alone, van defeat routing with
+the Book cause "fell in battle upon the pilgrim road, shoulder to
+shoulder in the van", serde-tail save/view additions — no DTO version
+bump), and Make Camp rides on top per docs/RECOVERY.md section 5.
+
+Post-implementation verification: the sweep harness re-ran against the
+landed tree (`cargo test -p crusade-app --test trail_depth_sim --release
+-- --ignored --nocapture`) and reproduces the table below exactly — A3:
+85.7% road won (77 battles), 1.9% gates (261), extinction 25/48 at
+median day 17.0, 60% reach 25 ≤d40, median arrival remnant 5.0, 100% of
+arrivals with ≥5 Book pages, 38 vanguard pages; A3+Camp: 85.0% / 1.9% /
+58% / 5.0 / 100% / 20 camps / 41 pages.[^1] Every headline metric holds
+within seed noise of the simmed acceptance profile (the harness is
+self-contained; the client wiring mirrors it, and the routing seams are
+pinned by the new client tests: minting at captain-2, slot arithmetic,
+defeat routing both ways, gates never field the van).
+
+[^1]: Review-pass harness repair (2026-10-17): `camp_day` previously
+      fought night ambushes with the brigand table `trail_foe_mix(201,
+      zone)` and keyed its day rng on the post-increment day. It now
+      fights the screen's encounter-zone mix (`Some(z) -> zone table,
+      None -> 201`) on the pre-increment day, cell-for-cell with client.rs
+      `trail_make_camp`. The re-rerun moves only the A3+Camp row:
+      86.2→85.0 road win, 60→58% reach, 19→20 camps, 42→41 van pages
+      (a different seed on the ambush roll re-rolls the ~2 ambush battles
+      in the sweep; nothing that gates acceptance changed). All other
+      rows are byte-identical.
+
+## The pre-implementation measurement report (2026-10-17)
+
+The sims live in `crusade-app/tests/trail_depth_sim.rs`, every
 test `#[ignore]`d. Run: `cargo test -p crusade-app --test
 trail_depth_sim -- --ignored --nocapture`. 48 seeded pilgrimages per
 configuration (the camp-soak seed set and journey loop, rational
@@ -42,7 +73,7 @@ single file. The single file was a v1 scaffolding, not a canon fact.
 | B asymmetric tables | **37.5** | 1.9 | 21/48 | 18.0 | 73% | 5.0 | 100% | 0 |
 | C skirmish (1v1 duels off gates) | 59.3 | 1.7 | 11/48 | 22.0 | 98% | 7.0 | 100% | 0 |
 | A5 van-of-ONE @cap-2, gates captain-alone | 54.5 | 1.9 | 24/48 | 17.0 | 60% | 4.0 | 100% | 32 |
-| A3 + prudent Make Camp (spec dials) | 86.2 | 1.9 | 26/48 | 18.0 | 60% | 5.0 | 100% | 42 |
+| A3 + prudent Make Camp (spec dials) | 85.0 | 1.9 | 26/48 | 18.0 | 58% | 5.0 | 100% | 41 |
 
 ## 2. Acceptance-profile scorecard
 
@@ -182,12 +213,13 @@ Phase-2 sketch, after owner approval (NO code in this card):
 ## 5. Make Camp interaction (the waiting recovery layer)
 
 A3 + the spec'd prudent camp (25% mend to a 3/4 cap, +5 morale, 10%
-ambush, double upkeep — the dials RECOVERY-SIM cleared as safe): 19
+ambush, double upkeep — the dials RECOVERY-SIM cleared as safe): 20
 camps pitched across 48 runs (the trigger — a wounded mantle standing
 on a camp screen — now actually fires, because road battles leave
 wounded survivors to mend), and every headline metric is unchanged
-within noise (86.2% road, 1.9% gates, 60% reach, 5.0 remnant, 100%
-Book, extinction 26/48 at day 18). The reading: with battle depth
+within noise (85.0% road, 1.9% gates, 58% reach, 5.0 remnant, 100%
+Book, extinction 26/48 at day 18 — see the header footnote for the
+review-pass harness repair that drifted this row 85.0/58/20/41). The reading: with battle depth
 fixed first, the camp engages (wounded winners exist) and remains
 weak-side safe (no overshoot, no never-camp regression by
 construction). Phase order stands as the owner ruled: ship A3, then

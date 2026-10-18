@@ -34,6 +34,74 @@ pub const REST_MORALE_GAIN: i8 = 10;
 /// the top quartile of the hidden 0..=255 seed.
 pub const DEVOTION_RISE_MIN: u8 = 192;
 
+// ---------- MAKE CAMP (docs/RECOVERY.md section 5) ----------
+
+/// Camp mend: the wounded captain recovers this share of his maximum
+/// resolve (numerator/denominator; integer math only).
+pub const CAMP_RESOLVE_PCT_NUM: u16 = 1;
+pub const CAMP_RESOLVE_PCT_DEN: u16 = 4;
+/// ...but never past this fraction of maximum: field-dressing can make a
+/// man serviceable, never fresh.
+pub const CAMP_RESOLVE_CAP_NUM: u16 = 3;
+pub const CAMP_RESOLVE_CAP_DEN: u16 = 4;
+/// The office sung and the watches posted: morale restored by a camp.
+pub const CAMP_MORALE_GAIN: i8 = 5;
+/// Night ambush chance on a camped day (the DD brake — a camped column
+/// is at its weakest).
+pub const CAMP_AMBUSH_PCT: u8 = 10;
+
+/// What one day of camp leaves behind. `resolve_after` is the mantle's
+/// mend target: the CALLER applies it to the trail party only on the
+/// quiet path or after a WON night ambush (a lost camp battle is an
+/// ordinary road defeat). `ambush` surfaced, caller maps the foe mix.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CampOutcome {
+    pub day: u16,
+    pub supplies: u16,
+    pub morale: i8,
+    pub resolve_after: u16,
+    /// The camp's balms found the ailment and lifted it.
+    pub ailment_cleared: bool,
+    /// The watch cries: foes fall upon the camp in the dark.
+    pub ambush: bool,
+}
+
+/// Make camp for one day (docs/RECOVERY.md Candidate A): double rations
+/// eaten, no trail-event roll (a camped company neither forages nor
+/// suffers spoilage), morale steadied, the mantle's wounds bound toward
+/// a hard 3/4-of-max ceiling, and a flat night-ambush roll. Pure and
+/// deterministic given (state, rng, mantle facts).
+pub fn make_camp(
+    state: &mut TrailState,
+    rng: &mut BattleRng,
+    mantle_max_resolve: u16,
+    mantle_resolve: u16,
+) -> CampOutcome {
+    state.day += 1;
+    // The halt feeds double: double rations for the standing watch, the
+    // wounded shriven and tended.
+    let cost = daily_supply_cost(state.living_count()) * 2;
+    state.supplies = state.supplies.saturating_sub(cost);
+    if state.supplies == 0 {
+        state.morale = (state.morale - STARVATION_MORALE_COST).max(MORALE_MIN);
+    }
+    state.morale = (state.morale + CAMP_MORALE_GAIN).min(MORALE_MAX);
+    let mend = mantle_max_resolve * CAMP_RESOLVE_PCT_NUM / CAMP_RESOLVE_PCT_DEN;
+    let cap = mantle_max_resolve * CAMP_RESOLVE_CAP_NUM / CAMP_RESOLVE_CAP_DEN;
+    // Field-dressing binds, never unwinds: a captain above the ceiling
+    // keeps his stance (the cap limits the mend, it does not bleed him).
+    let resolve_after = mantle_resolve.saturating_add(mend).min(cap).max(mantle_resolve);
+    let ambush = rng.pct() < CAMP_AMBUSH_PCT;
+    CampOutcome {
+        day: state.day,
+        supplies: state.supplies,
+        morale: state.morale,
+        resolve_after,
+        ailment_cleared: true,
+        ambush,
+    }
+}
+
 /// A named man of the company. Numbers never; names always.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ManEntry {
@@ -465,6 +533,73 @@ mod tests {
             h = h.wrapping_mul(0x100000001b3);
         }
         h
+    }
+
+    // ---------- MAKE CAMP ----------
+
+    #[test]
+    fn camp_mend_is_quarter_of_max_capped_at_three_quarters() {
+        let max = 100u16;
+        // From the floor: +25.
+        let mut rng = seeded(5);
+        let mut s = fresh_state(vec![man("Anselm of Beauvais", 7)]);
+        let out = make_camp(&mut s, &mut rng, max, 0);
+        assert_eq!(out.resolve_after, 25);
+        // Mid: 40 -> 65.
+        let mut rng = seeded(5);
+        let out = make_camp(&mut s, &mut rng, max, 40);
+        assert_eq!(out.resolve_after, 65);
+        // At max-1: the 3/4 ceiling binds the MEND, never the stance —
+        // field-dressing binds wounds; it does not unbind them.
+        let mut rng = seeded(5);
+        let out = make_camp(&mut s, &mut rng, max, max - 1);
+        assert_eq!(out.resolve_after, max - 1);
+        // Just under the cap: the mend is cut off at the ceiling.
+        let mut rng = seeded(5);
+        let out = make_camp(&mut s, &mut rng, max, max * 3 / 4 - 1);
+        assert_eq!(out.resolve_after, max * 3 / 4);
+        // Exactly at the cap: no more may be mended on the road.
+        let mut rng = seeded(5);
+        let out = make_camp(&mut s, &mut rng, max, max * 3 / 4);
+        assert_eq!(out.resolve_after, max * 3 / 4);
+        // Above the cap: the balms never UNBIND a wound.
+        let mut rng = seeded(5);
+        let out = make_camp(&mut s, &mut rng, max, max - 2);
+        assert_eq!(out.resolve_after, max - 2);
+    }
+
+    #[test]
+    fn camp_charges_one_day_and_double_upkeep() {
+        let men: Vec<ManEntry> = (0..20).map(|i| man(STARTING_MEN[i], 0)).collect();
+        let mut s = fresh_state(men);
+        s.supplies = 1_000;
+        let (day0, morale0) = (s.day, s.morale);
+        let mut rng = seeded(8);
+        let out = make_camp(&mut s, &mut rng, 100, 0);
+        assert_eq!(out.day, day0 + 1);
+        // 20 living -> daily cost 4, doubled to 8; no forage, no spoilage.
+        assert_eq!(out.supplies, 1_000 - 8);
+        assert_eq!(out.morale, morale0 + CAMP_MORALE_GAIN);
+        assert!(out.ailment_cleared);
+    }
+
+    #[test]
+    fn camp_ambush_bit_is_stable_per_seed() {
+        let mut hits = 0u32;
+        for b in 0..200u8 {
+            let run = || {
+                let mut s = fresh_state(vec![man("Anselm of Beauvais", 7)]);
+                let mut rng = seeded(b);
+                make_camp(&mut s, &mut rng, 100, 0).ambush
+            };
+            assert_eq!(run(), run(), "deterministic per seed");
+            if run() {
+                hits += 1;
+            }
+        }
+        // CAMP_AMBUSH_PCT = 10 across 200 seeds: expected ~20; assert a
+        // sane band rather than an exact count of any one rng stream.
+        assert!((5..=45).contains(&hits), "ambush rate off-band: {hits}");
     }
 
     // ---------- travel_day ----------

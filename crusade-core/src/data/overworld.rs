@@ -110,25 +110,25 @@ pub static SCREENS: &[ScreenDef] = &[
     // ---- 3. Anatolia (Rum Seljuk table; Kilij Arslan gate) ----
     ScreenDef { id: 6, region: 3, tiles_ref: 3, edges: [None, Some(7), None, Some(5)], encounter_zone: Some(3), scripted_gate: None, props: &[] },
     ScreenDef { id: 7, region: 3, tiles_ref: 3, edges: [None, Some(8), None, Some(6)], encounter_zone: Some(3), scripted_gate: None, props: &[PropRef::ChoiceEncounter(301)] },
-    ScreenDef { id: 8, region: 3, tiles_ref: 3, edges: [None, Some(9), None, Some(7)], encounter_zone: Some(3), scripted_gate: None, props: &[] },
+    ScreenDef { id: 8, region: 3, tiles_ref: 3, edges: [None, Some(9), None, Some(7)], encounter_zone: Some(3), scripted_gate: None, props: &[PropRef::Camp] },
     ScreenDef { id: 9, region: 3, tiles_ref: 3, edges: [None, Some(10), None, Some(8)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 101, commander_id: Some(120), boss_level_offset: 2 }), props: &[] },
     // ---- 4. The Coasts (mixed tables; the Harim gate) ----
     ScreenDef { id: 10, region: 4, tiles_ref: 4, edges: [None, Some(11), None, Some(9)], encounter_zone: Some(4), scripted_gate: None, props: &[PropRef::Shrine] },
     ScreenDef { id: 11, region: 4, tiles_ref: 4, edges: [None, Some(12), None, Some(10)], encounter_zone: Some(4), scripted_gate: None, props: &[] },
-    ScreenDef { id: 12, region: 4, tiles_ref: 4, edges: [None, Some(13), None, Some(11)], encounter_zone: Some(4), scripted_gate: None, props: &[PropRef::ChoiceEncounter(302)] },
+    ScreenDef { id: 12, region: 4, tiles_ref: 4, edges: [None, Some(13), None, Some(11)], encounter_zone: Some(4), scripted_gate: None, props: &[PropRef::ChoiceEncounter(302), PropRef::Camp] },
     ScreenDef { id: 13, region: 4, tiles_ref: 4, edges: [None, Some(14), None, Some(12)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 102, commander_id: Some(121), boss_level_offset: 2 }), props: &[] },
     // ---- 5. The Roads of Egypt (Shirkuh gate; heaviest supply drain) ----
     ScreenDef { id: 14, region: 5, tiles_ref: 5, edges: [None, Some(15), None, Some(13)], encounter_zone: Some(5), scripted_gate: None, props: &[] },
-    ScreenDef { id: 15, region: 5, tiles_ref: 5, edges: [None, Some(16), None, Some(14)], encounter_zone: Some(5), scripted_gate: None, props: &[PropRef::Caravan] },
+    ScreenDef { id: 15, region: 5, tiles_ref: 5, edges: [None, Some(16), None, Some(14)], encounter_zone: Some(5), scripted_gate: None, props: &[PropRef::Caravan, PropRef::Camp] },
     ScreenDef { id: 16, region: 5, tiles_ref: 5, edges: [None, Some(17), None, Some(15)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 103, commander_id: Some(122), boss_level_offset: 2 }), props: &[] },
     // ---- 6. The Horns of Hattin (scripted gauntlet; the wing commanders
     // gate the horns back to back, then the finale) ----
     ScreenDef { id: 17, region: 6, tiles_ref: 6, edges: [None, Some(18), None, Some(16)], encounter_zone: Some(6), scripted_gate: None, props: &[] },
-    ScreenDef { id: 18, region: 6, tiles_ref: 6, edges: [None, Some(19), None, Some(17)], encounter_zone: Some(6), scripted_gate: None, props: &[PropRef::ChoiceEncounter(303)] },
+    ScreenDef { id: 18, region: 6, tiles_ref: 6, edges: [None, Some(19), None, Some(17)], encounter_zone: Some(6), scripted_gate: None, props: &[PropRef::ChoiceEncounter(303), PropRef::Camp] },
     ScreenDef { id: 19, region: 6, tiles_ref: 6, edges: [None, Some(20), None, Some(18)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 104, commander_id: Some(124), boss_level_offset: 2 }), props: &[] },
     ScreenDef { id: 20, region: 6, tiles_ref: 6, edges: [None, Some(21), None, Some(19)], encounter_zone: None, scripted_gate: Some(BattleGate { battle_ref: 105, commander_id: Some(125), boss_level_offset: 3 }), props: &[] },
     // ---- 7. The Holy Land (the King's road; the Saladin finale) ----
-    ScreenDef { id: 21, region: 7, tiles_ref: 7, edges: [None, Some(22), None, Some(20)], encounter_zone: Some(7), scripted_gate: None, props: &[PropRef::Shrine] },
+    ScreenDef { id: 21, region: 7, tiles_ref: 7, edges: [None, Some(22), None, Some(20)], encounter_zone: Some(7), scripted_gate: None, props: &[PropRef::Shrine, PropRef::Camp] },
     ScreenDef { id: 22, region: 7, tiles_ref: 7, edges: [None, Some(23), None, Some(21)], encounter_zone: Some(7), scripted_gate: None, props: &[] },
     ScreenDef { id: 23, region: 7, tiles_ref: 7, edges: [None, Some(24), None, Some(22)], encounter_zone: None, scripted_gate: None, props: &[] },
     ScreenDef { id: 24, region: 7, tiles_ref: 7, edges: [None, Some(25), None, Some(23)], encounter_zone: None, scripted_gate: None, props: &[] },

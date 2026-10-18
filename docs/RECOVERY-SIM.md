@@ -1,6 +1,32 @@
 # RECOVERY-SIM — measured phase-1 results for Make Camp (docs/RECOVERY.md)
 
-Status: phase-1 measurement report, 2026-10-17, before any client wiring.
+Status: SHIPPED post-implementation, 2026-10-17. Make Camp is wired in
+crusade-app (`ClientInput::MakeCamp` on Camp-prop screens; camp props at
+screens {3, 8, 12, 15, 18, 21}; the night ambush fought from the unmended
+stance, balms at dawn on a kept watch) on top of A3 (docs/TRAIL-BATTLE-
+DEPTH.md). One engine-semantics repair landed with the wiring: the
+prototype's cap applied to the STANCE, so camping above 3/4 resolve would
+have bled the captain; the shipped `make_camp` caps the MEND only
+(`resolve_after = (r+mend).min(cap).max(r)` — top-of-bar camps are a
+no-op, never a wound). The prudent policy never camps above 40%, so no
+reported number moves; the sweep re-ran against the landed tree
+(`cargo test -p crusade-app --test camp_policy_sim --release --
+--ignored --nocapture`) and reproduces every section-1 and section-2 row
+verbatim: never-camp soak posture 10.0/48-48-extinct/0% reach; never-camp
+rational 17.0 (25/48), 60% reach; prudent 18.0 (27/48), 58% reach, 7.0
+median remnant, 100% Book, 20 camps.[^1] No DTO version bump (serde tail
+fields only).
+
+[^1]: Review-pass harness repair (2026-10-17): `Jour::camp` previously
+      fought night ambushes with the brigand table `trail_foe_mix(201,
+      zone)`; it now fights the screen's encounter-zone mix (`Some(z) ->
+      zone table, None -> 201`), cell-for-cell with client.rs
+      `trail_make_camp`. Re-ran in release: every section-1 and section-2
+      row reproduced unchanged.
+
+Status (original phase-1 report, preserved below): the measurements that
+followed justified the ordering A3-then-camp; the tables stand as
+measured.
 Run: `cargo test -p crusade-app --test camp_policy_sim -- --ignored --nocapture`
 Harness: `crusade-app/tests/camp_policy_sim.rs` — the real journey math
 (`trail_engine::travel_day`, `make_camp` semantics) with REAL battles via
@@ -108,7 +134,10 @@ honest sequence is:
    set expectations: it will show in the Book as ~2 extra souls at
    arrival, not as won battles.
 
-The engine prototype (`trail::make_camp` + consts + guard tests in
-crusade-core/src/engine/trail.rs) is landed and green; client wiring,
-view tail fields, prop placements, and log text remain phase 2 pending
-the owner's call on the above.
+The engine prototype (`trail::make_camp` + consts + guard tests) shipped
+with the A3 client wiring (2026-10-17): `ClientInput::MakeCamp` on camp
+screens, camp props at {3, 8, 12, 15, 18, 21}, `TrailView.can_camp` /
+`mantle_resolve` tail fields, the register text of RECOVERY.md §5, and
+the mend-cap repair noted above. The acceptance profile of §5 reads as
+measured — the camp remains weak-side safe, and the wound economy it was
+aimed at now exists because A3 produces wounded survivors on the road.

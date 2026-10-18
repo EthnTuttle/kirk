@@ -394,6 +394,20 @@ pub struct TrailView {
     pub choice_encounters: Vec<u16>,
     /// The pilgrimage is over (the whole company is gone). Terminal.
     pub over: bool,
+    /// A `PropRef::Camp` stands on this screen (MakeCamp is legal here).
+    /// Serde tail discipline: pre-camp snapshots load with `false`.
+    #[serde(default)]
+    pub can_camp: bool,
+    /// The mantle bearer's wounds as (current, max) resolve — the player
+    /// choosing to camp must see why (names-never-numbers applies to the
+    /// men; the mantle's resolve is a shown battle stat).
+    #[serde(default)]
+    pub mantle_resolve: (u16, u16),
+    /// The standing vanguard: named men who fight beside the captain on
+    /// road battles (A3, docs/TRAIL-BATTLE-DEPTH.md). Empty when the file
+    /// is depleted to the captain alone.
+    #[serde(default)]
+    pub vanguard: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -471,6 +485,12 @@ pub enum ClientInput {
     /// Trail: engage a ChoiceEncounter prop on the current screen (its
     /// encounter ref from [`TrailView::choice_encounters`]).
     EngageChoice { encounter_ref: u16 },
+    /// Trail: make camp at a Camp prop screen (docs/RECOVERY.md Candidate
+    /// A): a day passes at double upkeep, the mantle is mended toward the
+    /// 3/4 field-dressing ceiling, the watch may cry (10% night ambush
+    /// fought from the unmended stance). Legal from [`Phase::Trail`]
+    /// while [`TrailView::can_camp`] stands.
+    MakeCamp,
     /// Trail -> Menu: abandon the pilgrimage; the lane is cleared from the
     /// document (an abandoned run's Book pages vanish with it).
     AbandonTrail,

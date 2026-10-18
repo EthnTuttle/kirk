@@ -637,6 +637,9 @@ impl Jour {
     /// A camp day (spec dials; the interaction lane only).
     fn camp_day(&mut self) {
         self.run.camps += 1;
+        // The day stream keyed on the PRE-increment day, mirroring the
+        // client (a camp and a march on "day N" never alias).
+        let mut rng = trail_day_rng(self.seed, self.state.day);
         self.state.day += 1;
         let cost = trail_engine::daily_supply_cost(self.state.living_count()) * 2;
         self.state.supplies = self.state.supplies.saturating_sub(cost);
@@ -650,12 +653,16 @@ impl Jour {
         let mend = max * trail_engine::CAMP_RESOLVE_PCT_NUM / trail_engine::CAMP_RESOLVE_PCT_DEN;
         let cap = max * trail_engine::CAMP_RESOLVE_CAP_NUM / trail_engine::CAMP_RESOLVE_CAP_DEN;
         let resolve_after = self.mantle.current_resolve.saturating_add(mend).min(cap);
-        let mut rng = trail_day_rng(self.seed, self.state.day);
         if rng.pct() < trail_engine::CAMP_AMBUSH_PCT {
-            // The watch cries: fought unmended, by the company.
+            // The watch cries: fought unmended, by the company. The ambush
+            // fights the screen's zone mix (client.rs `trail_make_camp`;
+            // a camp off the zone table falls back to brigands).
             let zone = crusade_core::data::overworld::screen_by_id(self.state.screen)
                 .and_then(|s| s.encounter_zone);
-            let mix = trail_foe_mix(201, zone);
+            let mix = match zone {
+                Some(z) => trail_foe_mix(0, Some(z)),
+                None => trail_foe_mix(201, None),
+            };
             let lv = self.champion_level.clamp(5, MAX_LEVEL);
             let specs: Vec<(u16, u8)> = mix.iter().map(|&id| (id, lv)).collect();
             let kept = self.battle(&specs, false);

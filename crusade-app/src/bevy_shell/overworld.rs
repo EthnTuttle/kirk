@@ -259,7 +259,10 @@ fn prompt_for(screen: &ScreenDef, x: usize, y: usize) -> Option<String> {
             Some("A warband camp smokes beyond the rocks. [E] approach, or pass by.".into())
         }
         PropRef::Shrine => Some("A wayside shrine. [E] kneel with the company.".into()),
-        PropRef::Camp => Some("Your own camp could stand here. [E] make camp.".into()),
+        PropRef::Camp => Some(
+            "Your own camp could stand here. [E] make camp - a day, double rations, and the watches posted."
+                .into(),
+        ),
         PropRef::Caravan => Some("A wrecked caravan. [E] search what the road left.".into()),
     }
 }
@@ -986,6 +989,16 @@ fn engage(ow: &mut Overworld, queue: &mut crate::state::InputQueue) {
                             ow.notice = None;
                         } else {
                             ow.notice = Some("That encounter has moved on.".into());
+                        }
+                    }
+                    PropRef::Camp => {
+                        let known = ow.mirror.as_ref().is_some_and(|m| m.can_camp);
+                        if known {
+                            queue.0.push(ClientInput::MakeCamp);
+                            ow.notice = None;
+                        } else {
+                            ow.notice =
+                                Some("There is no pitching a camp on this ground.".into());
                         }
                     }
                     _ => {

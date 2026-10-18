@@ -161,6 +161,22 @@ const TRAIL_VICTORY_MORALE: i8 = 5;
 /// layer's tile stepping lands with the bevy shell's world pass.
 const TRAIL_WILD_ROLL_PCT: u8 = 8;
 
+/// A named man of the van (A3, docs/TRAIL-BATTLE-DEPTH.md section 3): his
+/// roster identity (the truth of whether he lives) and his battle body,
+/// resolve persisting between road battles.
+#[derive(Debug, Clone)]
+struct VanguardMan {
+    name: String,
+    instance: ChampionInstance,
+}
+
+/// At most this many named men stand beside the captain on the road.
+const VANGUARD_MAX: usize = 2;
+/// Vanguardsmen are minted at the captain's level less this (banded up
+/// when a risen captain raises the file — a fresh mint joins at the new
+/// band; there is no van XP lane in phase 1).
+const VANGUARD_LEVEL_OFF: u8 = 2;
+
 /// A live trail campaign: the engine's journey state plus the app-lane
 /// battle facts the engine deliberately does not own (M8A review: the
 /// roster here is ONE file — the champion's file).
@@ -170,6 +186,10 @@ struct TrailCampaign {
     /// The battle-lane party: ONE champion instance bearing the mantle
     /// (v1's single file), resolve persisting between road battles.
     party: Vec<ChampionInstance>,
+    /// The battle-body cache of the standing vanguard, keyed by name
+    /// (docs/TRAIL-BATTLE-DEPTH.md: the roster remains the truth of who
+    /// lives; synced against it at every road-battle entry).
+    vanguard: Vec<VanguardMan>,
     /// The current/fallen champion's level (succession banding input).
     champion_level: u8,
     /// The pilgrimage ended (every soul lost or the mantle unclaimed).
@@ -180,6 +200,44 @@ impl TrailCampaign {
     /// The man bearing the mantle, if any lives.
     fn champion(&self) -> Option<&trail_engine::ManEntry> {
         self.state.living().find(|m| m.champion)
+    }
+
+    /// Sync the van against the roster (A3): dead or promoted men are
+    /// struck off (their bodies retire with the old mantle), vacant
+    /// places are filled from the living non-champion file, minted at the
+    /// captain's level less [`VANGUARD_LEVEL_OFF`] with the Order's own
+    /// breed. Mercy is arithmetic: the slots are
+    /// `min(VANGUARD_MAX, living non-champion men)` — a depleted file
+    /// simply fights short, a lone captain fights alone.
+    fn sync_vanguard(&mut self) -> Result<(), AppError> {
+        self.vanguard.retain(|v| {
+            self.state
+                .men
+                .iter()
+                .any(|m| m.alive && !m.champion && m.name == v.name)
+        });
+        let species = self
+            .party
+            .first()
+            .map(|c| c.species_id)
+            .ok_or_else(|| illegal("the mantle is vacant"))?;
+        let level = self
+            .champion_level
+            .saturating_sub(VANGUARD_LEVEL_OFF)
+            .clamp(5, MAX_LEVEL);
+        while self.vanguard.len() < VANGUARD_MAX {
+            let taken: Vec<&str> = self.vanguard.iter().map(|v| v.name.as_str()).collect();
+            let next = self
+                .state
+                .living()
+                .find(|m| !m.champion && !taken.contains(&m.name.as_str()));
+            let Some(m) = next else { break };
+            self.vanguard.push(VanguardMan {
+                name: m.name.clone(),
+                instance: practice_champion(species, level)?,
+            });
+        }
+        Ok(())
     }
 }
 
@@ -378,6 +436,12 @@ pub struct ClientGame {
     /// end. Not persisted: it lives at most one battle, the same
     /// lifetime discipline as `battle` itself.
     trail_gate: Option<u16>,
+    /// A camp's mend awaiting its night-ambush battle (RECOVERY.md: a
+    /// won night fight earns the balms at dawn; a lost one is an ordinary
+    /// road defeat and the mend dies with it). Resolve-after value; the
+    /// ailment lift rides along. Same one-battle lifetime as
+    /// `trail_gate`, never persisted.
+    camp_mend: Option<u16>,
     /// Lobby render state while in [`Phase::Lobby`]. The async nostr
     /// session it mirrors lives in the UI's bridge task; everything here is
     /// plain data arrived via [`ClientInput::LobbyNet`].
@@ -407,6 +471,14 @@ impl ClientGame {
             TrailCampaign {
                 state: save.to_state(),
                 party: save.party.clone(),
+                vanguard: save
+                    .vanguard
+                    .iter()
+                    .map(|v| VanguardMan {
+                        name: v.name.clone(),
+                        instance: v.instance.clone(),
+                    })
+                    .collect(),
                 champion_level: save.champion_level,
                 over: save.over,
             }
@@ -419,6 +491,7 @@ impl ClientGame {
             trail,
             trail_battle: false,
             trail_gate: None,
+            camp_mend: None,
             lobby: None,
             nostr_keys: None,
             log: Vec::new(),
@@ -818,6 +891,10 @@ impl ClientGame {
             ClientInput::EngageChoice { encounter_ref } => match self.phase {
                 Phase::Trail => self.engage_choice_encounter(encounter_ref),
                 p => Err(illegal(format!("no encounter to engage from {p:?}"))),
+            },
+            ClientInput::MakeCamp => match self.phase {
+                Phase::Trail => self.trail_make_camp(),
+                p => Err(illegal(format!("no camp to pitch from {p:?}"))),
             },
             ClientInput::AbandonTrail => match self.phase {
                 Phase::Trail => {
@@ -1222,9 +1299,10 @@ impl ClientGame {
             m.champion = true;
         }
         let party = vec![field_reset(template, champion_level)?];
-        let mut t = TrailCampaign {
+        let t = TrailCampaign {
             champion_level,
             party,
+            vanguard: Vec::new(),
             state,
             over: false,
         };
@@ -1253,8 +1331,20 @@ impl ClientGame {
         let Some(t) = &self.trail else {
             return Ok(());
         };
-        let save = TrailSave::capture(&t.state, &t.party, t.champion_level, t.over)
-            .map_err(illegal)?;
+        let save = TrailSave::capture(
+            &t.state,
+            &t.party,
+            t.vanguard
+                .iter()
+                .map(|v| persist::VanguardSave {
+                    name: v.name.clone(),
+                    instance: v.instance.clone(),
+                })
+                .collect(),
+            t.champion_level,
+            t.over,
+        )
+        .map_err(illegal)?;
         persist::save_trail(&mut self.store, &save)?;
         Ok(())
     }
@@ -1431,18 +1521,150 @@ impl ClientGame {
 
     /// Enter a road battle (gate funnel, ambush, wild roll, or elective
     /// choice encounter): the mantle's file vs `foes`, battle rolls
-    /// day-keyed off the pilgrimage seed.
+    /// day-keyed off the pilgrimage seed. Under A3 (docs/TRAIL-BATTLE-
+    /// DEPTH.md section 3) ROAD battles field the mantle plus the standing
+    /// vanguard synced against the roster; the GATES of record (trail_gate
+    /// set) remain the captain's own fight, single file, exactly as
+    /// shipped.
     fn enter_trail_battle(&mut self, foes: Vec<ChampionInstance>, intro: String) -> Result<(), AppError> {
         let seed = self.pilgrim_seed()?;
-        let t = self.trail.as_ref().ok_or_else(|| illegal("no pilgrimage is underway"))?;
+        let gate = self.trail_gate.is_some();
+        let t = self.trail.as_mut().ok_or_else(|| illegal("no pilgrimage is underway"))?;
         let bseed = trail_battle_seed(seed, t.state.day);
-        let party = t.party.clone();
+        let mut party = t.party.clone();
+        if !gate {
+            t.sync_vanguard()?;
+            for v in &t.vanguard {
+                party.push(v.instance.clone());
+            }
+        }
+        // The trail battle intro names who stands (A3 view line). The
+        // engine renders the battle screen's party row itself; this is
+        // the only new ledger text the muster needs.
+        let muster = if gate {
+            None
+        } else if t.vanguard.is_empty() {
+            Some("The captain marches on with no man beside him.".to_string())
+        } else {
+            let van: Vec<&str> = t.vanguard.iter().map(|v| v.name.as_str()).collect();
+            let captain = t.champion().map(|m| m.name.clone()).unwrap_or_default();
+            Some(match van.as_slice() {
+                [one] => format!(
+                    "{captain} bears the mantle; with him stands {one}."
+                ),
+                [one, two] => format!(
+                    "{captain} bears the mantle; with him stand {one} and {two}."
+                ),
+                _ => format!("{captain} bears the mantle; the van stands with him."),
+            })
+        };
         let battle = Battle::new(party, foes, bseed)?;
         self.battle = Some(battle);
         self.trail_battle = true;
         self.phase = Phase::InBattle;
         self.fresh_events.borrow_mut().clear();
-        self.push_log(vec![intro]);
+        let mut lines = vec![intro];
+        if let Some(line) = muster {
+            lines.push(line);
+        }
+        self.push_log(lines);
+        Ok(())
+    }
+
+    /// Make camp at a Camp prop screen (docs/RECOVERY.md section 5,
+    /// Candidate A): a day passes at double upkeep — the men eat double
+    /// rations and the wounded are shriven; nature's table is never
+    /// rolled for a halted company; morale is steadied. The mantle is
+    /// mended toward the 3/4 field-dressing ceiling (mend applied now on
+    /// a quiet night, or at dawn after a KEPT night watch: the 10% camp
+    /// ambush is fought from the unmended stance, and a lost camp battle
+    /// is an ordinary road defeat). One sanctioned write at every exit,
+    /// same discipline as `travel`.
+    fn trail_make_camp(&mut self) -> Result<(), AppError> {
+        let seed = self.pilgrim_seed()?;
+        let t = self.trail.as_ref().ok_or_else(|| illegal("no pilgrimage is underway"))?;
+        if t.over {
+            return Err(illegal("the pilgrimage is over"));
+        }
+        let screen = overworld::screen_by_id(t.state.screen)
+            .ok_or_else(|| illegal(format!("unknown screen {}", t.state.screen)))?;
+        let has_camp = screen.props.iter().any(|p| matches!(p, PropRef::Camp));
+        if !has_camp {
+            return Err(illegal("no camp ground on this screen"));
+        }
+        // The day stream keyed on the PRE-increment day, mirroring
+        // travel's discipline (a camp and a march on "day N" never alias).
+        let day = t.state.day;
+        let zone = screen.encounter_zone;
+        let mantle = t.party.first().ok_or_else(|| illegal("the mantle is vacant"))?;
+        let sp = data::species_by_id(mantle.species_id)
+            .ok_or_else(|| illegal(format!("unknown species {}", mantle.species_id)))?;
+        let max_resolve = data::compute_stats(mantle, sp).max_resolve;
+        let resolve_before = mantle.current_resolve;
+        let champion_name = t.champion().map(|c| c.name.clone()).unwrap_or_default();
+
+        // The stores must bear the halt's double feed before the verb
+        // stands at all.
+        let cost = trail_engine::daily_supply_cost(t.state.living_count()) * 2;
+        if t.state.supplies < cost {
+            self.push_log(vec![
+                "The stores are too lean for a halt; the company must march or starve."
+                    .to_string(),
+            ]);
+            return Ok(());
+        }
+
+        let mut rng = trail_day_rng(seed, day);
+        let t = self.trail.as_mut().expect("trail checked above");
+        let out = trail_engine::make_camp(&mut t.state, &mut rng, max_resolve, resolve_before);
+
+        if out.ambush {
+            // The watch cries: fought from the unmended stance; the mend
+            // rides the battle and is paid only at a kept dawn.
+            let mix = match zone {
+                Some(z) => trail_foe_mix(0, Some(z)),
+                None => trail_foe_mix(201, None),
+            };
+            self.camp_mend = Some(out.resolve_after);
+            self.save_trail()?;
+            let foes = self.build_trail_foes(mix)?;
+            self.enter_trail_battle(
+                foes,
+                "A cry from the watch — the camp is fallen upon in the dark!".to_string(),
+            )?;
+            return Ok(());
+        }
+
+        // A quiet night: the balms go on.
+        let line = if out.resolve_after == resolve_before {
+            format!(
+                "The company makes camp. The watches are posted; the office is sung. Day {} passes quietly.",
+                out.day
+            )
+        } else {
+            let sp_cap = max_resolve * trail_engine::CAMP_RESOLVE_CAP_NUM
+                / trail_engine::CAMP_RESOLVE_CAP_DEN;
+            if out.resolve_after == sp_cap && out.resolve_after < max_resolve {
+                format!(
+                    "The company makes camp. The balms have done what field-dressing can; the rest must knit of itself. ({}/{} — no more may be mended on the road.)",
+                    out.resolve_after, max_resolve
+                )
+            } else {
+                format!(
+                    "The company makes camp. The wounds are washed and bound; the office is sung. {} rises steadier than he lay down (resolve {} -> {}/{}).",
+                    champion_name, resolve_before, out.resolve_after, max_resolve
+                )
+            }
+        };
+        {
+            let t = self.trail.as_mut().expect("trail checked above");
+            if let Some(m) = t.party.first_mut() {
+                m.current_resolve = out.resolve_after;
+                m.ailment = None;
+            }
+        }
+        self.push_log(vec![line]);
+        self.save_trail()?;
         Ok(())
     }
 
@@ -1485,37 +1707,119 @@ impl ClientGame {
     fn on_trail_battle_end(&mut self, winner: u8) -> Result<(), AppError> {
         self.trail_battle = false;
         let gate_ref = self.trail_gate.take();
-        if winner == MY_SIDE {
+        let camp_mend = self.camp_mend.take();
+        let won = winner == MY_SIDE;
+        if won {
             self.scan_defeated_foes()?;
+        }
+
+        // Read the WHOLE post-battle line: the felled stand present at 0
+        // resolve so the van's dead and a fallen mantle can be paged
+        // (A3). nb: the battle party is [mantle, van-in-entry-order];
+        // forced switches never reorder the party array.
+        let post: Vec<ChampionInstance> = {
             let b = self.battle.as_ref().expect("a battle just ended");
-            // Survivors march on UNRESTED (resolve persists per the
-            // journey's attrition design), but their zeal is refilled:
-            // battle entry validates full-zeal rites (campaign lane does
-            // the same reset on rest — here it is a field-fix, no rest).
-            let survivors: Vec<ChampionInstance> = b.sides[usize::from(MY_SIDE)]
+            b.sides[usize::from(MY_SIDE)]
                 .party
                 .iter()
-                .filter(|c| c.current_resolve > 0)
                 .cloned()
                 .map(|mut c| {
-                    for slot in c.rites.iter_mut().flatten() {
-                        if let Some(r) = data::rite_by_id(slot.rite_id) {
-                            slot.zeal_left = r.zeal;
+                    // Survivors march on UNRESTED (resolve persists per
+                    // the journey's attrition design), but their zeal is
+                    // refilled: battle entry validates full-zeal rites
+                    // (a field-fix, no rest).
+                    if c.current_resolve > 0 {
+                        for slot in c.rites.iter_mut().flatten() {
+                            if let Some(r) = data::rite_by_id(slot.rite_id) {
+                                slot.zeal_left = r.zeal;
+                            }
                         }
                     }
                     c
                 })
-                .collect();
+                .collect()
+        };
+        let mantle_stands = post.first().is_some_and(|c| c.current_resolve > 0);
+        let mut lines: Vec<String> = Vec::new();
+
+        {
             let t = self.trail.as_mut().expect("trail battle implies trail");
-            t.party = survivors;
-            t.state.morale = (t.state.morale + TRAIL_VICTORY_MORALE).min(trail_engine::MORALE_MAX);
-            // A gate's battle of record closes with its own routing line
-            // (docs/GATE-CONTENT.md); the wild road keeps the shipped one.
-            let line = gate_ref.and_then(gate_text).map_or_else(
-                || "The road is won; the men take heart and march on.".to_string(),
-                |t| t.victory.to_string(),
-            );
-            self.push_log(vec![line]);
+            // Settle the van first (docs/TRAIL-BATTLE-DEPTH.md section 3:
+            // a vanguardsman at 0 resolve after the battle — victory or
+            // defeat — died where the line stood: his page is written,
+            // the roster marked).
+            let mut van_lines: Vec<String> = Vec::new();
+            for (i, v) in t.vanguard.iter_mut().enumerate() {
+                let Some(body) = post.get(i + 1) else {
+                    continue;
+                };
+                if body.current_resolve > 0 {
+                    v.instance = body.clone();
+                } else {
+                    if let Some(m) = t.state.men.iter_mut().find(|m| m.alive && m.name == v.name) {
+                        m.alive = false;
+                    }
+                    let name = v.name.clone();
+                    t.state.fallen.push(trail_engine::FallenEntry {
+                        name: name.clone(),
+                        day: t.state.day,
+                        cause: persist::FallenCause::SlainInTheVan.as_str(),
+                        where_fell: t.state.screen,
+                    });
+                    van_lines.push(if won {
+                        format!("The van held, and {name} did not rise with it.")
+                    } else {
+                        format!(
+                            "{name} is slain beside the captain; the Book of the Fallen gains a page."
+                        )
+                    });
+                }
+            }
+            // Dead men's bodies retire with them (the next sync's retain
+            // strikes them off; do it now so the saved van holds only the
+            // standing).
+            t.vanguard.retain(|v| {
+                t.state
+                    .men
+                    .iter()
+                    .any(|m| m.alive && !m.champion && m.name == v.name)
+            });
+            lines.extend(van_lines);
+
+            if mantle_stands {
+                // The mantle carries his wounds forward, zeal field-fixed.
+                if let (Some(slot), Some(body)) = (t.party.first_mut(), post.first()) {
+                    *slot = body.clone();
+                }
+            }
+            if won {
+                t.state.morale =
+                    (t.state.morale + TRAIL_VICTORY_MORALE).min(trail_engine::MORALE_MAX);
+                // A gate's battle of record closes with its own routing
+                // line (docs/GATE-CONTENT.md); the wild road keeps the
+                // shipped one.
+                lines.push(gate_ref.and_then(gate_text).map_or_else(
+                    || "The road is won; the men take heart and march on.".to_string(),
+                    |t| t.victory.to_string(),
+                ));
+                // A camp's mend rides on a KEPT night watch by a
+                // STANDING mantle (RECOVERY.md: balms go on after the
+                // fight, at victory routing; a captain felled in the
+                // dark goes to the succession path and no dawn line).
+                if let (true, Some(resolve_after)) = (mantle_stands, camp_mend) {
+                    if let Some(m) = t.party.first_mut() {
+                        m.current_resolve = resolve_after;
+                        m.ailment = None;
+                    }
+                    lines.push(
+                        "The night is kept. By dawn the wounded are tended.".to_string()
+                    );
+                }
+            }
+        }
+        self.push_log(lines);
+
+        if won && mantle_stands {
             self.battle = None;
             self.phase = if self.pending_calls.is_empty() {
                 Phase::Trail
@@ -1525,6 +1829,8 @@ impl ClientGame {
             self.save_trail()?;
             return Ok(());
         }
+        // The mantle fell where the line stood — won field or lost, the
+        // captain's page is written and THE MANTLE answers.
 
         // Defeat: the mantle falls where the company broke.
         let seed = self.pilgrim_seed()?;
@@ -1616,6 +1922,15 @@ impl ClientGame {
             Mantle::Promoted { level } | Mantle::ReorderedContinue { level } => {
                 let t = self.trail.as_mut().expect("trail battle implies trail");
                 t.party = vec![practice_champion(former_species, level)?];
+                // A risen (or reordered) captain's vanguard body retires
+                // with the old mantle; the road-claimed are struck off
+                // too. The next road entry re-mints from the living file.
+                t.vanguard.retain(|v| {
+                    t.state
+                        .men
+                        .iter()
+                        .any(|m| m.alive && !m.champion && m.name == v.name)
+                });
                 self.phase = Phase::Trail;
             }
         }
@@ -2256,6 +2571,31 @@ fn trail_view(t: &TrailCampaign) -> TrailView {
         }
         format!("{}, day {}, at screen {} — {}", f.name, f.day, f.where_fell, f.cause)
     });
+    let can_camp = screen
+        .map(|s| s.props.iter().any(|p| matches!(p, PropRef::Camp)))
+        .unwrap_or(false)
+        && !t.over;
+    let mantle_resolve = t
+        .party
+        .first()
+        .and_then(|m| data::species_by_id(m.species_id).map(|sp| (m, sp)))
+        .map_or((0, 0), |(m, sp)| {
+            (m.current_resolve, data::compute_stats(m, sp).max_resolve)
+        });
+    // The roster is the truth of who lives; the view shows only men the
+    // van would actually field (road events can fell a man with no battle
+    // to reconcile his cache entry — the next sync strikes him off).
+    let vanguard = t
+        .vanguard
+        .iter()
+        .filter(|v| {
+            t.state
+                .men
+                .iter()
+                .any(|m| m.alive && !m.champion && m.name == v.name)
+        })
+        .map(|v| v.name.clone())
+        .collect();
     TrailView {
         screen: t.state.screen,
         region_name,
@@ -2269,6 +2609,9 @@ fn trail_view(t: &TrailCampaign) -> TrailView {
         exits,
         choice_encounters,
         over: t.over,
+        can_camp,
+        mantle_resolve,
+        vanguard,
     }
 }
 
@@ -3859,6 +4202,7 @@ mod trail_tests {
                 region_flags: 0,
             },
             party: vec![practice_champion(1, 20).expect("mantle instance")],
+            vanguard: Vec::new(),
             champion_level: 20,
             over: false,
         });
@@ -4073,5 +4417,336 @@ mod trail_tests {
                 );
             }
         }
+    }
+
+    // ---------- A3: the van (docs/TRAIL-BATTLE-DEPTH.md section 3) ----------
+
+    /// Open a road battle against one token foe via the real entry seam
+    /// (gates unset `trail_gate`, so this is a road/wild entry — the van
+    /// syncs). Returns nothing; the battle is live on the game.
+    fn open_road_battle(game: &mut ClientGame) {
+        let foes = vec![practice_champion(112, 5).expect("foe")];
+        game.enter_trail_battle(foes, "Foes rise from the wilds!".to_string())
+            .expect("road battle enters");
+    }
+
+    #[test]
+    fn the_van_mints_at_captain_minus_two_and_fights_the_road() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(
+            &mut game,
+            8,
+            &[(255, true), (200, false), (90, false), (90, false)],
+            0,
+        );
+        let mantle_species = game.trail.as_ref().expect("trail").party[0].species_id;
+        open_road_battle(&mut game);
+        let b = game.battle.as_ref().expect("road battle live");
+        let mine = &b.sides[usize::from(MY_SIDE)].party;
+        assert_eq!(mine.len(), 3, "the mantle plus two vanguardsmen");
+        assert_eq!(b.sides[usize::from(MY_SIDE)].active_idx, 0, "the mantle leads");
+        for van in &mine[1..] {
+            assert_eq!(van.level, 18, "minted at the captain's level - 2");
+            assert_eq!(van.species_id, mantle_species, "the Order's own breed");
+        }
+        let t = game.trail.as_ref().expect("trail");
+        assert_eq!(
+            t.vanguard.iter().map(|v| v.name.as_str()).collect::<Vec<_>>(),
+            vec!["Test-Man 1", "Test-Man 2"],
+            "the van is drawn from the living file, in roster order"
+        );
+        // The view names the standing van.
+        let v = game.snapshot().trail.expect("trail view");
+        assert_eq!(v.vanguard.len(), 2);
+    }
+
+    #[test]
+    fn a_depleted_file_fights_short_and_a_lone_captain_alone() {
+        // Two living non-champions -> two-man van (the slot cap).
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 8, &[(255, true), (200, false)], 0);
+        open_road_battle(&mut game);
+        let b = game.battle.as_ref().expect("road battle live");
+        assert_eq!(b.sides[usize::from(MY_SIDE)].party.len(), 2, "one slot open");
+
+        // No living non-champion -> the captain fights alone.
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 8, &[(255, true)], 0);
+        open_road_battle(&mut game);
+        let b = game.battle.as_ref().expect("road battle live");
+        assert_eq!(b.sides[usize::from(MY_SIDE)].party.len(), 1, "the lone captain");
+        assert!(
+            game.snapshot()
+                .log_tail
+                .iter()
+                .any(|l| l.contains("no man beside him")),
+            "the lone captain's ledger line reads"
+        );
+    }
+
+    #[test]
+    fn the_gate_remains_the_captains_own_fight() {
+        // Fabricate the gate seam directly: with trail_gate set, the van
+        // does not stand even with a full file behind it.
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(
+            &mut game,
+            8,
+            &[(255, true), (200, false), (90, false), (90, false)],
+            0,
+        );
+        game.trail_gate = Some(101);
+        open_road_battle(&mut game);
+        let b = game.battle.as_ref().expect("gate battle live");
+        assert_eq!(
+            b.sides[usize::from(MY_SIDE)].party.len(),
+            1,
+            "gates are single file, exactly as shipped"
+        );
+        assert!(
+            !game.snapshot()
+                .log_tail
+                .iter()
+                .any(|l| l.contains("bears the mantle; with him stand")),
+            "no muster line at a battle of record"
+        );
+    }
+
+    /// Fabricate a lost road battle with named casualties: indices into
+    /// the van (0-based) felled where they stood; the mantle felled per
+    /// flag. Settles through the real router.
+    fn settle_road_defeat(game: &mut ClientGame, van_felled: &[usize], mantle_felled: bool) {
+        {
+            let b = game.battle.as_mut().expect("a battle is live");
+            for i in van_felled {
+                b.sides[usize::from(MY_SIDE)].party[i + 1].current_resolve = 0;
+            }
+            if mantle_felled {
+                b.sides[usize::from(MY_SIDE)].party[0].current_resolve = 0;
+            }
+            b.winner = Some(FOE_SIDE);
+        }
+        game.on_battle_end(FOE_SIDE).expect("lost battle routes");
+    }
+
+    #[test]
+    fn a_felled_vanguardsman_gains_his_page_and_the_roster_marks_him() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(
+            &mut game,
+            8,
+            &[(255, true), (200, false), (90, false), (90, false)],
+            0,
+        );
+        open_road_battle(&mut game);
+        // The shield-man (van slot 1) falls; the captain falls too; the
+        // 200-devotion man of the van lives to rise.
+        settle_road_defeat(&mut game, &[1], true);
+
+        let t = game.trail.as_ref().expect("trail");
+        assert!(
+            !t.state
+                .men
+                .iter()
+                .find(|m| m.name == "Test-Man 2")
+                .expect("roster row")
+                .alive,
+            "his name is struck from the living"
+        );
+        let page = t
+            .state
+            .fallen
+            .iter()
+            .find(|f| f.name == "Test-Man 2")
+            .expect("a page of the Book");
+        assert_eq!(page.cause, persist::FallenCause::SlainInTheVan.as_str());
+        assert_eq!(page.where_fell, 8);
+        // THE MANTLE: the surviving van man rose in righteousness; his
+        // vanguard body retires with the old mantle.
+        assert_eq!(t.champion().expect("a champion").name, "Test-Man 1");
+        assert!(
+            t.vanguard.iter().all(|v| v.name != "Test-Man 1"),
+            "the risen man's van body retires"
+        );
+        // The next road entry re-mints around him at the new band.
+        open_road_battle(&mut game);
+        let t = game.trail.as_ref().expect("trail");
+        assert_eq!(t.vanguard.len(), 1, "Test-Man 3 fills the open place");
+        assert_eq!(t.vanguard[0].name, "Test-Man 3");
+        assert_eq!(
+            t.vanguard[0].instance.level,
+            t.champion_level.saturating_sub(2).clamp(5, MAX_LEVEL),
+            "re-banded to the risen captain's -2"
+        );
+    }
+
+    #[test]
+    fn a_won_field_still_pages_the_felled_man_of_the_van() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(
+            &mut game,
+            8,
+            &[(255, true), (200, false), (90, false), (90, false)],
+            0,
+        );
+        open_road_battle(&mut game);
+        {
+            let b = game.battle.as_mut().expect("battle live");
+            // The foe falls; the van loses its second man in the winning.
+            for f in &mut b.sides[usize::from(FOE_SIDE)].party {
+                f.current_resolve = 0;
+            }
+            b.sides[usize::from(MY_SIDE)].party[2].current_resolve = 0;
+            b.winner = Some(MY_SIDE);
+        }
+        game.on_battle_end(MY_SIDE).expect("won battle routes");
+        let t = game.trail.as_ref().expect("trail");
+        assert!(t
+            .state
+            .fallen
+            .iter()
+            .any(|f| f.name == "Test-Man 2"
+                && f.cause == persist::FallenCause::SlainInTheVan.as_str()),
+            "victory does not spare the page");
+        assert!(
+            t.vanguard.iter().any(|v| v.name == "Test-Man 1")
+                && !t.vanguard.iter().any(|v| v.name == "Test-Man 2"),
+            "the standing survive, the slain leave the van"
+        );
+    }
+
+    // ---------- Make Camp (docs/RECOVERY.md section 5) ----------
+
+    #[test]
+    fn make_camp_guards_hold() {
+        // Off-prop screen: the verb does not stand.
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail(&mut game, &[(255, true), (200, false)], 0);
+        assert!(game.handle(ClientInput::MakeCamp).is_err());
+        // From the menu there is no pilgrimage to halt.
+        let mut game = ClientGame::new(fixture_store());
+        assert!(game.handle(ClientInput::MakeCamp).is_err());
+
+        // Lean stores refuse without spending the day.
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 3, &[(255, true), (200, false), (10, false)], 0);
+        game.trail.as_mut().expect("trail").state.supplies = 0;
+        let day0 = game.snapshot().trail.expect("trail").day;
+        game.handle(ClientInput::MakeCamp)
+            .expect("a lean stores refusal is a no-op, not an error");
+        let t = game.trail.as_ref().expect("trail");
+        assert_eq!(t.state.day, day0, "no day is spent on a refused halt");
+        assert!(
+            game.snapshot()
+                .log_tail
+                .iter()
+                .any(|l| l.contains("too lean for a halt")),
+            "the refusal keeps the register"
+        );
+        // An ended pilgrimage cannot camp.
+        game.trail.as_mut().expect("trail").over = true;
+        assert!(game.handle(ClientInput::MakeCamp).is_err());
+    }
+
+    #[test]
+    fn a_camp_halt_pays_its_day_and_mends_only_toward_the_ceiling() {
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 3, &[(255, true), (200, false), (10, false)], 0);
+        assert!(
+            game.snapshot().trail.expect("trail").can_camp,
+            "screen 3 carries the camp ground"
+        );
+        {
+            let t = game.trail.as_mut().expect("trail");
+            let m = &mut t.party[0];
+            let sp = data::species_by_id(m.species_id).expect("species");
+            let max = data::compute_stats(m, sp).max_resolve;
+            m.current_resolve = max / 4; // a wounded captain
+            m.ailment = Some(Ailment::Venom);
+        }
+        let (day0, sup0) = {
+            let t = game.trail.as_ref().expect("trail");
+            (t.state.day, t.state.supplies)
+        };
+        let want_resolve = {
+            let t = game.trail.as_ref().expect("trail");
+            let m = &t.party[0];
+            let sp = data::species_by_id(m.species_id).expect("species");
+            let max = data::compute_stats(m, sp).max_resolve;
+            (m.current_resolve + max * te::CAMP_RESOLVE_PCT_NUM / te::CAMP_RESOLVE_PCT_DEN)
+                .min(max * te::CAMP_RESOLVE_CAP_NUM / te::CAMP_RESOLVE_CAP_DEN)
+        };
+        game.handle(ClientInput::MakeCamp).expect("camp is legal here");
+        let t = game.trail.as_ref().expect("trail");
+        assert_eq!(t.state.day, day0 + 1, "a camp is a day");
+        // 3 souls -> upkeep 1, doubled to 2; no trail-event roll.
+        assert_eq!(t.state.supplies, sup0 - 2, "double rations, nothing foraged");
+        assert_eq!(t.state.morale, te::CAMP_MORALE_GAIN);
+        match game.phase() {
+            Phase::Trail => {
+                // The night was quiet: the mend is on the mantle.
+                let m = &t.party[0];
+                assert_eq!(m.current_resolve, want_resolve, "the balms bind");
+                assert!(m.ailment.is_none(), "the ailment is lifted");
+            }
+            Phase::InBattle => {
+                // The watch cried: fought from the UNMENDED stance.
+                let m = &t.party[0];
+                let sp = data::species_by_id(m.species_id).expect("species");
+                let max = data::compute_stats(m, sp).max_resolve;
+                assert_eq!(m.current_resolve, max / 4, "no balms before the fight");
+                // The road battle fields the van, as any road fight.
+                let b = game.battle.as_ref().expect("night battle live");
+                assert_eq!(
+                    b.sides[usize::from(MY_SIDE)].party.len(),
+                    2,
+                    "the van stands to the watch"
+                );
+                auto_win(&mut game);
+                assert_eq!(game.phase(), Phase::Trail, "the night is kept");
+                let t = game.trail.as_ref().expect("trail");
+                let m = &t.party[0];
+                assert_eq!(m.current_resolve, want_resolve, "the mend rides the dawn");
+                assert!(m.ailment.is_none());
+            }
+            p => panic!("camp must end on the road or the night watch, got {p:?}"),
+        }
+    }
+
+    #[test]
+    fn a_pyrrhic_night_watch_writes_no_dawn_mend() {
+        // The watch is kept but the captain fell holding it: the mend
+        // and the dawn line belong to a STANDING mantle (review NIT).
+        let mut game = ClientGame::new(fixture_store());
+        craft_trail_on(&mut game, 3, &[(255, true), (200, false), (10, false)], 0);
+        // A camp's mend awaiting its night-ambush battle.
+        game.camp_mend = Some(1);
+        force_trail_battle(&mut game);
+        {
+            // Pyrrhic: the foes are finished but the captain is felled.
+            let b = game.battle.as_mut().expect("night battle live");
+            for f in &mut b.sides[usize::from(FOE_SIDE)].party {
+                f.current_resolve = 0;
+            }
+            b.sides[usize::from(MY_SIDE)].party[0].current_resolve = 0;
+            b.winner = Some(MY_SIDE);
+        }
+        game.on_battle_end(MY_SIDE).expect("won battle routes");
+        let lines = game.snapshot().log_tail;
+        assert!(
+            !lines.iter().any(|l| l.contains("By dawn the wounded are tended")),
+            "no dawn mend over the captain's corpse"
+        );
+        assert!(
+            !lines.iter().any(|l| l.contains("The night is kept")),
+            "no kept-dawn line on a Pyrrhic watch"
+        );
+        // The ordinary succession path ran: the captain's page is in the
+        // Book and the company answered the fall.
+        let t = game.trail.as_ref().expect("trail");
+        assert!(
+            t.state.fallen.iter().any(|f| f.name == "Test-Man 0"),
+            "the captain's page is written"
+        );
     }
 }

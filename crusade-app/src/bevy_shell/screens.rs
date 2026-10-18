@@ -244,6 +244,27 @@ fn trail_screen(cmd: &mut Commands, trail: Option<&crusade_app::TrailView>) -> V
             style::BONE,
         ),
     ];
+    // The van (A3): who stands beside the captain on the road.
+    if !t.vanguard.is_empty() {
+        kids.push(text_node(
+            cmd,
+            format!("With him stand {}.", t.vanguard.join(" and ")),
+            style::small_font(),
+            style::BONE,
+        ));
+    }
+    // The mantle's wounds, so a camp choice shows its reason.
+    if t.mantle_resolve.1 > 0 && t.mantle_resolve.0 < t.mantle_resolve.1 {
+        kids.push(text_node(
+            cmd,
+            format!(
+                "{} is wounded (resolve {}/{}).",
+                t.champion_name, t.mantle_resolve.0, t.mantle_resolve.1
+            ),
+            style::small_font(),
+            style::BONE,
+        ));
+    }
     if t.fallen_count > 0 {
         kids.push(text_node(
             cmd,
@@ -281,6 +302,13 @@ fn trail_screen(cmd: &mut Commands, trail: Option<&crusade_app::TrailView>) -> V
             cmd,
             format!("Engage the warband (encounter {})", enc),
             ClientInput::EngageChoice { encounter_ref: *enc },
+        ));
+    }
+    if t.can_camp {
+        kids.push(action_button(
+            cmd,
+            "Make camp - a day, double rations, and the watches posted.".into(),
+            ClientInput::MakeCamp,
         ));
     }
     // M8c-integration seam: the Zelda walker, off by default (feature
