@@ -81,6 +81,7 @@ function badgeHTML(p){
   return s;
 }
 function openM(p){
+  if(p !== cur) flushNote(); // a typed-but-undebounced note rides along
   cur = p;
   document.getElementById('mtitle').textContent = p;
   if(ANIM[p]){ startPlayer(ANIM[p]); }
@@ -92,7 +93,15 @@ function openM(p){
   });
   document.getElementById('modal').style.display = 'block';
 }
-function closeM(){ stopPlayer(); document.getElementById('modal').style.display = 'none'; }
+function closeM(){ flushNote(); stopPlayer(); document.getElementById('modal').style.display = 'none'; }
+function flushNote(){
+  if(!noteTimer) return;
+  clearTimeout(noteTimer); noteTimer = null;
+  let n = NOTES[cur] || {};
+  let t = document.getElementById('mnote').value;
+  if(t) n.note = t; else delete n.note;
+  NOTES[cur] = n; persist();
+}
 function visibleKeys(){
   return [...document.querySelectorAll('.card')]
     .filter(c => c.style.display !== 'none')
@@ -113,16 +122,29 @@ document.addEventListener('keydown', e => {
   else if(e.key === 'ArrowLeft'){ e.preventDefault(); navM(-1); }
   else if(e.key === 'Escape'){ closeM(); }
 });
+let noteTimer = null;
+// Debounced autosave: typed notes persist without closing or re-render,
+// so verdict clicks or queue navigation can never wipe an in-flight note.
+function noteInput(){
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => {
+    let n = NOTES[cur] || {};
+    let t = document.getElementById('mnote').value;
+    if(t) n.note = t; else delete n.note;
+    NOTES[cur] = n; persist();
+  }, 400);
+}
 function setVerd(v){
   let n = NOTES[cur] || {};
   if(v) n.verdict = v; else delete n.verdict;
   NOTES[cur] = n; persist();
 }
-function saveNote(){
+function saveNote(){ closeM(); } // closeM flushes any pending note first
+function refreshVerdBtns(){
   let n = NOTES[cur] || {};
-  let t = document.getElementById('mnote').value;
-  if(t) n.note = t; else delete n.note;
-  NOTES[cur] = n; persist(); closeM();
+  ['approved','needs-work','rejected'].forEach(v => {
+    document.getElementById('v-' + v).className = 'verdbtn' + (n.verdict === v ? ' sel-' + v : '');
+  });
 }
 function persist(){
   let n = NOTES[cur] || {};
@@ -134,7 +156,9 @@ function persist(){
         let old = host.querySelector('.badges'); if(old) old.remove();
         host.insertAdjacentHTML('beforeend', '<span class="badges">' + badgeHTML(cur) + '</span>');
       }
-      if(document.getElementById('modal').style.display === 'block') openM(cur);
+      // Modal stays untouched mid-review: patch badges/counts only, never
+      // rebuild it (a rebuild would clobber the open image and textarea).
+      if(document.getElementById('modal').style.display === 'block') refreshVerdBtns();
       counts();
     });
 }
@@ -319,7 +343,7 @@ def render() -> bytes:
         "<button class='verdbtn' id='v-needs-work' onclick=setVerd('needs-work')>Needs work</button>",
         "<button class='verdbtn' id='v-rejected' onclick=setVerd('rejected')>Rejected</button>",
         "<button class='verdbtn' onclick=setVerd('')>Clear verdict</button></div>",
-        "<textarea id='mnote' placeholder='tweak notes (e.g. cross too small, recolor banner)'></textarea>",
+        "<textarea id='mnote' oninput='noteInput()' placeholder='tweak notes (e.g. cross too small, recolor banner)'></textarea>",
         "<div style='margin-top:.5rem'><button class='verdbtn' onclick='saveNote()'>Save note</button>",
         "<button class='verdbtn' onclick='closeM()'>Close</button></div>",
         "</div></div>",
