@@ -116,3 +116,12 @@ every prompt at generation time).
 - Nothing wired into crusade-app (correct — the stage_sprites ADVERSARIES
   table + icons are a later card after human eyeball QA per HF 8). The
   worker eyeball above is the generation gate, not that human QA.
+- **Wiring landed 2026-10-19** (owner QA approved the full inventory
+  2026-10-19): `stage_sprites.py` gained the ADVERSARIES table (14 rows,
+  108-117 + 120-123) staging `sprites/adversaries/{id:03}-{slug}.png` +
+  `sprites/icons/{id:03}.png`; 124 Gokbori and 125 Taki al-Din Umar are
+  PENDING-ART (no cells commissioned) and skip with a warning. Shell
+  seams: `battle.rs::champion_sprite_path` routes adversary species names
+  to the adversaries dir (battle panels incl. the practice trio's 116),
+  and the Roll/Testimonies rows draw the 32px codex icon via the shared
+  `sin_icon` seam.

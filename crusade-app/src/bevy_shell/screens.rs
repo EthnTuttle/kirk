@@ -2439,7 +2439,7 @@ fn hagiography_screen(
             style::DIM,
         ));
     } else {
-        kids.push(adversary_roll_panel(cmd, &snap.foes));
+        kids.push(adversary_roll_panel(cmd, &snap.foes, assets));
     }
     kids.push(text_node(
         cmd,
@@ -2455,7 +2455,7 @@ fn hagiography_screen(
             style::DIM,
         ));
     } else {
-        kids.push(testimony_panel(cmd, &snap.testimonies));
+        kids.push(testimony_panel(cmd, &snap.testimonies, assets));
     }
     kids
 }
@@ -2580,8 +2580,11 @@ fn sin_row(cmd: &mut Commands, card: &SinCard, assets: Option<&AssetServer>) -> 
     .id()
 }
 
-/// The boss's 32x32 icon in the manuscript — the same
-/// `sprites/icons/{id:03}.png` seam as [`champion_icon`] (D2): spawned
+/// The 32x32 codex icon — the same
+/// `sprites/icons/{id:03}.png` seam as [`champion_icon`] (D2), shared by
+/// the Manuscript of Sins rows, the Roll of Worthy Adversaries, and the
+/// Testimonies of the Baptized (which is why FoeCard/TestimonyCard rows
+/// resolve straight off their static-table species id): spawned
 /// only when an asset server exists AND the id is a static-table species;
 /// a 404ing fetch draws nothing over the row's unconditional text. Sealed
 /// entries tint the icon down to the row's dimmed tone.
@@ -2622,8 +2625,15 @@ pub fn hagiography_menu_button(cmd: &mut Commands) -> Entity {
 /// book is a single artifact, same as the Manuscript. Row gating is
 /// doubled here as with [`manuscript_panel`]: lore renders only for
 /// `defeated` cards, so a mis-built snapshot cannot leak the readings.
-fn adversary_roll_panel(cmd: &mut Commands, foes: &[FoeCard]) -> Entity {
-    let rows: Vec<Entity> = foes.iter().map(|card| adversary_row(cmd, card)).collect();
+fn adversary_roll_panel(
+    cmd: &mut Commands,
+    foes: &[FoeCard],
+    assets: Option<&AssetServer>,
+) -> Entity {
+    let rows: Vec<Entity> = foes
+        .iter()
+        .map(|card| adversary_row(cmd, card, assets))
+        .collect();
     cmd.spawn((
         Node {
             max_width: Val::Px(760.0),
@@ -2638,12 +2648,23 @@ fn adversary_roll_panel(cmd: &mut Commands, foes: &[FoeCard]) -> Entity {
     .id()
 }
 
-/// One adversary row. Revealed: name in gold over the chronicle reading in
-/// bone. Sealed: one dimmed line — "{name} - Unmet"; the man is not yet
-/// witnessed, and no lore is shown.
-fn adversary_row(cmd: &mut Commands, card: &FoeCard) -> Entity {
+/// One adversary row. Revealed: the 32px icon (staged
+/// `sprites/icons/{id:03}.png`, same seam as [`sin_icon`]) beside the name
+/// in gold over the chronicle reading in bone. Sealed: one dimmed line —
+/// "{name} - Unmet"; the man is not yet witnessed, and no lore is shown.
+fn adversary_row(cmd: &mut Commands, card: &FoeCard, assets: Option<&AssetServer>) -> Entity {
     if card.defeated {
-        let heading = text_node(cmd, card.name.clone(), style::body_font(), style::GOLD);
+        let mut head_kids: Vec<Entity> = Vec::new();
+        head_kids.extend(sin_icon(cmd, card.species_id, true, assets));
+        head_kids.push(text_node(cmd, card.name.clone(), style::body_font(), style::GOLD));
+        let heading = cmd
+            .spawn(Node {
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(10.0),
+                ..default()
+            })
+            .add_children(&head_kids)
+            .id();
         let lore = cmd
             .spawn((
                 Text::new(card.lore.clone()),
@@ -2664,19 +2685,35 @@ fn adversary_row(cmd: &mut Commands, card: &FoeCard) -> Entity {
             .add_children(&[heading, lore])
             .id();
     }
-    text_node(
+    let mut kids: Vec<Entity> = Vec::new();
+    kids.extend(sin_icon(cmd, card.species_id, false, assets));
+    kids.push(text_node(
         cmd,
         format!("{} - Unmet", card.name),
         style::body_font(),
         style::DIM,
-    )
+    ));
+    cmd.spawn(Node {
+        align_items: AlignItems::Center,
+        column_gap: Val::Px(10.0),
+        ..default()
+    })
+    .add_children(&kids)
+    .id()
 }
 
 /// The Testimonies of the Baptized as ONE register panel: ten rows, one
 /// per convertible archetype. Gating doubled as ever: testimony renders
 /// only for `baptized` cards.
-fn testimony_panel(cmd: &mut Commands, rows: &[TestimonyCard]) -> Entity {
-    let rows: Vec<Entity> = rows.iter().map(|card| testimony_row(cmd, card)).collect();
+fn testimony_panel(
+    cmd: &mut Commands,
+    rows: &[TestimonyCard],
+    assets: Option<&AssetServer>,
+) -> Entity {
+    let rows: Vec<Entity> = rows
+        .iter()
+        .map(|card| testimony_row(cmd, card, assets))
+        .collect();
     cmd.spawn((
         Node {
             max_width: Val::Px(760.0),
@@ -2691,16 +2728,27 @@ fn testimony_panel(cmd: &mut Commands, rows: &[TestimonyCard]) -> Entity {
     .id()
 }
 
-/// One testimony row. Baptized: the office in gold over the man's own
-/// account in bone. Sealed: one dimmed line — "{name} - Not yet called".
-fn testimony_row(cmd: &mut Commands, card: &TestimonyCard) -> Entity {
+/// One testimony row. Baptized: the 32px icon beside the office in gold
+/// over the man's own account in bone. Sealed: one dimmed line — "{name}
+/// - Not yet called".
+fn testimony_row(cmd: &mut Commands, card: &TestimonyCard, assets: Option<&AssetServer>) -> Entity {
     if card.baptized {
-        let heading = text_node(
+        let mut head_kids: Vec<Entity> = Vec::new();
+        head_kids.extend(sin_icon(cmd, card.species_id, true, assets));
+        head_kids.push(text_node(
             cmd,
             format!("{}, baptized into Christ", card.name),
             style::body_font(),
             style::GOLD,
-        );
+        ));
+        let heading = cmd
+            .spawn(Node {
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(10.0),
+                ..default()
+            })
+            .add_children(&head_kids)
+            .id();
         let body = cmd
             .spawn((
                 Text::new(card.testimony.clone()),
@@ -2721,12 +2769,21 @@ fn testimony_row(cmd: &mut Commands, card: &TestimonyCard) -> Entity {
             .add_children(&[heading, body])
             .id();
     }
-    text_node(
+    let mut kids: Vec<Entity> = Vec::new();
+    kids.extend(sin_icon(cmd, card.species_id, false, assets));
+    kids.push(text_node(
         cmd,
         format!("{} - Not yet called", card.name),
         style::body_font(),
         style::DIM,
-    )
+    ));
+    cmd.spawn(Node {
+        align_items: AlignItems::Center,
+        column_gap: Val::Px(10.0),
+        ..default()
+    })
+    .add_children(&kids)
+    .id()
 }
 
 /// The post-battle Call to Repentance screen (M7b, docs/CONVERSION.md): a

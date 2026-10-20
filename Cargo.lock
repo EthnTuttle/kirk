@@ -3094,6 +3094,10 @@ dependencies = [
 name = "crusade-bridge"
 version = "0.1.0"
 dependencies = [
+ "cashu",
+ "cdk",
+ "cdk-signatory",
+ "cdk-sqlite",
  "crusade-core",
  "crusade-net",
  "hex",

@@ -4,6 +4,7 @@ crusade-app/assets/ in the species_id-keyed layout the Bevy shell loads
 (docs/ART-PIPELINE.md section 2):
 
     assets/sprites/champions/{id:03}-{slug}.png   128x128 battle sprite
+    assets/sprites/adversaries/{id:03}-{slug}.png 128x128 Road East sprite
     assets/sprites/icons/{id:03}.png              32x32 roster icon
     assets/sprites/scenes/<name>.png              128x128 scene/hero art
     assets/sprites/anim/{id:03}-{slug}/NN_<pose>.png  128x128 idle+arc frames
@@ -93,6 +94,39 @@ SUBJECTS = [
     (107, "grasper-of-greed", "grasper-of-greed"),
 ]
 
+# The Road East adversary roster (cards M7a wiring, docs/ART-ADVERSARIES.md):
+# (species_id, slug, staging cell) under art/adversaries-staging/<lane>/.
+# Battle sprites land at sprites/adversaries/{id:03}-{slug}.png (NOT the
+# champions/ dir — the shell routes ids 108+ there); icons stay on the
+# shared sprites/icons/{id:03}.png seam. Commanders (120-123) are static
+# boss portraits like the sin-bosses: no anim frames, no gallery plates.
+ADVERSARIES = [
+    (108, "turcoman-bowrider", "turcoman-bowrider"),
+    (109, "ghulam-lancer", "ghulam-lancer"),
+    (110, "sudani-shieldbearer", "sudani-shieldbearer"),
+    (111, "armenian-bowman", "armenian-bowman"),
+    (112, "daylamite-axeman", "daylamite-axeman"),
+    (113, "bedouin-outrider", "bedouin-outrider"),
+    (114, "kurdish-ghazw-rider", "kurdish-ghazw-rider"),
+    (115, "naffatun-sapper", "naffatun-sapper"),
+    (116, "askari-alamdar", "askari-alamdar"),
+    (117, "muqaddam-of-the-tulb", "muqaddam-of-the-tulb"),
+    (120, "kilij-arslan-i", "kilij-arslan-i"),
+    (121, "nur-ad-din", "nur-ad-din"),
+    (122, "asad-al-din-shirkuh", "asad-al-din-shirkuh"),
+    (123, "saladin", "saladin"),
+]
+
+# Pending-art adversaries: static-table species with NO approved art cell
+# staged yet (124 gokbori, 125 taki-al-din-umar per ART-ADVERSARIES; the
+# M7 data table names 125 "Taki al-Din Umar"). The stage loop SKIPS these
+# with a warning instead of failing; the shell keeps them text-only. Once
+# a q128 cell lands, move the row into ADVERSARIES and delete the entry.
+PENDING_ART = [
+    (124, "gokbori"),
+    (125, "taki-al-din-umar"),
+]
+
 CANVAS = 128  # production canvas (ART-STATUS section 1)
 ICON = 32  # roster icon side (ART-PIPELINE section 6)
 INK = (0x0B, 0x0E, 0x1B)  # palette background: shell NAVY, quarter-dark shell
@@ -152,6 +186,9 @@ def parse_args(argv):
                    help="override the staging root (default: <repo>/art/roster-staging/<lane>)")
     p.add_argument("--assets", default=None,
                    help="override the assets root (default: <repo>/crusade-app/assets)")
+    p.add_argument("--adv-staging", default=None,
+                   help="override the adversary staging root (default: "
+                        "<repo>/art/adversaries-staging/<lane>)")
     p.add_argument("--anim-staging", default=None,
                    help="override the anim staging root (default: <repo>/art/anim-staging)")
     p.add_argument("--masters", default=None,
@@ -169,6 +206,8 @@ def parse_args(argv):
         args.staging = os.path.join(REPO_ROOT, "art", "roster-staging", args.lane)
     if args.assets is None:
         args.assets = os.path.join(REPO_ROOT, "crusade-app", "assets")
+    if args.adv_staging is None:
+        args.adv_staging = os.path.join(REPO_ROOT, "art", "adversaries-staging", args.lane)
     if args.anim_staging is None:
         args.anim_staging = os.path.join(REPO_ROOT, "art", "anim-staging")
     if args.manifest is None:
@@ -238,6 +277,35 @@ def load_canvas(src):
         print(f"stage_sprites: {src} is {img.size}, expected {CANVAS}x{CANVAS}", file=sys.stderr)
         sys.exit(1)
     return img
+
+
+def stage_battle_and_icon(args, staging_root, sprite_class, species_id, slug, cell):
+    """Stage one species' keyed battle sprite + 32x32 roster icon.
+    `sprite_class` is the sprites/ subdirectory ("champions" or
+    "adversaries"). Returns (written, kept) file counts."""
+    # Canon: the heraldry variant (cross-bearing identity, owner-locked)
+    # supersedes the plain q128 wherever the heraldry pass ran; plain q128
+    # remains the source for cells without heraldry (adversaries).
+    src_h = os.path.join(staging_root, cell, "heraldry-q128.png")
+    src = src_h if os.path.exists(src_h) else os.path.join(staging_root, cell, "q128.png")
+    img = load_canvas(src)
+    keyed = 0
+    if args.key_bg:
+        img, keyed = key_edge_connected_ink(img)
+    sprite = os.path.join(
+        args.assets, "sprites", sprite_class, f"{species_id:03d}-{slug}.png"
+    )
+    icon = os.path.join(args.assets, "sprites", "icons", f"{species_id:03d}.png")
+    icon_img = img.resize((ICON, ICON), Image.Resampling.NEAREST)
+    written = kept = 0
+    for path, im in ((sprite, img), (icon, icon_img)):
+        if write_png_if_changed(im, path):
+            written += 1
+        else:
+            kept += 1
+    print(f"  {species_id:>4} {slug:22} {cell:22} {keyed:>8}  "
+          f"{os.path.relpath(sprite, args.assets)} + {os.path.relpath(icon, args.assets)}")
+    return written, kept
 
 
 def find_gallery_master(args, cell):
@@ -369,26 +437,29 @@ def main(argv):
     print(f"stage_sprites: lane={os.path.basename(args.staging)} key_bg={args.key_bg}")
     print(f"  {'id':>4} {'slug':22} {'cell':22} {'keyed px':>8}  outputs")
     for species_id, slug, cell in SUBJECTS:
-        src = os.path.join(args.staging, cell, "q128.png")
-        img = load_canvas(src)
+        w, k = stage_battle_and_icon(args, args.staging, "champions", species_id, slug, cell)
+        written += w
+        kept += k
 
-        keyed = 0
-        if args.key_bg:
-            img, keyed = key_edge_connected_ink(img)
-
-        sprite = os.path.join(
-            args.assets, "sprites", "champions", f"{species_id:03d}-{slug}.png"
-        )
-        icon = os.path.join(args.assets, "sprites", "icons", f"{species_id:03d}.png")
-        icon_img = img.resize((ICON, ICON), Image.Resampling.NEAREST)
-
-        for path, im in ((sprite, img), (icon, icon_img)):
-            if write_png_if_changed(im, path):
-                written += 1
-            else:
-                kept += 1
-        print(f"  {species_id:>4} {slug:22} {cell:22} {keyed:>8}  "
-              f"{os.path.relpath(sprite, args.assets)} + {os.path.relpath(icon, args.assets)}")
+    # Adversaries (ids 108-117, 120-123): art/adversaries-staging lane,
+    # sprites/adversaries/ + shared icons/. An absent staging root skips
+    # the lane wholesale (fresh box before art lands); a missing cell for
+    # a LISTED adversary is a hard error like any missing cell, while
+    # PENDING_ART ids (no cell commissioned yet) skip with a warning.
+    adv_staged = 0
+    if os.path.isdir(args.adv_staging):
+        for species_id, slug, cell in ADVERSARIES:
+            w, k = stage_battle_and_icon(
+                args, args.adv_staging, "adversaries", species_id, slug, cell)
+            written += w
+            kept += k
+            adv_staged += 1
+        for species_id, slug in PENDING_ART:
+            print(f"  {species_id:>4} {slug:22} {'(pending-art)':22} {'':>8}  "
+                  f"SKIPPED — no approved art cell yet; shell renders text-only")
+    else:
+        print(f"stage_sprites: adversary staging not found: {args.adv_staging} "
+              f"(skipping adversary lane)", file=sys.stderr)
 
     for (cell,) in SCENES:
         src = os.path.join(args.staging, cell, "q128.png")
@@ -442,9 +513,11 @@ def main(argv):
     if gallery_rc:
         return gallery_rc
 
-    n = len(SUBJECTS)
+    n = len(SUBJECTS) + adv_staged
     total = 2 * n + len(SCENES) + anim_frames + plates
-    print(f"stage_sprites: {n} subjects + {len(SCENES)} scene(s) + {anim_frames} anim frames"
+    print(f"stage_sprites: {n} subjects ({adv_staged} adversaries, "
+          f"{len(PENDING_ART)} pending-art skipped) + {len(SCENES)} scene(s)"
+          f" + {anim_frames} anim frames"
           f" + {plates} gallery plates, "
           f"{written} files written, "
           f"{kept} unchanged, {total} files expected under "

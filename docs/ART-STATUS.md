@@ -479,7 +479,9 @@ keys `kirk-adv-nano-banana-2-1-<subject>-vN` (207 keys total). Spend
 unchanged at **$0.664**.
 
 stage_sprites.py ADVERSARIES table + icons stay UNWIRED until the HF §8
-human eyeball pass approves cells.
+human eyeball pass approves cells. **(Resolved 2026-10-19: owner QA
+approved; 14 rows wired into crusade-app — see ART-ADVERSARIES "Status"
+tail. 124/125 remain pending-art.)**
 
 ### 4.18 Heraldry regeneration pass — D1 canon compliance (DONE 2026-10-16, $0.00)
 

@@ -839,9 +839,11 @@ fn verdict_panel(
 
 /// The 128x128 battle sprite above the name row — the section 2 seam-1
 /// `ImageNode` keyed by species id (`sprites/champions/{id:03}-{slug}.png`,
-/// staged by `tools/artbake/stage_sprites.py`). Spawned only when the app
+/// adversaries under `sprites/adversaries/`, staged by
+/// `tools/artbake/stage_sprites.py`). Spawned only when the app
 /// HAS an asset server (MinimalPlugins smoke runs do not) AND the species
-/// is one of the 19 art-lane species; the name/resolve/type text rows below
+/// is one of the art-lane species (champions, sin-bosses, and the staged
+/// Road East adversaries); the name/resolve/type text rows below
 /// are unconditional, so a sprite whose fetch 404s (wasm during a partial
 /// deploy) simply draws nothing over an intact text panel.
 ///
@@ -921,12 +923,35 @@ fn champion_sprite(
 /// a reverse name scan recovers exactly the id the client rendered. The
 /// client's defensive "Champion #N" fallback name matches nothing and
 /// yields `None` on purpose: unknown species keep the text-only render.
+///
+/// Road East adversaries (ids 108..=117, 120..=123) resolve the same way
+/// against `data::adversaries::ADVERSARIES`, routed to
+/// `sprites/adversaries/{id:03}-{slug}.png` (their own art lane, staged
+/// by `stage_sprites.py`'s ADVERSARIES table) — this one resolver feeds
+/// every battle surface that draws a foe (wild/ambush/gate/escort trail
+/// battles AND the practice trio, which rotates in 116 Askari Alamdar).
+/// Pending-art adversaries (124 Gokbori, 125 Taki al-Din Umar — staged
+/// after their cells land) get `None`: the text-only render, never a
+/// 404 guess.
 fn champion_sprite_path(species_name: &str) -> Option<String> {
-    let sp = data::species::SPECIES
+    if let Some(sp) = data::species::SPECIES
+        .iter()
+        .find(|sp| sp.name == species_name)
+    {
+        return Some(format!(
+            "sprites/champions/{:03}-{}.png",
+            sp.id,
+            slugify(sp.name)
+        ));
+    }
+    let sp = data::adversaries::ADVERSARIES
         .iter()
         .find(|sp| sp.name == species_name)?;
+    if !matches!(sp.id, 108..=117 | 120..=123) {
+        return None; // pending-art rows (124, 125) stay text-only
+    }
     Some(format!(
-        "sprites/champions/{:03}-{}.png",
+        "sprites/adversaries/{:03}-{}.png",
         sp.id,
         slugify(sp.name)
     ))
@@ -1301,6 +1326,73 @@ mod tests {
         assert_eq!(champion_sprite_path("Vigo the Carpathian"), None);
     }
 
+    /// The Road East adversary knobs test: the stage-mapping covers
+    /// EXACTLY the adversary ids with approved art cells (108..=117 field
+    /// archetypes + 120..=123 commander portraits, per
+    /// `tools/artbake/stage_sprites.py`'s ADVERSARIES table staging
+    /// `sprites/adversaries/{id:03}-{slug}.png`). Every other ADVERSARIES
+    /// row — today the pending-art 124 Gokbori and 125 Taki al-Din Umar —
+    /// must resolve to `None` (text-only render, never a 404 guess). The
+    /// battle-panel read of this table is what puts 116 Askari Alamdar on
+    /// the practice trio's foe card and the wild/ambush/gate/escort foes
+    /// on the trail renderer.
+    #[test]
+    fn adversary_sprite_paths_cover_exactly_ids_with_art() {
+        let staged: &[(u16, &str)] = &[
+            (108, "turcoman-bowrider"),
+            (109, "ghulam-lancer"),
+            (110, "sudani-shieldbearer"),
+            (111, "armenian-bowman"),
+            (112, "daylamite-axeman"),
+            (113, "bedouin-outrider"),
+            (114, "kurdish-ghazw-rider"),
+            (115, "naffatun-sapper"),
+            (116, "askari-alamdar"),
+            (117, "muqaddam-of-the-tulb"),
+            (120, "kilij-arslan-i"),
+            (121, "nur-ad-din"),
+            (122, "asad-al-din-shirkuh"),
+            (123, "saladin"),
+        ];
+        let staged_ids: Vec<u16> = staged.iter().map(|(id, _)| *id).collect();
+        assert_eq!(
+            data::adversaries::ADVERSARIES.len(),
+            staged.len() + 2,
+            "16 adversary rows = 14 staged + 124/125 pending-art"
+        );
+        for sp in data::adversaries::ADVERSARIES {
+            if staged_ids.contains(&sp.id) {
+                let (id, slug) = staged.iter().find(|(id, _)| *id == sp.id).unwrap();
+                assert_eq!(*id, sp.id);
+                assert_eq!(
+                    champion_sprite_path(sp.name).as_deref(),
+                    Some(format!("sprites/adversaries/{id:03}-{slug}.png").as_str()),
+                    "{}",
+                    sp.name
+                );
+            } else {
+                assert!(
+                    matches!(sp.id, 124 | 125),
+                    "only the pending-art rows may lack sprites, not {}",
+                    sp.name
+                );
+                assert_eq!(
+                    champion_sprite_path(sp.name),
+                    None,
+                    "pending-art {} renders text-only",
+                    sp.name
+                );
+            }
+        }
+        // Adversaries stage no anim family (commander static-portrait
+        // rule): idle/arc/verdict resolvers stay None for all of them.
+        for sp in data::adversaries::ADVERSARIES {
+            assert_eq!(champion_anim_paths(sp.name), None, "{}", sp.name);
+            assert_eq!(champion_arc_paths(sp.name), None, "{}", sp.name);
+            assert_eq!(champion_verdict_paths(sp.name), None, "{}", sp.name);
+        }
+    }
+
     /// The idle-loop resolver (card D5): every champion resolves to its
     /// staged `01_idle.png`; the 11 batch-grid champions get `04_idle2.png`
     /// too, while Squire Audric's 4.3 pilot grid has no idle2 cell. Bosses
@@ -1642,6 +1734,10 @@ mod tests {
             lobby: None,
             witnesses: Vec::new(),
             sins: Vec::new(),
+            foes: Vec::new(),
+            testimonies: Vec::new(),
+            conversion: None,
+            trail: None,
             fresh_events: events.clone(),
         };
         // The net tell: both panels idle out — no strike, no windup, nothing.
