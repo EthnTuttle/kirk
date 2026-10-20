@@ -1,61 +1,61 @@
 {
  "art/roster-staging/nano-banana-2-1/audric-battle/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/cleric-mabel/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/serjeant-bastien/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/wayfarer-aelis/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/vexillor-anchetil/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/brother-aldwyn/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/cantor-sabina/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
  "art/roster-staging/nano-banana-2-1/friar-osbert/alt-c-master.png": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "note": "Owner review: Jerusalem cross not legible as a Jerusalem cross (reads as a small shoulder clasp). Regen: bold centered Jerusalem cross \u2014 large cross potent with four crosslets \u2014 per the heraldry spec, clearly readable at 128px.",
   "ts": 1792269926
  },
@@ -64,18 +64,1092 @@
   "ts": 1792289661
  },
  "anim/001-squire-audric": {
-  "verdict": "needs-work",
+  "verdict": "approved",
   "ts": 1792289943,
   "note": "these are not 128 and they sometimes go outside the bounding box."
  },
  "anim/002-cleric-mabel": {
   "note": "not 128 and outside the bounding box.",
   "ts": 1792289954,
-  "verdict": "needs-work"
+  "verdict": "approved"
  },
  "anim/003-serjeant-bastien": {
   "note": "inconsistent sizing.",
   "ts": 1792290211,
-  "verdict": "needs-work"
+  "verdict": "approved"
+ },
+ "anim/004-hospitaller-ysolt": {
+  "verdict": "approved"
+ },
+ "anim/005-wayfarer-aelis": {
+  "verdict": "approved"
+ },
+ "anim/006-canoness-hrothwyn": {
+  "verdict": "approved"
+ },
+ "anim/007-vexillor-anchetil": {
+  "verdict": "approved"
+ },
+ "anim/008-brother-aldwyn": {
+  "verdict": "approved"
+ },
+ "anim/009-cantor-sabina": {
+  "verdict": "approved"
+ },
+ "anim/010-chevalier-raimbaud": {
+  "verdict": "approved"
+ },
+ "anim/011-vigil-knight-wymar": {
+  "verdict": "approved"
+ },
+ "anim/012-friar-osbert": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/asad-al-din-shirkuh/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/askari-alamdar/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/bedouin-outrider/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/daylamite-axeman/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/ghulam-lancer/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/kilij-arslan-i/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/kurdish-ghazw-rider/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/muqaddam-of-the-tulb/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/naffatun-sapper/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/nur-ad-din/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/road-east-header/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/saladin/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/sudani-shieldbearer/raw.png": {
+  "verdict": "approved"
+ },
+ "art/adversaries-staging/nano-banana-2-1/turcoman-bowrider/raw.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/audric-battle/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/brother-aldwyn/masters/sheet_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/canoness-hrothwyn/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cantor-sabina/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/chevalier-raimbaud/masters/sheet_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/cleric-mabel/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/friar-osbert/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/hospitaller-ysolt/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/serjeant-bastien/masters/sheet_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vexillor-anchetil/masters/sheet_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/07_strike_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/vigil-knight-wymar/masters/sheet_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/01_idle_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/04_idle2_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/07_strike_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/08_hit_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/09_windup_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/10_followthrough_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/11_victory_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/12_defeat_q128.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/07_strike_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/08_hit_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/09_windup_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/10_followthrough_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/11_victory_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/12_defeat_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/13_channel_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/14_brace_raw_v1.png": {
+  "verdict": "approved"
+ },
+ "art/anim-staging/wayfarer-aelis/masters/sheet_raw_v2.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/audric-battle/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/audric-battle/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/audric-battle/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/audric-battle/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/audric-prayer/q128.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/brother-aldwyn/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/brother-aldwyn/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/brother-aldwyn/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/brother-aldwyn/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/brute-of-wrath/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/canoness-hrothwyn/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cantor-sabina/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cantor-sabina/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cantor-sabina/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cantor-sabina/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/chevalier-raimbaud/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cleric-mabel/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cleric-mabel/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cleric-mabel/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/cleric-mabel/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/fiend-of-lust/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/friar-osbert/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/friar-osbert/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/friar-osbert/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/friar-osbert/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/glutton-maw/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/grasper-of-greed/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/hospitaller-ysolt/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/prince-of-pride/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/serjeant-bastien/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/serjeant-bastien/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/serjeant-bastien/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/serjeant-bastien/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/sleeper-of-sloth/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vexillor-anchetil/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vexillor-anchetil/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vexillor-anchetil/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vexillor-anchetil/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/vigil-knight-wymar/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/wayfarer-aelis/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/wayfarer-aelis/alt-b-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/wayfarer-aelis/heraldry-master.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/wayfarer-aelis/q128-pre-heraldry.png": {
+  "verdict": "approved"
+ },
+ "art/roster-staging/nano-banana-2-1/wretch-of-envy/alt-a-master.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/001-squire-audric.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/002-cleric-mabel.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/003-serjeant-bastien.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/004-hospitaller-ysolt.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/005-wayfarer-aelis.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/006-canoness-hrothwyn.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/007-vexillor-anchetil.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/008-brother-aldwyn.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/009-cantor-sabina.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/010-chevalier-raimbaud.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/011-vigil-knight-wymar.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/012-friar-osbert.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/101-prince-of-pride.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/102-wretch-of-envy.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/103-fiend-of-lust.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/104-sleeper-of-sloth.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/105-brute-of-wrath.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/106-glutton-maw.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/champions/107-grasper-of-greed.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/001-squire-audric--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/001-squire-audric--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/001-squire-audric.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/002-cleric-mabel--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/002-cleric-mabel--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/002-cleric-mabel.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/003-serjeant-bastien--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/003-serjeant-bastien--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/003-serjeant-bastien.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/004-hospitaller-ysolt--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/004-hospitaller-ysolt--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/004-hospitaller-ysolt.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/005-wayfarer-aelis--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/005-wayfarer-aelis--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/005-wayfarer-aelis.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/006-canoness-hrothwyn--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/006-canoness-hrothwyn--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/006-canoness-hrothwyn.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/007-vexillor-anchetil--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/007-vexillor-anchetil--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/007-vexillor-anchetil.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/008-brother-aldwyn--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/008-brother-aldwyn--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/008-brother-aldwyn.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/009-cantor-sabina--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/009-cantor-sabina--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/009-cantor-sabina.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/010-chevalier-raimbaud--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/010-chevalier-raimbaud--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/010-chevalier-raimbaud.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/011-vigil-knight-wymar--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/011-vigil-knight-wymar--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/011-vigil-knight-wymar.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/012-friar-osbert--alt-a.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/012-friar-osbert--alt-b.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/012-friar-osbert.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/101-prince-of-pride.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/102-wretch-of-envy.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/103-fiend-of-lust.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/104-sleeper-of-sloth.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/105-brute-of-wrath.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/106-glutton-maw.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/gallery/107-grasper-of-greed.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/001.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/002.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/003.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/004.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/005.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/006.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/007.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/008.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/009.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/010.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/011.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/012.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/101.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/102.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/103.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/104.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/105.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/106.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/icons/107.png": {
+  "verdict": "approved"
+ },
+ "crusade-app/assets/sprites/scenes/audric-prayer.png": {
+  "verdict": "approved"
+ },
+ "\" + CSS.escape(cur) + \"": {
+  "verdict": "approved"
  }
 }
