@@ -276,7 +276,7 @@ candidate pair containing a third-party seal — agreeing, disagreeing,
 or backdated — can ever form. Two merged devices converge. Review:
 docs/LADDER-REVIEW.md (incl. R1 sockpuppet-laundering closure).
 
-**V12-2 — Wager escrow** — *L*: escrow via existing kirk token flow,
+**V12-2 (DONE 2026-10-19, a885ef5) — Wager escrow** — *L*: escrow via existing kirk token flow,
 settlement via the replay adapter (M6, already mint-visible). Files:
 `crusade-bridge/src/adapter.rs`, kirk `src/cashu/`. Deps: **G2 mint
 decision** (who runs a production GameMint) — the only true blocker.
