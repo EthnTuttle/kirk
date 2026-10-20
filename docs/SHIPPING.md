@@ -32,9 +32,14 @@ a Bevy front-end shell:
 1. **PvP.** Wired since v1.1: the Tournament of Virtue lobby screens
    (challenge posting/acceptance over nostr) drive `NetDuelDriver`
    sessions with dual attestation (kind 9265).
-2. **No wagers in v1.** Attestations are produced; escrow claim flow against a
-   live Cashu mint is not wired (needs a deployed mint + GameMint production
-   config). The old `GameMint::new_test` stub debt is closed (2026-10-15):
+2. **Wagers: escrow exists, not in the shipped client.** The V12-2 wager
+   escrow is implemented and test-covered end-to-end on the in-memory CDK
+   mint (docs/WAGERS.md): NUT-11 2-of-2 duel-pubkey locks with timelocked
+   depositor refunds, adjudicated on the ladder's shared attestation fold;
+   no rake, refund-on-dispute. Not yet wired into the app UI, and
+   production use needs the owner's self-hosted mint pointed in via
+   `CRUSADE_MINT_URL` (deployment-time config only). The old
+   `GameMint::new_test` stub debt is closed (2026-10-15):
    the test mint is a real in-memory CDK mint and
    `extract_c_value_from_token` parses for real — workspace is fully green.
 3. **Browser runtime was verified headless** (build + asset presence + smokes).

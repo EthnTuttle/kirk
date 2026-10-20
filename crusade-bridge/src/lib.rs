@@ -16,11 +16,13 @@
 
 pub mod adapter;
 pub mod attest;
+pub mod escrow;
 pub mod ladder;
 pub mod seed;
 
 pub use adapter::*;
 pub use attest::*;
+pub use escrow::{EscrowConfig, EscrowError, EscrowVerdict, WagerEscrow, WagerTerms};
 pub use ladder::*;
 pub use seed::*;
 

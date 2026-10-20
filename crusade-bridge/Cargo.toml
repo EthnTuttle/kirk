@@ -9,6 +9,10 @@ license = "MIT"
 crusade-core = { path = "../crusade-core" }
 crusade-net = { path = "../crusade-net" }
 kirk = { path = ".." }
+# V12-2 wager escrow: NUT-11 locks + swaps go through the CDK mint handle
+# directly; same path-pinned crates kirk already puts in the graph.
+cdk = { path = "../deps/cdk/crates/cdk" }
+cashu = { path = "../deps/cdk/crates/cashu", features = ["kirk"] }
 nostr = "0.35"
 sha2 = "0.10"
 hex = "0.4"
@@ -18,3 +22,7 @@ thiserror = "1.0"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
+# In-memory CDK mint for escrow end-to-end tests (the GameMint::new_test
+# precedent): native-only, never in the app/wasm graph.
+cdk-sqlite = { path = "../deps/cdk/crates/cdk-sqlite" }
+cdk-signatory = { path = "../deps/cdk/crates/cdk-signatory", default-features = false }

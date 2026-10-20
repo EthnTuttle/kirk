@@ -189,9 +189,12 @@ struct AuthorSeal {
 }
 
 /// One settled battle, canonicalized: `a` < `b` by pubkey, so pair keys
-/// are orientation-free.
-#[derive(Debug, Clone)]
-struct Settlement {
+/// are orientation-free. Public because the V12-2 wager escrow
+/// (`crate::escrow`) adjudicates on exactly the same fold product —
+/// shared gate product, keyed only on winner identity (see
+/// [`canonical_settlements`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttestedSettlement {
     a: PublicKey,
     b: PublicKey,
     winner_is_a: bool,
@@ -201,8 +204,43 @@ struct Settlement {
     battle: String,
 }
 
+impl AttestedSettlement {
+    /// The settled winner's pubkey (either `a` or `b`).
+    pub fn winner(&self) -> PublicKey {
+        if self.winner_is_a {
+            self.a
+        } else {
+            self.b
+        }
+    }
+
+    /// The settled loser's pubkey (the other of `a`/`b`).
+    pub fn loser(&self) -> PublicKey {
+        if self.winner_is_a {
+            self.b
+        } else {
+            self.a
+        }
+    }
+
+    /// The two settled participants, canonical (sorted) order.
+    pub fn pair(&self) -> [PublicKey; 2] {
+        [self.a, self.b]
+    }
+
+    /// The battle id (64 lowercase hex) this settlement is for.
+    pub fn battle(&self) -> &str {
+        &self.battle
+    }
+
+    /// The pair's max created_at (when the last seal landed).
+    pub fn settled_at(&self) -> u64 {
+        self.settled_at
+    }
+}
+
 /// Try to build a settlement from two unconflicted author seals.
-fn try_settle(battle: &str, x: &AuthorSeal, y: &AuthorSeal) -> Option<Settlement> {
+fn try_settle(battle: &str, x: &AuthorSeal, y: &AuthorSeal) -> Option<AttestedSettlement> {
     if x.conflicted || y.conflicted {
         return None; // gate 2: equivocation voids every pair it touches
     }
@@ -216,7 +254,7 @@ fn try_settle(battle: &str, x: &AuthorSeal, y: &AuthorSeal) -> Option<Settlement
     // Mutual peer-naming: each seal must name the OTHER seal's author as
     // its counterparty. A third party's agreeing seal names an author
     // whose seal names someone else — the mob/sockpuppet class dies here.
-    let mut named = |seal: &Verified, other: PublicKey| -> bool {
+    let named = |seal: &Verified, other: PublicKey| -> bool {
         seal.att
             .peer
             .as_deref()
@@ -242,7 +280,7 @@ fn try_settle(battle: &str, x: &AuthorSeal, y: &AuthorSeal) -> Option<Settlement
         (ya.author, xa.author)
     };
     let host_won = xa.att.winner == 0;
-    Some(Settlement {
+    Some(AttestedSettlement {
         a,
         b,
         winner_is_a: host_won == (host == a),
@@ -251,21 +289,20 @@ fn try_settle(battle: &str, x: &AuthorSeal, y: &AuthorSeal) -> Option<Settlement
     })
 }
 
-/// Fold an attestation event stream into the ladder table.
+/// Gates 1–3 of the fold pipeline: well-formedness, per-author
+/// equivocation detection, and mutually-named agreeing-pair settlement —
+/// everything EXCEPT the ladder-specific `already_settled` cursor
+/// handling and the damping/Elo application. Returns one settlement per
+/// settleable battle, in canonical total order (settled_at, battle id).
 ///
-/// `base` seeds starting ratings (the persisted full table from prior
-/// folds — not just the local player's row); players without a base
-/// entry start at [`DEFAULT_LADDER_RATING`]. `already_settled` is the
-/// settlement cursor: battles whose outcomes the base already reflects
-/// are skipped, which is exactly what makes refolding a persisted stream
-/// idempotent. `damping_prior` carries the persisted per-pair counters.
-/// Pure and order-independent given identical inputs.
-pub fn fold_attestations<'a>(
+/// This is the SHARED fold product the V12-2 wager escrow adjudicates on
+/// (`crate::escrow`): an escrow pays out exactly when the ladder would
+/// rate the battle, and the winner here is the same winner the ladder
+/// would credit. Keyed only on winner identity.
+pub fn canonical_settlements<'a>(
     events: impl IntoIterator<Item = &'a Event>,
-    base: &[(PublicKey, u64)],
     already_settled: &BTreeSet<String>,
-    damping_prior: &BTreeMap<(PublicKey, PublicKey, u64), u32>,
-) -> LadderTable {
+) -> Vec<AttestedSettlement> {
     // Gate 1, then gate 2's grouping: per (battle, author) keep the
     // representative seal and detect equivocation.
     let mut battles: BTreeMap<String, BTreeMap<PublicKey, AuthorSeal>> = BTreeMap::new();
@@ -305,13 +342,13 @@ pub fn fold_attestations<'a>(
 
     // Gate 3: per battle, the canonical earliest agreeing pair settles;
     // everything else on the id is inert noise.
-    let mut settlements: Vec<Settlement> = Vec::new();
+    let mut settlements: Vec<AttestedSettlement> = Vec::new();
     for (battle, authors) in &battles {
         if already_settled.contains(battle) {
             continue; // the checkpoint already carries this outcome
         }
         let keys: Vec<PublicKey> = authors.keys().copied().collect();
-        let mut best: Option<Settlement> = None;
+        let mut best: Option<AttestedSettlement> = None;
         for i in 0..keys.len() {
             for j in (i + 1)..keys.len() {
                 let (x, y) = (&authors[&keys[i]], &authors[&keys[j]]);
@@ -334,8 +371,28 @@ pub fn fold_attestations<'a>(
         }
     }
     settlements.sort_by(|s, t| (&s.settled_at, &s.battle).cmp(&(&t.settled_at, &t.battle)));
+    settlements
+}
 
-    // Gate 4 (damping) + Elo application in canonical order.
+/// Fold an attestation event stream into the ladder table.
+///
+/// `base` seeds starting ratings (the persisted full table from prior
+/// folds — not just the local player's row); players without a base
+/// entry start at [`DEFAULT_LADDER_RATING`]. `already_settled` is the
+/// settlement cursor: battles whose outcomes the base already reflects
+/// are skipped, which is exactly what makes refolding a persisted stream
+/// idempotent. `damping_prior` carries the persisted per-pair counters.
+/// Pure and order-independent given identical inputs.
+pub fn fold_attestations<'a>(
+    events: impl IntoIterator<Item = &'a Event>,
+    base: &[(PublicKey, u64)],
+    already_settled: &BTreeSet<String>,
+    damping_prior: &BTreeMap<(PublicKey, PublicKey, u64), u32>,
+) -> LadderTable {
+    // Gates 1–3 live in `canonical_settlements`, shared with the wager
+    // escrow's adjudication; what remains here is ladder-specific: gate
+    // 4 (damping) + Elo application in canonical order.
+    let settlements = canonical_settlements(events, already_settled);
     let mut ratings: BTreeMap<PublicKey, u64> = base.iter().copied().collect();
     let mut damping = damping_prior.clone();
     for s in &settlements {
